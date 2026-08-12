@@ -1,0 +1,22 @@
+{
+  "name": "toktickit",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev:client": "npm --workspace client run dev",
+    "dev:server": "npm --workspace server run dev",
+    "build": "npm --workspace client run build && npm --workspace server run build",
+    "test": "vitest run --config vitest.config.ts",
+    "test:client": "npm --workspace client run test",
+    "test:server": "npm --workspace server run test",
+    "prisma:generate": "npm --workspace server run prisma:generate",
+    "prisma:migrate": "npm --workspace server run prisma:migrate"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.4"
+  }
+}
