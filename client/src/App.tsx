@@ -2,13 +2,25 @@ import { useState } from 'react';
 
 const API_URL = 'http://localhost:3000';
 
-type Status = 'idle' | 'loading' | 'online' | 'error';
+type Category = { id: number; name: string };
+type SystemStatus = 'idle' | 'loading' | 'online' | 'error';
+type CategoryStatus = 'idle' | 'loading' | 'success' | 'error';
 
 export function App() {
-  const [status, setStatus] = useState<Status>('idle');
+  const [systemStatus, setSystemStatus] = useState<SystemStatus>('idle');
+  const [categoryStatus, setCategoryStatus] = useState<CategoryStatus>('idle');
+  const [categories, setCategories] = useState<Category[]>([]);
 
   async function checkSystem() {
-    setStatus('loading');
+    setSystemStatus('loading');
+    setCategoryStatus('loading');
+    setCategories([]);
+
+    await checkHealth();
+    await loadCategories();
+  }
+
+  async function checkHealth() {
     try {
       const response = await fetch(`${API_URL}/api/health`);
       if (!response.ok) {
@@ -18,9 +30,23 @@ export function App() {
       if (data.status !== 'ok') {
         throw new Error('Unexpected health check response');
       }
-      setStatus('online');
+      setSystemStatus('online');
     } catch {
-      setStatus('error');
+      setSystemStatus('error');
+    }
+  }
+
+  async function loadCategories() {
+    try {
+      const response = await fetch(`${API_URL}/api/categories`);
+      if (!response.ok) {
+        throw new Error(`Categories request failed: ${response.status}`);
+      }
+      const data = await response.json();
+      setCategories(data);
+      setCategoryStatus('success');
+    } catch {
+      setCategoryStatus('error');
     }
   }
 
@@ -32,7 +58,7 @@ export function App() {
           Check System
         </button>
 
-        {status === 'loading' && (
+        {systemStatus === 'loading' && (
           <p className="mt-4" role="status">
             Checking system...
             <span
@@ -41,12 +67,36 @@ export function App() {
             />
           </p>
         )}
-        {status === 'online' && (
+        {systemStatus === 'online' && (
           <p className="mt-4 text-success">System Status: Online</p>
         )}
-        {status === 'error' && (
+        {systemStatus === 'error' && (
           <p className="mt-4 text-danger" role="alert">
             Unable to reach the backend. Please make sure the server is running.
+          </p>
+        )}
+
+        {categoryStatus === 'loading' && (
+          <p className="mt-4" role="status">
+            Loading categories...
+          </p>
+        )}
+        {categoryStatus === 'success' && (
+          <div className="mt-4">
+            <h2 className="h5 mb-3">Supported Request Categories</h2>
+            <ul className="list-group">
+              {categories.map((category) => (
+                <li key={category.id} className="list-group-item">
+                  {category.name}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {categoryStatus === 'error' && (
+          <p className="mt-4 text-danger" role="alert">
+            Unable to load categories. Please make sure the database is
+            available.
           </p>
         )}
       </section>
