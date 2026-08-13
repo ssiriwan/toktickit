@@ -14,7 +14,8 @@
     "test:client": "npm --workspace client run test",
     "test:server": "npm --workspace server run test",
     "prisma:generate": "npm --workspace server run prisma:generate",
-    "prisma:migrate": "npm --workspace server run prisma:migrate"
+    "prisma:migrate": "npm --workspace server run prisma:migrate",
+    "prisma:seed": "npm --workspace server run prisma:seed"
   },
   "devDependencies": {
     "vitest": "^3.2.4"
