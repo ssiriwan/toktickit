@@ -39,7 +39,7 @@ npm run test:server
 
 ## Latest Test Evidence
 
-The README test commands were run successfully on the `feature/4-category-list` branch.
+The README test commands were run successfully on the `main` branch.
 
 ```text
 npm test
