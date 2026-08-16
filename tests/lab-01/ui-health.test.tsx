@@ -53,7 +53,10 @@ describe('TokTickIT health check UI', () => {
     await userEvent.click(screen.getByRole('button', { name: /Check System/i }));
 
     expect(
-      await screen.findByText(/unable to reach the backend/i)
+      await screen.findByText(/System Status: Offline/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Unable to connect to TokTickIT API/i)
     ).toBeInTheDocument();
   });
 });
