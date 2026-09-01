@@ -7,8 +7,78 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum TicketStatus {
+  NEW
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
 model Category {
   id        Int      @id @default(autoincrement())
   name      String   @unique
   createdAt DateTime @default(now())
+  tickets   Ticket[]
+}
+
+model RequesterUser {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tickets   Ticket[]
+}
+
+model RelatedSystem {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  tickets   Ticket[]
+}
+
+model Ticket {
+  id               Int           @id @default(autoincrement())
+  ticketNumber     String        @unique
+  summary          String
+  description      String
+  currentStatus    TicketStatus  @default(NEW)
+  requestedPriority Priority
+  ticketDate       DateTime      @default(now())
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  requesterId      Int
+  categoryId       Int
+  relatedSystemId  Int
+  requester        RequesterUser @relation(fields: [requesterId], references: [id])
+  category         Category      @relation(fields: [categoryId], references: [id])
+  relatedSystem    RelatedSystem @relation(fields: [relatedSystemId], references: [id])
+  attachments      Attachment[]
+
+  @@index([requesterId, createdAt])
+  @@index([currentStatus])
+  @@index([categoryId])
+  @@index([relatedSystemId])
+}
+
+model Attachment {
+  id             Int       @id @default(autoincrement())
+  filename       String
+  storedFilename String    @unique
+  mimeType       String
+  fileSize       Int
+  ticketId       Int
+  isRemoved      Boolean   @default(false)
+  removalReason  String?
+  removedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  ticket         Ticket    @relation(fields: [ticketId], references: [id])
+
+  @@index([ticketId])
 }
