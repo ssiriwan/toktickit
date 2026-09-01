@@ -71,9 +71,10 @@ export function App() {
           <p className="mt-4 text-success">System Status: Online</p>
         )}
         {systemStatus === 'error' && (
-          <p className="mt-4 text-danger" role="alert">
-            Unable to reach the backend. Please make sure the server is running.
-          </p>
+          <div className="mt-4 text-danger" role="alert">
+            <p className="mb-0">System Status: Offline</p>
+            <p className="mb-0">Unable to connect to TokTickIT API</p>
+          </div>
         )}
 
         {categoryStatus === 'loading' && (
@@ -93,7 +94,7 @@ export function App() {
             </ul>
           </div>
         )}
-        {categoryStatus === 'error' && (
+        {categoryStatus === 'error' && systemStatus !== 'error' && (
           <p className="mt-4 text-danger" role="alert">
             Unable to load categories. Please make sure the database is
             available.
