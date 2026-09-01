@@ -27,7 +27,12 @@ Retrieve active Development Requesters for the selection screen.
 ### Response 500 Internal Server Error
 
 ```json
-{ "message": "Failed to load requesters" }
+{
+  "error": {
+    "code": "INTERNAL_ERROR",
+    "message": "Failed to load requesters"
+  }
+}
 ```
 
 ---
@@ -50,7 +55,12 @@ Retrieve active ticket categories.
 ### Response 500 Internal Server Error
 
 ```json
-{ "message": "Failed to load categories" }
+{
+  "error": {
+    "code": "INTERNAL_ERROR",
+    "message": "Failed to load categories"
+  }
+}
 ```
 
 ---
@@ -76,7 +86,12 @@ Retrieve active related systems.
 ### Response 500 Internal Server Error
 
 ```json
-{ "message": "Failed to load related systems" }
+{
+  "error": {
+    "code": "INTERNAL_ERROR",
+    "message": "Failed to load related systems"
+  }
+}
 ```
 
 ---
@@ -148,24 +163,37 @@ Format: `TK-YYYYMMDD-XXXX`
 
 ```json
 {
-  "message": "Validation failed",
-  "errors": [
-    { "field": "summary", "message": "Summary is required" },
-    { "field": "categoryId", "message": "Invalid category" }
-  ]
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Ticket payload is invalid",
+    "details": [
+      { "field": "summary", "message": "Summary is required" },
+      { "field": "categoryId", "message": "Invalid category" }
+    ]
+  }
 }
 ```
 
 ### Response 404 Not Found
 
 ```json
-{ "message": "Requester not found" }
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Requester not found"
+  }
+}
 ```
 
 ### Response 500 Internal Server Error
 
 ```json
-{ "message": "Failed to create ticket" }
+{
+  "error": {
+    "code": "INTERNAL_ERROR",
+    "message": "Failed to create ticket"
+  }
+}
 ```
 
 ---
@@ -230,13 +258,23 @@ GET /api/tickets?requesterId=1&search=laptop&categoryId=2&page=1&pageSize=10&sor
 ### Response 400 Bad Request
 
 ```json
-{ "message": "Invalid query parameters" }
+{
+  "error": {
+    "code": "INVALID_QUERY",
+    "message": "Invalid query parameters"
+  }
+}
 ```
 
 ### Response 500 Internal Server Error
 
 ```json
-{ "message": "Failed to load tickets" }
+{
+  "error": {
+    "code": "INTERNAL_ERROR",
+    "message": "Failed to load tickets"
+  }
+}
 ```
 
 ---
@@ -303,19 +341,34 @@ Retrieve a single Ticket with all details and attachments.
 ### Response 403 Forbidden
 
 ```json
-{ "message": "Access denied" }
+{
+  "error": {
+    "code": "ACCESS_DENIED",
+    "message": "Access denied"
+  }
+}
 ```
 
 ### Response 404 Not Found
 
 ```json
-{ "message": "Ticket not found" }
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Ticket not found"
+  }
+}
 ```
 
 ### Response 500 Internal Server Error
 
 ```json
-{ "message": "Failed to load ticket" }
+{
+  "error": {
+    "code": "INTERNAL_ERROR",
+    "message": "Failed to load ticket"
+  }
+}
 ```
 
 ---
@@ -362,37 +415,67 @@ Content-Type: `multipart/form-data`
 ### Response 400 Bad Request (Invalid File Type)
 
 ```json
-{ "message": "File type not allowed. Permitted: JPG, JPEG, PNG, WEBP, PDF" }
+{
+  "error": {
+    "code": "INVALID_FILE_TYPE",
+    "message": "File type not allowed. Permitted: JPG, JPEG, PNG, WEBP, PDF"
+  }
+}
 ```
 
 ### Response 400 Bad Request (File Too Large)
 
 ```json
-{ "message": "File size exceeds 5MB limit" }
+{
+  "error": {
+    "code": "FILE_TOO_LARGE",
+    "message": "File size exceeds 5MB limit"
+  }
+}
 ```
 
 ### Response 400 Bad Request (Max Attachments)
 
 ```json
-{ "message": "Maximum 5 active attachments per ticket" }
+{
+  "error": {
+    "code": "MAX_ATTACHMENTS",
+    "message": "Maximum 5 active attachments per ticket"
+  }
+}
 ```
 
 ### Response 403 Forbidden
 
 ```json
-{ "message": "Access denied" }
+{
+  "error": {
+    "code": "ACCESS_DENIED",
+    "message": "Access denied"
+  }
+}
 ```
 
 ### Response 404 Not Found
 
 ```json
-{ "message": "Ticket not found" }
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Ticket not found"
+  }
+}
 ```
 
 ### Response 500 Internal Server Error
 
 ```json
-{ "message": "Failed to upload attachment" }
+{
+  "error": {
+    "code": "INTERNAL_ERROR",
+    "message": "Failed to upload attachment"
+  }
+}
 ```
 
 ---
@@ -416,25 +499,45 @@ Download an active attachment file.
 ### Response 403 Forbidden
 
 ```json
-{ "message": "Access denied" }
+{
+  "error": {
+    "code": "ACCESS_DENIED",
+    "message": "Access denied"
+  }
+}
 ```
 
 ### Response 404 Not Found
 
 ```json
-{ "message": "Attachment not found" }
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Attachment not found"
+  }
+}
 ```
 
 ### Response 410 Gone (Soft-Removed)
 
 ```json
-{ "message": "Attachment has been removed" }
+{
+  "error": {
+    "code": "REMOVED",
+    "message": "Attachment has been removed"
+  }
+}
 ```
 
 ### Response 500 Internal Server Error
 
 ```json
-{ "message": "Failed to download attachment" }
+{
+  "error": {
+    "code": "INTERNAL_ERROR",
+    "message": "Failed to download attachment"
+  }
+}
 ```
 
 ---
@@ -478,25 +581,48 @@ Soft-remove an attachment. The file metadata is retained but the file becomes un
 ### Response 400 Bad Request
 
 ```json
-{ "message": "Reason is required" }
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Ticket payload is invalid",
+    "details": [
+      { "field": "reason", "message": "Reason is required" }
+    ]
+  }
+}
 ```
 
 ### Response 403 Forbidden
 
 ```json
-{ "message": "Access denied" }
+{
+  "error": {
+    "code": "ACCESS_DENIED",
+    "message": "Access denied"
+  }
+}
 ```
 
 ### Response 404 Not Found
 
 ```json
-{ "message": "Attachment not found" }
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Attachment not found"
+  }
+}
 ```
 
 ### Response 500 Internal Server Error
 
 ```json
-{ "message": "Failed to remove attachment" }
+{
+  "error": {
+    "code": "INTERNAL_ERROR",
+    "message": "Failed to remove attachment"
+  }
+}
 ```
 
 ---
@@ -507,14 +633,21 @@ All error responses follow a consistent shape:
 
 ```json
 {
-  "message": "Human-readable error description",
-  "errors": [
-    { "field": "fieldName", "message": "Field-specific error" }
-  ]
+  "error": {
+    "code": "MACHINE_READABLE_CODE",
+    "message": "Human-readable error description",
+    "details": [
+      { "field": "fieldName", "message": "Field-specific error" }
+    ]
+  }
 }
 ```
 
-The `errors` array is included for validation failures (400). Other error types include only `message`.
+- **`code`**: Machine-readable error type used by clients to branch on the failure kind (e.g. `VALIDATION_ERROR`, `NOT_FOUND`, `ACCESS_DENIED`, `REMOVED`, `INTERNAL_ERROR`). Do not rely on HTTP status alone.
+- **`message`**: Human-readable summary of the error.
+- **`details`**: Present only for validation failures (400). Lists one entry per invalid field so the frontend can map messages back to controls. Omitted for other error codes.
+
+Each endpoint documents the specific `code` value it returns. A `VALIDATION_ERROR` is always accompanied by HTTP `400`.
 
 ## Ownership Check Pattern
 

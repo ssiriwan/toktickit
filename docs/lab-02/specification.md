@@ -275,7 +275,7 @@ enum Priority {
 Retrieve active Development Requesters.
 
 - **Response 200**: `[{ id, name, email }]`
-- **Response 500**: `{ message: "Failed to load requesters" }`
+- **Response 500**: `{ error: { code: "INTERNAL_ERROR", message: "Failed to load requesters" } }`
 
 #### GET /api/categories
 
@@ -305,9 +305,9 @@ Create a new Ticket.
   }
   ```
 - **Response 201**: `{ id, ticketNumber, summary, description, currentStatus, requestedPriority, ticketDate, createdAt, requester: { id, name }, category: { id, name }, relatedSystem: { id, name } }`
-- **Response 400**: `{ message: "Validation failed", errors: [{ field, message }] }`
-- **Response 404**: `{ message: "Requester not found" }`
-- **Response 500**: `{ message: "Failed to create ticket" }`
+- **Response 400**: `{ error: { code: "VALIDATION_ERROR", message, details: [{ field, message }] } }`
+- **Response 404**: `{ error: { code: "NOT_FOUND", message: "Requester not found" } }`
+- **Response 500**: `{ error: { code: "INTERNAL_ERROR", message: "Failed to create ticket" } }`
 
 #### GET /api/tickets
 
@@ -331,8 +331,8 @@ Retrieve paginated tickets for the selected Requester.
     "pagination": { page, pageSize, totalItems, totalPages }
   }
   ```
-- **Response 400**: `{ message: "Invalid query parameters" }`
-- **Response 500**: `{ message: "Failed to load tickets" }`
+- **Response 400**: `{ error: { code: "INVALID_QUERY", message: "Invalid query parameters" } }`
+- **Response 500**: `{ error: { code: "INTERNAL_ERROR", message: "Failed to load tickets" } }`
 
 #### GET /api/tickets/:id
 
@@ -352,9 +352,9 @@ Retrieve a single owned Ticket with attachments.
     ]
   }
   ```
-- **Response 403**: `{ message: "Access denied" }` (ownership violation)
-- **Response 404**: `{ message: "Ticket not found" }`
-- **Response 500**: `{ message: "Failed to load ticket" }`
+- **Response 403**: `{ error: { code: "ACCESS_DENIED", message: "Access denied" } }` (ownership violation)
+- **Response 404**: `{ error: { code: "NOT_FOUND", message: "Ticket not found" } }`
+- **Response 500**: `{ error: { code: "INTERNAL_ERROR", message: "Failed to load ticket" } }`
 
 #### POST /api/tickets/:id/attachments
 
@@ -363,10 +363,10 @@ Upload an attachment to a ticket.
 - **Query Parameter**: `requesterId` (required for ownership check)
 - **Request**: `multipart/form-data` with field `file`
 - **Response 201**: `{ id, filename, mimeType, fileSize, isRemoved: false, createdAt }`
-- **Response 400**: `{ message: "Invalid file type" }` or `{ message: "File exceeds 5MB limit" }` or `{ message: "Maximum 5 active attachments per ticket" }`
-- **Response 403**: `{ message: "Access denied" }`
-- **Response 404**: `{ message: "Ticket not found" }`
-- **Response 500**: `{ message: "Failed to upload attachment" }`
+- **Response 400**: `{ error: { code: "INVALID_FILE_TYPE" | "FILE_TOO_LARGE" | "MAX_ATTACHMENTS", message } }`
+- **Response 403**: `{ error: { code: "ACCESS_DENIED", message: "Access denied" } }`
+- **Response 404**: `{ error: { code: "NOT_FOUND", message: "Ticket not found" } }`
+- **Response 500**: `{ error: { code: "INTERNAL_ERROR", message: "Failed to upload attachment" } }`
 
 #### GET /api/attachments/:id/download
 
@@ -374,10 +374,10 @@ Download an active attachment.
 
 - **Query Parameter**: `requesterId` (required for ownership check)
 - **Response 200**: File stream with appropriate Content-Type and Content-Disposition headers
-- **Response 403**: `{ message: "Access denied" }`
-- **Response 404**: `{ message: "Attachment not found" }`
-- **Response 410**: `{ message: "Attachment has been removed" }`
-- **Response 500**: `{ message: "Failed to download attachment" }`
+- **Response 403**: `{ error: { code: "ACCESS_DENIED", message: "Access denied" } }`
+- **Response 404**: `{ error: { code: "NOT_FOUND", message: "Attachment not found" } }`
+- **Response 410**: `{ error: { code: "REMOVED", message: "Attachment has been removed" } }`
+- **Response 500**: `{ error: { code: "INTERNAL_ERROR", message: "Failed to download attachment" } }`
 
 #### PATCH /api/attachments/:id/remove
 
@@ -386,10 +386,10 @@ Soft-remove an attachment.
 - **Query Parameter**: `requesterId` (required for ownership check)
 - **Request Body**: `{ "reason": "No longer needed" }`
 - **Response 200**: `{ id, filename, isRemoved: true, removalReason, removedAt }`
-- **Response 400**: `{ message: "Reason is required" }`
-- **Response 403**: `{ message: "Access denied" }`
-- **Response 404**: `{ message: "Attachment not found" }`
-- **Response 500**: `{ message: "Failed to remove attachment" }`
+- **Response 400**: `{ error: { code: "VALIDATION_ERROR", message, details: [{ field: "reason", message }] } }`
+- **Response 403**: `{ error: { code: "ACCESS_DENIED", message: "Access denied" } }`
+- **Response 404**: `{ error: { code: "NOT_FOUND", message: "Attachment not found" } }`
+- **Response 500**: `{ error: { code: "INTERNAL_ERROR", message: "Failed to remove attachment" } }`
 
 ### HTTP Status Codes Summary
 
