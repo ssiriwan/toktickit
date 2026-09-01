@@ -25,6 +25,21 @@ export function createApp() {
     }
   });
 
+  app.get('/api/requesters', async (_req, res) => {
+    try {
+      const requesters = await prisma.requesterUser.findMany({
+        where: { isActive: true },
+        orderBy: { id: 'asc' },
+        select: { id: true, name: true, email: true }
+      });
+      res.json(requesters);
+    } catch {
+      res.status(500).json({
+        error: { code: 'INTERNAL_ERROR', message: 'Failed to load requesters' }
+      });
+    }
+  });
+
   app.use((_req, res) => {
     res.status(404).json({ message: 'Route not found' });
   });
