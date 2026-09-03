@@ -8,9 +8,10 @@ type SubmitStatus = 'idle' | 'submitting' | 'error' | 'done';
 
 interface CreateTicketProps {
   requester: Requester;
+  onViewMyTickets?: () => void;
 }
 
-export function CreateTicket({ requester }: CreateTicketProps) {
+export function CreateTicket({ requester, onViewMyTickets }: CreateTicketProps) {
   const [status, setStatus] = useState<Status>('idle');
   const [categories, setCategories] = useState<ReferenceItem[]>([]);
   const [systems, setSystems] = useState<ReferenceItem[]>([]);
@@ -22,6 +23,7 @@ export function CreateTicket({ requester }: CreateTicketProps) {
   const [description, setDescription] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitStatus, setSubmitStatus] = useState<SubmitStatus>('idle');
+  const [createdTicketNumber, setCreatedTicketNumber] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -31,10 +33,10 @@ export function CreateTicket({ requester }: CreateTicketProps) {
           fetch('/api/categories'),
           fetch('/api/related-systems')
         ]);
-        const [cats, sys] = await Promise.all([
-          catResp.json(),
-          sysResp.json()
-        ]);
+        if (!catResp.ok || !sysResp.ok) {
+          throw new Error('Failed to load reference data');
+        }
+        const [cats, sys] = await Promise.all([catResp.json(), sysResp.json()]);
         setCategories(cats);
         setSystems(sys);
         setStatus('success');
@@ -44,6 +46,17 @@ export function CreateTicket({ requester }: CreateTicketProps) {
     }
     load();
   }, []);
+
+  function resetForm() {
+    setCategoryId('');
+    setSystemId('');
+    setPriority('');
+    setSummary('');
+    setDescription('');
+    setErrors({});
+    setSubmitStatus('idle');
+    setCreatedTicketNumber(null);
+  }
 
   function validate(): boolean {
     const next: Record<string, string> = {};
@@ -75,11 +88,41 @@ export function CreateTicket({ requester }: CreateTicketProps) {
       if (!response.ok) {
         throw new Error(`Ticket request failed: ${response.status}`);
       }
-      await response.json();
+      const data = (await response.json()) as { ticketNumber: string };
+      setCreatedTicketNumber(data.ticketNumber);
       setSubmitStatus('done');
     } catch {
       setSubmitStatus('error');
     }
+  }
+
+  function RequiredStar() {
+    return <span style={{ color: '#DC2626' }}> *</span>;
+  }
+
+  if (submitStatus === 'done' && createdTicketNumber) {
+    return (
+      <main className="container py-4" style={{ maxWidth: '46rem' }}>
+        <div className="alert alert-success" role="status">
+          <h2 className="h5 mb-2">Ticket created successfully!</h2>
+          <p className="mb-1">
+            Your ticket number is{' '}
+            <strong style={{ fontSize: '1.1rem' }}>{createdTicketNumber}</strong>
+          </p>
+          <p className="text-muted small mb-0">
+            Ticket Number: {createdTicketNumber} — Status: NEW
+          </p>
+        </div>
+        <div className="d-flex gap-2">
+          <button type="button" className="btn btn-primary" onClick={onViewMyTickets}>
+            View My Tickets
+          </button>
+          <button type="button" className="btn btn-outline-secondary" onClick={resetForm}>
+            Create another ticket
+          </button>
+        </div>
+      </main>
+    );
   }
 
   return (
@@ -123,14 +166,16 @@ export function CreateTicket({ requester }: CreateTicketProps) {
             <div className="card-body">
               <div className="mb-3">
                 <label htmlFor="category" className="form-label">
-                  Category {errors.category && (
-                    <span className="text-danger">({errors.category})</span>
-                  )}
+                  Category
+                  <RequiredStar />
                 </label>
                 <select
                   id="category"
                   className="form-select"
                   value={categoryId}
+                  aria-required="true"
+                  aria-invalid={!!errors.category}
+                  aria-describedby={errors.category ? 'category-error' : undefined}
                   onChange={(e) => setCategoryId(e.target.value)}
                 >
                   <option value="">Select a category</option>
@@ -140,15 +185,24 @@ export function CreateTicket({ requester }: CreateTicketProps) {
                     </option>
                   ))}
                 </select>
+                {errors.category && (
+                  <small id="category-error" className="text-danger mt-1 d-block" role="alert">
+                    {errors.category}
+                  </small>
+                )}
               </div>
               <div className="mb-3">
                 <label htmlFor="relatedSystem" className="form-label">
                   Related System
+                  <RequiredStar />
                 </label>
                 <select
                   id="relatedSystem"
                   className="form-select"
                   value={systemId}
+                  aria-required="true"
+                  aria-invalid={!!errors.system}
+                  aria-describedby={errors.system ? 'system-error' : undefined}
                   onChange={(e) => setSystemId(e.target.value)}
                 >
                   <option value="">Select a system</option>
@@ -158,15 +212,24 @@ export function CreateTicket({ requester }: CreateTicketProps) {
                     </option>
                   ))}
                 </select>
+                {errors.system && (
+                  <small id="system-error" className="text-danger mt-1 d-block" role="alert">
+                    {errors.system}
+                  </small>
+                )}
               </div>
               <div className="mb-3">
                 <label htmlFor="priority" className="form-label">
                   Requested Priority
+                  <RequiredStar />
                 </label>
                 <select
                   id="priority"
                   className="form-select"
                   value={priority}
+                  aria-required="true"
+                  aria-invalid={!!errors.priority}
+                  aria-describedby={errors.priority ? 'priority-error' : undefined}
                   onChange={(e) => setPriority(e.target.value)}
                 >
                   <option value="">Select priority</option>
@@ -176,6 +239,11 @@ export function CreateTicket({ requester }: CreateTicketProps) {
                     </option>
                   ))}
                 </select>
+                {errors.priority && (
+                  <small id="priority-error" className="text-danger mt-1 d-block" role="alert">
+                    {errors.priority}
+                  </small>
+                )}
               </div>
             </div>
           </section>
@@ -186,24 +254,33 @@ export function CreateTicket({ requester }: CreateTicketProps) {
               <div className="mb-3">
                 <label htmlFor="summary" className="form-label">
                   Summary
+                  <RequiredStar />
                 </label>
                 <input
                   id="summary"
                   className="form-control"
                   value={summary}
                   maxLength={150}
+                  aria-required="true"
                   aria-invalid={!!errors.summary}
+                  aria-describedby={errors.summary ? 'summary-error' : undefined}
                   onChange={(e) => setSummary(e.target.value)}
                 />
-                {errors.summary && (
-                  <small className="text-danger" role="alert">
-                    {errors.summary}
-                  </small>
-                )}
+                <div className="d-flex justify-content-between">
+                  {errors.summary ? (
+                    <small id="summary-error" className="text-danger mt-1" role="alert">
+                      {errors.summary}
+                    </small>
+                  ) : (
+                    <span />
+                  )}
+                  <small className="text-muted mt-1">{summary.length}/150</small>
+                </div>
               </div>
               <div className="mb-3">
                 <label htmlFor="description" className="form-label">
                   Description
+                  <RequiredStar />
                 </label>
                 <textarea
                   id="description"
@@ -211,31 +288,33 @@ export function CreateTicket({ requester }: CreateTicketProps) {
                   rows={5}
                   value={description}
                   maxLength={2000}
+                  aria-required="true"
                   aria-invalid={!!errors.description}
+                  aria-describedby={errors.description ? 'description-error' : undefined}
                   onChange={(e) => setDescription(e.target.value)}
                 />
-                {errors.description && (
-                  <small className="text-danger" role="alert">
-                    {errors.description}
-                  </small>
-                )}
+                <div className="d-flex justify-content-between">
+                  {errors.description ? (
+                    <small id="description-error" className="text-danger mt-1" role="alert">
+                      {errors.description}
+                    </small>
+                  ) : (
+                    <span />
+                  )}
+                  <small className="text-muted mt-1">{description.length}/2000</small>
+                </div>
               </div>
             </div>
           </section>
 
           {submitStatus === 'error' && (
-            <p className="text-danger" role="alert">
+            <p className="text-danger mt-2" role="alert">
               Unable to create ticket. Please try again.
-            </p>
-          )}
-          {submitStatus === 'done' && (
-            <p className="text-success" role="status">
-              Ticket created successfully!
             </p>
           )}
 
           <div className="d-flex gap-2">
-            <button type="button" className="btn btn-outline-secondary">
+            <button type="button" className="btn btn-outline-secondary" onClick={resetForm}>
               Cancel
             </button>
             <button

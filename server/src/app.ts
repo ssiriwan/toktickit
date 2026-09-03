@@ -87,15 +87,29 @@ export function createApp() {
       }
 
       const priorities = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
-      const validPriority = priorities.includes(body.requestedPriority);
+      if (!body.requestedPriority || !priorities.includes(body.requestedPriority)) {
+        details.push({
+          field: 'requestedPriority',
+          message: 'Priority must be one of: LOW, MEDIUM, HIGH, URGENT'
+        });
+      }
 
-      if (details.length > 0 || !validPriority) {
-        if (body.requestedPriority && !validPriority) {
-          details.push({
-            field: 'requestedPriority',
-            message: 'Priority must be one of: LOW, MEDIUM, HIGH, URGENT'
-          });
-        }
+      const requesterIdNum = Number(body.requesterId);
+      if (!Number.isInteger(requesterIdNum) || requesterIdNum <= 0) {
+        details.push({ field: 'requesterId', message: 'Requester is required' });
+      }
+
+      const categoryIdNum = Number(body.categoryId);
+      if (!Number.isInteger(categoryIdNum) || categoryIdNum <= 0) {
+        details.push({ field: 'categoryId', message: 'Category is required' });
+      }
+
+      const relatedSystemIdNum = Number(body.relatedSystemId);
+      if (!Number.isInteger(relatedSystemIdNum) || relatedSystemIdNum <= 0) {
+        details.push({ field: 'relatedSystemId', message: 'Related system is required' });
+      }
+
+      if (details.length > 0) {
         return res.status(400).json({
           error: {
             code: 'VALIDATION_ERROR',
@@ -144,28 +158,49 @@ export function createApp() {
       const now = new Date();
       const dateStamp = toDateStamp(now);
       const prefix = `TK-${dateStamp}-`;
-      const todayCount = await prisma.ticket.count({
-        where: { ticketNumber: { startsWith: prefix } }
-      });
 
-      const ticket = await prisma.ticket.create({
-        data: {
-          ticketNumber: nextTicketNumber(todayCount + 1, now),
-          summary,
-          description,
-          currentStatus: 'NEW',
-          requestedPriority: body.requestedPriority,
-          ticketDate: now,
-          requesterId: requester.id,
-          categoryId: category.id,
-          relatedSystemId: relatedSystem.id
-        },
-        include: {
-          requester: { select: { id: true, name: true } },
-          category: { select: { id: true, name: true } },
-          relatedSystem: { select: { id: true, name: true } }
+      let ticket: Awaited<ReturnType<typeof prisma.ticket.create>> | null = null;
+      const maxAttempts = 5;
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const todayCount = await prisma.ticket.count({
+          where: { ticketNumber: { startsWith: prefix } }
+        });
+        const candidate = nextTicketNumber(todayCount + 1, now);
+        try {
+          ticket = await prisma.ticket.create({
+            data: {
+              ticketNumber: candidate,
+              summary,
+              description,
+              currentStatus: 'NEW',
+              requestedPriority: body.requestedPriority,
+              ticketDate: now,
+              requesterId: requester.id,
+              categoryId: category.id,
+              relatedSystemId: relatedSystem.id
+            },
+            include: {
+              requester: { select: { id: true, name: true } },
+              category: { select: { id: true, name: true } },
+              relatedSystem: { select: { id: true, name: true } }
+            }
+          });
+          break;
+        } catch (err: unknown) {
+          const code =
+            typeof err === 'object' && err !== null && 'code' in err
+              ? (err as { code: string }).code
+              : undefined;
+          if (code === 'P2002' && attempt < maxAttempts - 1) {
+            continue;
+          }
+          throw err;
         }
-      });
+      }
+
+      if (!ticket) {
+        throw new Error('Failed to generate unique ticket number');
+      }
 
       res.status(201).json(ticket);
     } catch {
