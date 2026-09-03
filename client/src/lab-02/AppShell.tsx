@@ -1,42 +1,28 @@
-import { useState } from 'react';
-
 import { RequesterSelection, type Requester } from './RequesterSelection';
-import { RequesterUserProvider } from './RequesterUserContext';
+import { RequesterUserProvider, useRequester } from './RequesterUserContext';
 
 export function AppShell() {
-  const [selectedRequester, setSelectedRequester] = useState<Requester | null>(
-    null
-  );
-
   return (
     <RequesterUserProvider>
-      <RequesterFlow
-        selectedRequester={selectedRequester}
-        onSelect={setSelectedRequester}
-      />
+      <RequesterFlow />
     </RequesterUserProvider>
   );
 }
 
-function RequesterFlow({
-  selectedRequester,
-  onSelect
-}: {
-  selectedRequester: Requester | null;
-  onSelect: (requester: Requester | null) => void;
-}) {
-  if (selectedRequester) {
+function RequesterFlow() {
+  const { requester, setRequester } = useRequester();
+
+  if (requester) {
     return (
       <main className="py-5 container" style={{ maxWidth: '42rem' }}>
         <h1 className="h4">TokTickIT</h1>
         <p className="text-muted">
-          Signed in as <strong>{selectedRequester.name}</strong> (
-          {selectedRequester.email})
+          Signed in as <strong>{requester.name}</strong> ({requester.email})
         </p>
         <button
           type="button"
           className="btn btn-outline-secondary"
-          onClick={() => onSelect(null)}
+          onClick={() => setRequester(null)}
         >
           Change Requester
         </button>
@@ -44,5 +30,5 @@ function RequesterFlow({
     );
   }
 
-  return <RequesterSelection onContinue={onSelect} />;
+  return <RequesterSelection onContinue={setRequester} />;
 }

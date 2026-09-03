@@ -16,7 +16,7 @@ describe('TokTickIT API /api/requesters', () => {
       { id: 1, name: 'Alice Carter', email: 'alice.carter@student.example' },
       { id: 2, name: 'Bob Nguyen', email: 'bob.nguyen@student.example' }
     ];
-    vi.spyOn(prisma.requesterUser, 'findMany').mockResolvedValue(
+    const spy = vi.spyOn(prisma.requesterUser, 'findMany').mockResolvedValue(
       activeRequesters as never
     );
 
@@ -24,6 +24,11 @@ describe('TokTickIT API /api/requesters', () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual(activeRequesters);
+    expect(spy).toHaveBeenCalledWith({
+      where: { isActive: true },
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, email: true }
+    });
   });
 
   it('returns an empty array when there are no active requesters', async () => {

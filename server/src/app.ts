@@ -29,7 +29,7 @@ export function createApp() {
     try {
       const requesters = await prisma.requesterUser.findMany({
         where: { isActive: true },
-        orderBy: { id: 'asc' },
+        orderBy: { name: 'asc' },
         select: { id: true, name: true, email: true }
       });
       res.json(requesters);

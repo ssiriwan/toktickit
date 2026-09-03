@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react';
 
-const API_URL = 'http://localhost:3000';
-
 export type Requester = { id: number; name: string; email: string };
 
 type Status = 'idle' | 'loading' | 'success' | 'empty' | 'error';
@@ -18,7 +16,7 @@ export function RequesterSelection({ onContinue }: RequesterSelectionProps) {
   async function loadRequesters() {
     setStatus('loading');
     try {
-      const response = await fetch(`${API_URL}/api/requesters`);
+      const response = await fetch(`/api/requesters`);
       if (!response.ok) {
         throw new Error(`Requesters request failed: ${response.status}`);
       }
