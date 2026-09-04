@@ -38,6 +38,8 @@ export function TicketDetail({ ticketId, requester, onBack }: TicketDetailProps)
   const [ticket, setTicket] = useState<TicketDetailData | null>(null);
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [removeError, setRemoveError] = useState<Record<number, string>>({});
   const [removeReason, setRemoveReason] = useState<Record<number, string>>({});
   const [showReasonFor, setShowReasonFor] = useState<number | null>(null);
 
@@ -88,26 +90,53 @@ export function TicketDetail({ ticketId, requester, onBack }: TicketDetailProps)
   }
 
   async function handleDownload(att: Attachment) {
-    if (att.isRemoved) return;
-    window.open(`/api/attachments/${att.id}/download?requesterId=${requester.id}`, '_blank');
+    if (att.isRemoved) {
+      setDownloadError('Attachment has been removed');
+      return;
+    }
+    setDownloadError(null);
+    try {
+      const res = await fetch(`/api/attachments/${att.id}/download?requesterId=${requester.id}`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({} as { error?: { code?: string; message?: string } }));
+        if (body.error?.code === 'REMOVED') setDownloadError('Attachment has been removed');
+        else if (body.error?.code === 'ACCESS_DENIED') setDownloadError('Access denied');
+        else if (res.status === 404) setDownloadError('Attachment not found');
+        else setDownloadError(body.error?.message || 'Failed to download');
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = att.filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setDownloadError('Failed to download');
+    }
   }
 
   async function handleRemove(id: number) {
     const reason = removeReason[id]?.trim();
     if (!reason) {
-      setUploadError('Reason is required');
+      setRemoveError({ ...removeError, [id]: 'Reason is required' });
       return;
     }
+    setRemoveError({ ...removeError, [id]: '' });
     const res = await fetch(`/api/attachments/${id}/remove?requesterId=${requester.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reason })
     });
     if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      setUploadError(body.error?.message || 'Failed to remove');
+      const body = await res.json().catch(() => ({} as { error?: { message?: string } }));
+      setRemoveError({ ...removeError, [id]: body.error?.message || 'Failed to remove' });
     } else {
       setShowReasonFor(null);
+      setRemoveError({ ...removeError, [id]: '' });
       await load();
     }
   }
@@ -131,7 +160,9 @@ export function TicketDetail({ ticketId, requester, onBack }: TicketDetailProps)
           <p><strong>System:</strong> {ticket.relatedSystem.name}</p>
           <p><strong>Priority:</strong> {ticket.requestedPriority}</p>
           <p><strong>Status:</strong> {ticket.currentStatus}</p>
+          <p><strong>Requester:</strong> {ticket.requester.name} ({ticket.requester.email})</p>
           <p><strong>Created:</strong> {new Date(ticket.ticketDate).toLocaleString()}</p>
+          <p><strong>Updated:</strong> {new Date(ticket.updatedAt).toLocaleString()}</p>
           <p className="mb-0"><strong>Description:</strong></p>
           <p>{ticket.description}</p>
         </div>
@@ -142,11 +173,18 @@ export function TicketDetail({ ticketId, requester, onBack }: TicketDetailProps)
           <span>Attachments ({activeCount}/5)</span>
           <label className="btn btn-outline-secondary btn-sm mb-0">
             Upload File
-            <input type="file" hidden onChange={handleUpload} accept=".jpg,.jpeg,.png,.webp,.pdf" />
+            <input
+              type="file"
+              hidden
+              data-testid="file-input"
+              onChange={handleUpload}
+              accept=".jpg,.jpeg,.png,.webp,.pdf"
+            />
           </label>
         </div>
         <div className="card-body">
           {uploadError && <p className="text-danger" role="alert">{uploadError}</p>}
+          {downloadError && <p className="text-danger" role="alert">{downloadError}</p>}
           {ticket.attachments.length === 0 && <p className="text-muted">No attachments yet.</p>}
           {ticket.attachments.map((att) => (
             <div key={att.id} className="d-flex justify-content-between align-items-center border-bottom py-2">
@@ -163,16 +201,19 @@ export function TicketDetail({ ticketId, requester, onBack }: TicketDetailProps)
                       Download
                     </button>
                     {showReasonFor === att.id ? (
-                      <div className="d-flex gap-1">
-                        <input
-                          placeholder="Reason"
-                          className="form-control form-control-sm"
-                          value={removeReason[att.id] || ''}
-                          onChange={(e) => setRemoveReason({ ...removeReason, [att.id]: e.target.value })}
-                        />
-                        <button type="button" className="btn btn-danger btn-sm" onClick={() => handleRemove(att.id)}>
-                          Confirm
-                        </button>
+                      <div>
+                        <div className="d-flex gap-1">
+                          <input
+                            placeholder="Reason"
+                            className="form-control form-control-sm"
+                            value={removeReason[att.id] || ''}
+                            onChange={(e) => setRemoveReason({ ...removeReason, [att.id]: e.target.value })}
+                          />
+                          <button type="button" className="btn btn-danger btn-sm" onClick={() => handleRemove(att.id)}>
+                            Confirm
+                          </button>
+                        </div>
+                        {removeError[att.id] && <small className="text-danger d-block mt-1" role="alert">{removeError[att.id]}</small>}
                       </div>
                     ) : (
                       <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => setShowReasonFor(att.id)}>

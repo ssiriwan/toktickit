@@ -237,8 +237,15 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
                 key={t.id}
                 className="list-group-item d-flex justify-content-between align-items-center"
                 role="button"
+                tabIndex={onSelectTicket ? 0 : undefined}
                 style={{ cursor: onSelectTicket ? 'pointer' : undefined }}
                 onClick={() => onSelectTicket?.(t.id)}
+                onKeyDown={(e) => {
+                  if ((e.key === 'Enter' || e.key === ' ') && onSelectTicket) {
+                    e.preventDefault();
+                    onSelectTicket(t.id);
+                  }
+                }}
               >
                 <div>
                   <strong>{t.ticketNumber}</strong> — {t.summary}

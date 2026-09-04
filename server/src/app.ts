@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { prisma } from './db.js';
 import { nextTicketNumber, toDateStamp } from './ticket-number.js';
 
-const uploadsDir = path.resolve('uploads');
+const uploadsDir = path.resolve('server/uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
@@ -33,12 +33,7 @@ const upload = multer({
     if (allowedMimeTypes.has(file.mimetype)) {
       cb(null, true);
     } else {
-      const ext = path.extname(file.originalname).toLowerCase();
-      if (['.jpg', '.jpeg', '.png', '.webp', '.pdf'].includes(ext)) {
-        cb(null, true);
-      } else {
-        cb(new Error('INVALID_FILE_TYPE'));
-      }
+      cb(new Error('INVALID_FILE_TYPE'));
     }
   }
 });
@@ -470,13 +465,6 @@ export function createApp() {
         if (!file) {
           return res.status(400).json({
             error: { code: 'INVALID_FILE_TYPE', message: 'File is required' }
-          });
-        }
-        // Double-check mime after multer
-        if (!allowedMimeTypes.has(file.mimetype)) {
-          if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
-          return res.status(400).json({
-            error: { code: 'INVALID_FILE_TYPE', message: 'File type not allowed. Permitted: JPG, JPEG, PNG, WEBP, PDF' }
           });
         }
         const attachment = await prisma.attachment.create({
