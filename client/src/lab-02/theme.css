@@ -17,6 +17,10 @@
   --zen-error-text: #B91C1C;
   --zen-error-border: #DC2626;
   --zen-error-bg: #FEF2F2;
+  --zen-warning-bg: #FEF3C7;
+  --zen-warning-text: #92400E;
+  --zen-success-bg: #DCFCE7;
+  --zen-success-text: #166534;
 }
 
 html, body {
@@ -137,7 +141,11 @@ html, body {
 .required-star { color: var(--zen-error-border); }
 
 /* Responsive */
+@media (min-width: 768px) and (max-width: 991px) {
+  .container { padding-left: 1rem; padding-right: 1rem; }
+  .btn, .form-control, .form-select, .nav-link { min-height: 44px; }
+}
 @media (max-width: 767px) {
   .container { padding-left: 1rem; padding-right: 1rem; }
-  .btn { min-height: 44px; min-width: 44px; }
+  .btn, .form-control, .form-select, .nav-link { min-height: 44px; min-width: 44px; }
 }

@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { BrowserRouter, Link, Navigate, NavLink, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 
 import { CreateTicket } from './CreateTicket';
 import { MyTickets } from './MyTickets';
@@ -41,32 +41,27 @@ function TicketDetailRoute({
 
 function Header() {
   const { requester, setRequester } = useRequester();
-  const navigate = useNavigate();
-  const location = useLocation();
   if (!requester) return null;
-  const isActive = (path: string) => location.pathname === path;
   return (
     <header className="zen-header">
       <div className="container d-flex justify-content-between align-items-center w-100" style={{ maxWidth: '1200px' }}>
         <div className="d-flex align-items-center gap-4">
-          <span className="brand" role="button" onClick={() => navigate('/')}>
+          <Link to="/" className="brand text-decoration-none" style={{ color: '#FFFFFF', fontWeight: 700, fontSize: '18px' }}>
             TokTickIT
-          </span>
+          </Link>
           <nav className="d-flex gap-3">
-            <a
-              className={`nav-link p-0 ${isActive('/tickets') ? 'active' : ''}`}
-              style={{ cursor: 'pointer' }}
-              onClick={() => navigate('/tickets')}
+            <NavLink
+              to="/tickets"
+              className={({ isActive }) => `nav-link p-0 ${isActive ? 'active' : ''}`}
             >
               My Tickets
-            </a>
-            <a
-              className={`nav-link p-0 ${isActive('/create') ? 'active' : ''}`}
-              style={{ cursor: 'pointer' }}
-              onClick={() => navigate('/create')}
+            </NavLink>
+            <NavLink
+              to="/create"
+              className={({ isActive }) => `nav-link p-0 ${isActive ? 'active' : ''}`}
             >
               Create Ticket
-            </a>
+            </NavLink>
           </nav>
         </div>
         <div className="d-flex align-items-center gap-2">

@@ -250,10 +250,13 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
                 <div>
                   <strong>{t.ticketNumber}</strong> — {t.summary}
                   <div className="small text-muted">
-                    {t.category.name} • {t.relatedSystem.name} • {new Date(t.ticketDate).toLocaleDateString()} • Priority: {t.requestedPriority}
+                    {t.category.name} • {t.relatedSystem.name} • {new Date(t.ticketDate).toLocaleDateString()}
                   </div>
                 </div>
-                <span className="badge bg-light text-dark border">{t.currentStatus}</span>
+                <div className="d-flex gap-1">
+                  <span className={`badge badge-priority-${t.requestedPriority}`}>{t.requestedPriority}</span>
+                  <span className="badge bg-light text-dark border">{t.currentStatus}</span>
+                </div>
               </div>
             ))}
           </div>

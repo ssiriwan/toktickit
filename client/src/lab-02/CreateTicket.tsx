@@ -97,7 +97,7 @@ export function CreateTicket({ requester, onViewMyTickets }: CreateTicketProps) 
   }
 
   function RequiredStar() {
-    return <span style={{ color: '#DC2626' }}> *</span>;
+    return <span className="required-star" aria-hidden="true"> *</span>;
   }
 
   if (submitStatus === 'done' && createdTicketNumber) {
@@ -134,15 +134,15 @@ export function CreateTicket({ requester, onViewMyTickets }: CreateTicketProps) 
         <div className="card-body row g-2">
           <div className="col-md-4">
             <span className="text-muted d-block">Ticket Number</span>
-            <em className="text-muted">Auto-generated</em>
+            <div className="zen-readonly">Auto-generated</div>
           </div>
           <div className="col-md-4">
             <span className="text-muted d-block">Ticket Date</span>
-            <em className="text-muted">Auto-set</em>
+            <div className="zen-readonly">Auto-set</div>
           </div>
           <div className="col-md-4">
             <span className="text-muted d-block">Requester</span>
-            <strong>{requester.name}</strong>
+            <div className="zen-readonly">{requester.name}</div>
           </div>
         </div>
       </section>
