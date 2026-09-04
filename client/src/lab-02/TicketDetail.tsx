@@ -62,16 +62,19 @@ export function TicketDetail({ ticketId, requester, onBack }: TicketDetailProps)
   }, [ticketId, requester.id]);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
     if (!file) return;
     setUploadError(null);
     const allowed = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
     if (!allowed.includes(file.type)) {
       setUploadError('File type not allowed. Permitted: JPG, JPEG, PNG, WEBP, PDF');
+      input.value = '';
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
       setUploadError('File size exceeds 5MB limit');
+      input.value = '';
       return;
     }
     const form = new FormData();
@@ -86,7 +89,7 @@ export function TicketDetail({ ticketId, requester, onBack }: TicketDetailProps)
     } else {
       await load();
     }
-    e.target.value = '';
+    input.value = '';
   }
 
   async function handleDownload(att: Attachment) {

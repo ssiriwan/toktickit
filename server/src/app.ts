@@ -3,12 +3,15 @@ import express from 'express';
 import fs from 'fs';
 import multer from 'multer';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 
 import { prisma } from './db.js';
 import { nextTicketNumber, toDateStamp } from './ticket-number.js';
 
-const uploadsDir = path.resolve('server/uploads');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadsDir = path.resolve(__dirname, '../uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }

@@ -38,20 +38,27 @@ describe('TokTickIT API Attachments', () => {
   });
 
   afterAll(async () => {
-    await prisma.attachment.deleteMany({});
-    await prisma.ticket.deleteMany({});
+    // delete uploaded files by storedFilename before deleting DB rows
+    const atts = await prisma.attachment.findMany({ where: { ticketId } });
+    for (const att of atts) {
+      const fp = path.join(path.resolve('server/uploads'), att.storedFilename);
+      if (fs.existsSync(fp)) {
+        try {
+          fs.unlinkSync(fp);
+        } catch {}
+      }
+      // also try fileURLToPath-based path (server/src -> server/uploads)
+      const alt = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1')), '../../server/uploads', att.storedFilename);
+      if (fs.existsSync(alt)) {
+        try {
+          fs.unlinkSync(alt);
+        } catch {}
+      }
+    }
+    await prisma.attachment.deleteMany({ where: { ticketId } });
+    await prisma.ticket.deleteMany({ where: { id: ticketId } });
     for (const p of tmpFiles) {
       if (fs.existsSync(p)) fs.unlinkSync(p);
-    }
-    // clean uploads
-    const uploads = path.resolve('server/uploads');
-    if (fs.existsSync(uploads)) {
-      for (const f of fs.readdirSync(uploads)) {
-        const fp = path.join(uploads, f);
-        if (fs.statSync(fp).isFile()) {
-          // keep only files created in this test run? For now don't delete all
-        }
-      }
     }
   });
 

@@ -25,7 +25,17 @@ function TicketDetailRoute({
 }) {
   const { id } = useParams<{ id: string }>();
   const ticketId = Number(id);
-  if (!Number.isInteger(ticketId) || ticketId <= 0) return <p>Invalid ticket</p>;
+  if (!Number.isInteger(ticketId) || ticketId <= 0)
+    return (
+      <div className="container py-4">
+        <p role="alert" className="text-danger">
+          Invalid ticket
+        </p>
+        <button type="button" className="btn btn-outline-secondary" onClick={onBack}>
+          &larr; Back to My Tickets
+        </button>
+      </div>
+    );
   return <TicketDetail ticketId={ticketId} requester={requester} onBack={onBack} />;
 }
 
