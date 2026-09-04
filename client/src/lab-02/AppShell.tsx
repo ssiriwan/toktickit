@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 
 import { CreateTicket } from './CreateTicket';
+import { MyTickets } from './MyTickets';
 import { RequesterSelection } from './RequesterSelection';
 import { RequesterUserProvider, useRequester } from './RequesterUserContext';
 
@@ -43,6 +44,13 @@ function RequesterFlow() {
               <button
                 type="button"
                 className="btn btn-outline-secondary"
+                onClick={() => navigate('/tickets')}
+              >
+                My Tickets
+              </button>
+              <button
+                type="button"
+                className="btn btn-outline-secondary"
                 onClick={() => setRequester(null)}
               >
                 Change Requester
@@ -62,7 +70,22 @@ function RequesterFlow() {
             >
               &larr; Back
             </button>
-            <CreateTicket requester={requester} onViewMyTickets={() => navigate('/')} />
+            <CreateTicket requester={requester} onViewMyTickets={() => navigate('/tickets')} />
+          </div>
+        }
+      />
+      <Route
+        path="/tickets"
+        element={
+          <div>
+            <button
+              type="button"
+              className="btn btn-outline-secondary m-3"
+              onClick={() => navigate('/')}
+            >
+              &larr; Back
+            </button>
+            <MyTickets requester={requester} />
           </div>
         }
       />

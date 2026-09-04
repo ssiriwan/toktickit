@@ -18,7 +18,6 @@ const validPayload = {
 describe('TokTickIT API POST /api/tickets', () => {
   afterAll(async () => {
     await prisma.ticket.deleteMany({});
-    await prisma.$disconnect();
   });
 
   it('creates a valid ticket with number, status NEW, and correct requester', async () => {
