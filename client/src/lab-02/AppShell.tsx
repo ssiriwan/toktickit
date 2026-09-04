@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { CreateTicket } from './CreateTicket';
 import { MyTickets } from './MyTickets';
@@ -39,6 +39,52 @@ function TicketDetailRoute({
   return <TicketDetail ticketId={ticketId} requester={requester} onBack={onBack} />;
 }
 
+function Header() {
+  const { requester, setRequester } = useRequester();
+  const navigate = useNavigate();
+  const location = useLocation();
+  if (!requester) return null;
+  const isActive = (path: string) => location.pathname === path;
+  return (
+    <header className="zen-header">
+      <div className="container d-flex justify-content-between align-items-center w-100" style={{ maxWidth: '1200px' }}>
+        <div className="d-flex align-items-center gap-4">
+          <span className="brand" role="button" onClick={() => navigate('/')}>
+            TokTickIT
+          </span>
+          <nav className="d-flex gap-3">
+            <a
+              className={`nav-link p-0 ${isActive('/tickets') ? 'active' : ''}`}
+              style={{ cursor: 'pointer' }}
+              onClick={() => navigate('/tickets')}
+            >
+              My Tickets
+            </a>
+            <a
+              className={`nav-link p-0 ${isActive('/create') ? 'active' : ''}`}
+              style={{ cursor: 'pointer' }}
+              onClick={() => navigate('/create')}
+            >
+              Create Ticket
+            </a>
+          </nav>
+        </div>
+        <div className="d-flex align-items-center gap-2">
+          <small className="d-none d-md-inline">{requester.name}</small>
+          <button
+            type="button"
+            className="btn btn-sm"
+            style={{ color: '#FFFFFF', border: '1px solid rgba(255,255,255,0.5)', background: 'transparent' }}
+            onClick={() => setRequester(null)}
+          >
+            Change Requester
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+}
+
 function RequesterFlow() {
   const { requester, setRequester } = useRequester();
   const navigate = useNavigate();
@@ -48,7 +94,9 @@ function RequesterFlow() {
   }
 
   return (
-    <Routes>
+    <>
+      <Header />
+      <Routes>
       <Route
         path="/"
         element={
@@ -71,13 +119,6 @@ function RequesterFlow() {
                 onClick={() => navigate('/tickets')}
               >
                 My Tickets
-              </button>
-              <button
-                type="button"
-                className="btn btn-outline-secondary"
-                onClick={() => setRequester(null)}
-              >
-                Change Requester
               </button>
             </div>
           </main>
@@ -122,5 +163,6 @@ function RequesterFlow() {
       />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   );
 }

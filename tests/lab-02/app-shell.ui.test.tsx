@@ -36,8 +36,8 @@ describe('TokTickIT requester context app shell', () => {
       screen.getByText(/signed in as/i)
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/alice carter/i)
-    ).toBeInTheDocument();
+      screen.getAllByText(/alice carter/i).length
+    ).toBeGreaterThanOrEqual(1);
 
     await userEvent.click(
       screen.getByRole('button', { name: /change requester/i })
