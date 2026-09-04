@@ -11,7 +11,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await prisma.$disconnect();
+  // keep connection open for other test files
 });
 
 describe('Lab 2 seed content (API-02)', () => {

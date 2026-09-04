@@ -210,6 +210,75 @@ export function createApp() {
     }
   });
 
+  app.get('/api/tickets', async (req, res) => {
+    try {
+      const q = req.query as Record<string, string | undefined>;
+      const requesterId = Number(q.requesterId);
+      if (!Number.isInteger(requesterId) || requesterId <= 0) {
+        return res.status(400).json({
+          error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' }
+        });
+      }
+
+      const search = q.search?.trim() ?? '';
+      const categoryId = q.categoryId ? Number(q.categoryId) : undefined;
+      const relatedSystemId = q.relatedSystemId ? Number(q.relatedSystemId) : undefined;
+      const status = q.status?.trim();
+      const priority = q.priority?.trim();
+      const sort = q.sort?.trim() || 'ticketDate';
+      const order = q.order?.trim() === 'asc' ? 'asc' : 'desc';
+      const page = Math.max(1, Number(q.page) || 1);
+      const pageSize = Math.min(50, Math.max(1, Number(q.pageSize) || 10));
+
+      const validSorts = new Set(['ticketDate', 'updatedAt', 'requestedPriority']);
+      if (!validSorts.has(sort)) {
+        return res.status(400).json({
+          error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' }
+        });
+      }
+
+      const where: Record<string, unknown> = { requesterId };
+      if (categoryId && Number.isInteger(categoryId)) where.categoryId = categoryId;
+      if (relatedSystemId && Number.isInteger(relatedSystemId)) where.relatedSystemId = relatedSystemId;
+      if (status) where.currentStatus = status;
+      if (priority) where.requestedPriority = priority;
+      if (search) {
+        where.OR = [
+          { summary: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } }
+        ];
+      }
+
+      const totalItems = await prisma.ticket.count({ where: where as never });
+      const totalPages = Math.ceil(totalItems / pageSize) || 1;
+      const skip = (page - 1) * pageSize;
+
+      const tickets = await prisma.ticket.findMany({
+        where: where as never,
+        orderBy: { [sort]: order },
+        skip,
+        take: pageSize,
+        select: {
+          id: true,
+          ticketNumber: true,
+          summary: true,
+          currentStatus: true,
+          requestedPriority: true,
+          ticketDate: true,
+          updatedAt: true,
+          category: { select: { id: true, name: true } },
+          relatedSystem: { select: { id: true, name: true } }
+        }
+      });
+
+      res.json({ tickets, pagination: { page, pageSize, totalItems, totalPages } });
+    } catch {
+      res.status(500).json({
+        error: { code: 'INTERNAL_ERROR', message: 'Failed to load tickets' }
+      });
+    }
+  });
+
   app.use((_req, res) => {
     res.status(404).json({ message: 'Route not found' });
   });
