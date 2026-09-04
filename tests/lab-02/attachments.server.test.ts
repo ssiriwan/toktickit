@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { createApp } from '../../server/src/app';
 import { prisma } from '../../server/src/db';
+import { uploadsDir } from '../../server/src/uploads';
 
 const app = createApp();
 
@@ -38,20 +39,13 @@ describe('TokTickIT API Attachments', () => {
   });
 
   afterAll(async () => {
-    // delete uploaded files by storedFilename before deleting DB rows
+    // delete uploaded files by storedFilename (single shared helper)
     const atts = await prisma.attachment.findMany({ where: { ticketId } });
     for (const att of atts) {
-      const fp = path.join(path.resolve('server/uploads'), att.storedFilename);
+      const fp = path.join(uploadsDir, att.storedFilename);
       if (fs.existsSync(fp)) {
         try {
           fs.unlinkSync(fp);
-        } catch {}
-      }
-      // also try fileURLToPath-based path (server/src -> server/uploads)
-      const alt = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1')), '../../server/uploads', att.storedFilename);
-      if (fs.existsSync(alt)) {
-        try {
-          fs.unlinkSync(alt);
         } catch {}
       }
     }
