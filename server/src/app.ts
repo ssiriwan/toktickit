@@ -213,22 +213,61 @@ export function createApp() {
   app.get('/api/tickets', async (req, res) => {
     try {
       const q = req.query as Record<string, string | undefined>;
-      const requesterId = Number(q.requesterId);
-      if (!Number.isInteger(requesterId) || requesterId <= 0) {
+      const rawRequesterId = q.requesterId ?? (req.header('X-Requester-Id') as string | undefined);
+      const requesterId = Number(rawRequesterId);
+      if (!rawRequesterId || !Number.isInteger(requesterId) || requesterId <= 0) {
         return res.status(400).json({
           error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' }
         });
       }
 
       const search = q.search?.trim() ?? '';
-      const categoryId = q.categoryId ? Number(q.categoryId) : undefined;
-      const relatedSystemId = q.relatedSystemId ? Number(q.relatedSystemId) : undefined;
+      const rawCategoryId = q.categoryId;
+      const rawSystemId = q.relatedSystemId;
+      let categoryId: number | undefined;
+      let relatedSystemId: number | undefined;
+      if (rawCategoryId !== undefined) {
+        const n = Number(rawCategoryId);
+        if (!Number.isInteger(n) || n <= 0) {
+          return res.status(400).json({
+            error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' }
+          });
+        }
+        categoryId = n;
+      }
+      if (rawSystemId !== undefined) {
+        const n = Number(rawSystemId);
+        if (!Number.isInteger(n) || n <= 0) {
+          return res.status(400).json({
+            error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' }
+          });
+        }
+        relatedSystemId = n;
+      }
       const status = q.status?.trim();
       const priority = q.priority?.trim();
       const sort = q.sort?.trim() || 'ticketDate';
       const order = q.order?.trim() === 'asc' ? 'asc' : 'desc';
-      const page = Math.max(1, Number(q.page) || 1);
-      const pageSize = Math.min(50, Math.max(1, Number(q.pageSize) || 10));
+      let page = 1;
+      let pageSize = 10;
+      if (q.page !== undefined) {
+        const n = Number(q.page);
+        if (!Number.isInteger(n) || n < 1) {
+          return res.status(400).json({
+            error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' }
+          });
+        }
+        page = n;
+      }
+      if (q.pageSize !== undefined) {
+        const n = Number(q.pageSize);
+        if (!Number.isInteger(n) || n < 1 || n > 50) {
+          return res.status(400).json({
+            error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' }
+          });
+        }
+        pageSize = n;
+      }
 
       const validSorts = new Set(['ticketDate', 'updatedAt', 'requestedPriority']);
       if (!validSorts.has(sort)) {
