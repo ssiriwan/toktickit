@@ -158,16 +158,34 @@ export function TicketDetail({ ticketId, requester, onBack }: TicketDetailProps)
 
       <section className="card mb-3">
         <div className="card-body">
-          <p><strong>Summary:</strong> {ticket.summary}</p>
-          <p><strong>Category:</strong> {ticket.category.name}</p>
-          <p><strong>System:</strong> {ticket.relatedSystem.name}</p>
-          <p><strong>Priority:</strong> {ticket.requestedPriority}</p>
-          <p><strong>Status:</strong> {ticket.currentStatus}</p>
-          <p><strong>Requester:</strong> {ticket.requester.name} ({ticket.requester.email})</p>
-          <p><strong>Created:</strong> {new Date(ticket.ticketDate).toLocaleString()}</p>
-          <p><strong>Updated:</strong> {new Date(ticket.updatedAt).toLocaleString()}</p>
-          <p className="mb-0"><strong>Description:</strong></p>
-          <p>{ticket.description}</p>
+          <p>
+            <strong>Summary:</strong> <span className="zen-readonly ms-1">{ticket.summary}</span>
+          </p>
+          <p>
+            <strong>Category:</strong> <span className="zen-readonly ms-1">{ticket.category.name}</span>
+          </p>
+          <p>
+            <strong>System:</strong> <span className="zen-readonly ms-1">{ticket.relatedSystem.name}</span>
+          </p>
+          <p>
+            <strong>Priority:</strong> <span className={`badge badge-priority-${ticket.requestedPriority} ms-1`}>{ticket.requestedPriority}</span>
+          </p>
+          <p>
+            <strong>Status:</strong> <span className="badge bg-light ms-1">{ticket.currentStatus}</span>
+          </p>
+          <p>
+            <strong>Requester:</strong> <span className="zen-readonly ms-1">{ticket.requester.name} ({ticket.requester.email})</span>
+          </p>
+          <p>
+            <strong>Created:</strong> <span className="zen-readonly ms-1">{new Date(ticket.ticketDate).toLocaleString()}</span>
+          </p>
+          <p>
+            <strong>Updated:</strong> <span className="zen-readonly ms-1">{new Date(ticket.updatedAt).toLocaleString()}</span>
+          </p>
+          <p className="mb-0">
+            <strong>Description:</strong>
+          </p>
+          <div className="zen-readonly mt-1">{ticket.description}</div>
         </div>
       </section>
 
