@@ -97,7 +97,7 @@ export function CreateTicket({ requester, onViewMyTickets }: CreateTicketProps) 
   }
 
   function RequiredStar() {
-    return <span className="required-star" aria-hidden="true"> *</span>;
+    return <span className="required-star"> *</span>;
   }
 
   if (submitStatus === 'done' && createdTicketNumber) {

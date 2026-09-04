@@ -1,8 +1,11 @@
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { describe, expect, it } from 'vitest';
 
-const themePath = path.resolve('client/src/lab-02/theme.css');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const themePath = path.resolve(__dirname, '../../client/src/lab-02/theme.css');
 const theme = fs.existsSync(themePath) ? fs.readFileSync(themePath, 'utf-8') : '';
 
 describe('Zen Green Theme checklist (ui-spec §10)', () => {
@@ -40,9 +43,9 @@ describe('Zen Green Theme checklist (ui-spec §10)', () => {
   });
 
   it('MyTickets and TicketDetail wire badge and readonly classes', () => {
-    const myTickets = fs.readFileSync(path.resolve('client/src/lab-02/MyTickets.tsx'), 'utf-8');
-    const ticketDetail = fs.readFileSync(path.resolve('client/src/lab-02/TicketDetail.tsx'), 'utf-8');
-    const createTicket = fs.readFileSync(path.resolve('client/src/lab-02/CreateTicket.tsx'), 'utf-8');
+    const myTickets = fs.readFileSync(path.resolve(__dirname, '../../client/src/lab-02/MyTickets.tsx'), 'utf-8');
+    const ticketDetail = fs.readFileSync(path.resolve(__dirname, '../../client/src/lab-02/TicketDetail.tsx'), 'utf-8');
+    const createTicket = fs.readFileSync(path.resolve(__dirname, '../../client/src/lab-02/CreateTicket.tsx'), 'utf-8');
     expect(myTickets).toContain('badge-priority-');
     expect(ticketDetail).toContain('badge-priority-');
     expect(createTicket).toContain('required-star');
