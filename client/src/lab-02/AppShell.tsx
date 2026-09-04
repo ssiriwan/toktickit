@@ -1,9 +1,10 @@
-import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 
 import { CreateTicket } from './CreateTicket';
 import { MyTickets } from './MyTickets';
 import { RequesterSelection } from './RequesterSelection';
 import { RequesterUserProvider, useRequester } from './RequesterUserContext';
+import { TicketDetail } from './TicketDetail';
 
 export function AppShell() {
   return (
@@ -13,6 +14,29 @@ export function AppShell() {
       </RequesterUserProvider>
     </BrowserRouter>
   );
+}
+
+function TicketDetailRoute({
+  requester,
+  onBack
+}: {
+  requester: { id: number; name: string; email: string };
+  onBack: () => void;
+}) {
+  const { id } = useParams<{ id: string }>();
+  const ticketId = Number(id);
+  if (!Number.isInteger(ticketId) || ticketId <= 0)
+    return (
+      <div className="container py-4">
+        <p role="alert" className="text-danger">
+          Invalid ticket
+        </p>
+        <button type="button" className="btn btn-outline-secondary" onClick={onBack}>
+          &larr; Back to My Tickets
+        </button>
+      </div>
+    );
+  return <TicketDetail ticketId={ticketId} requester={requester} onBack={onBack} />;
 }
 
 function RequesterFlow() {
@@ -85,9 +109,16 @@ function RequesterFlow() {
             >
               &larr; Back
             </button>
-            <MyTickets requester={requester} />
+            <MyTickets
+              requester={requester}
+              onSelectTicket={(id) => navigate(`/tickets/${id}`)}
+            />
           </div>
         }
+      />
+      <Route
+        path="/tickets/:id"
+        element={<TicketDetailRoute requester={requester} onBack={() => navigate('/tickets')} />}
       />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

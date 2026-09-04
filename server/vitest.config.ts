@@ -5,6 +5,8 @@ export default defineConfig({
     environment: 'node',
     globals: true,
     include: ['../tests/lab-01/**/*.server.test.ts', '../tests/lab-02/**/*.server.test.ts'],
-    fileParallelism: false
+    fileParallelism: false,
+    pool: 'forks',
+    poolOptions: { forks: { singleFork: true } }
   }
 });

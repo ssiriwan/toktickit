@@ -1,8 +1,41 @@
 import cors from 'cors';
 import express from 'express';
+import fs from 'fs';
+import multer from 'multer';
+import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 
 import { prisma } from './db.js';
 import { nextTicketNumber, toDateStamp } from './ticket-number.js';
+import { uploadsDir } from './uploads.js';
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const allowedMimeTypes = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'application/pdf'
+]);
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, uploadsDir),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname) || '';
+      cb(null, `${uuidv4()}${ext}`);
+    }
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (allowedMimeTypes.has(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('INVALID_FILE_TYPE'));
+    }
+  }
+});
 
 export function createApp() {
   const app = express();
@@ -315,6 +348,239 @@ export function createApp() {
       res.status(500).json({
         error: { code: 'INTERNAL_ERROR', message: 'Failed to load tickets' }
       });
+    }
+  });
+
+  app.get('/api/tickets/:id', async (req, res) => {
+    try {
+      const rawRequesterId =
+        (req.query.requesterId as string | undefined) ??
+        (req.header('X-Requester-Id') as string | undefined);
+      const requesterId = Number(rawRequesterId);
+      if (!rawRequesterId || !Number.isInteger(requesterId) || requesterId <= 0) {
+        return res.status(400).json({
+          error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' }
+        });
+      }
+      const ticketId = Number(req.params.id);
+      if (!Number.isInteger(ticketId) || ticketId <= 0) {
+        return res.status(400).json({
+          error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' }
+        });
+      }
+      const ticket = await prisma.ticket.findUnique({
+        where: { id: ticketId },
+        include: {
+          requester: { select: { id: true, name: true, email: true } },
+          category: { select: { id: true, name: true } },
+          relatedSystem: { select: { id: true, name: true } },
+          attachments: {
+            orderBy: { createdAt: 'asc' },
+            select: {
+              id: true,
+              filename: true,
+              mimeType: true,
+              fileSize: true,
+              isRemoved: true,
+              removalReason: true,
+              removedAt: true,
+              createdAt: true
+            }
+          }
+        }
+      });
+      if (!ticket) {
+        return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+      }
+      if (ticket.requesterId !== requesterId) {
+        return res.status(403).json({ error: { code: 'ACCESS_DENIED', message: 'Access denied' } });
+      }
+      res.json(ticket);
+    } catch {
+      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to load ticket' } });
+    }
+  });
+
+  app.post('/api/tickets/:id/attachments', (req, res) => {
+    const single = upload.single('file');
+    single(req as never, res as never, async (err: unknown) => {
+      try {
+        const rawRequesterId =
+          (req.query.requesterId as string | undefined) ??
+          (req.header('X-Requester-Id') as string | undefined);
+        const requesterId = Number(rawRequesterId);
+        if (!rawRequesterId || !Number.isInteger(requesterId) || requesterId <= 0) {
+          if ((req as unknown as { file?: unknown }).file) {
+            const f = (req as unknown as { file: { path: string } }).file;
+            if (f?.path && fs.existsSync(f.path)) fs.unlinkSync(f.path);
+          }
+          return res.status(400).json({
+            error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' }
+          });
+        }
+        if (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          if (msg === 'INVALID_FILE_TYPE') {
+            return res.status(400).json({
+              error: { code: 'INVALID_FILE_TYPE', message: 'File type not allowed. Permitted: JPG, JPEG, PNG, WEBP, PDF' }
+            });
+          }
+          const multerErr = err as { code?: string };
+          if (multerErr.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({
+              error: { code: 'FILE_TOO_LARGE', message: 'File size exceeds 5MB limit' }
+            });
+          }
+          return res.status(400).json({
+            error: { code: 'INVALID_FILE_TYPE', message: 'File type not allowed. Permitted: JPG, JPEG, PNG, WEBP, PDF' }
+          });
+        }
+        const ticketId = Number(req.params.id);
+        if (!Number.isInteger(ticketId) || ticketId <= 0) {
+          return res.status(400).json({ error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' } });
+        }
+        const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+        if (!ticket) {
+          const f = (req as unknown as { file?: { path: string } }).file;
+          if (f?.path && fs.existsSync(f.path)) fs.unlinkSync(f.path);
+          return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+        }
+        if (ticket.requesterId !== requesterId) {
+          const f = (req as unknown as { file?: { path: string } }).file;
+          if (f?.path && fs.existsSync(f.path)) fs.unlinkSync(f.path);
+          return res.status(403).json({ error: { code: 'ACCESS_DENIED', message: 'Access denied' } });
+        }
+        const activeCount = await prisma.attachment.count({
+          where: { ticketId, isRemoved: false }
+        });
+        if (activeCount >= 5) {
+          const f = (req as unknown as { file?: { path: string } }).file;
+          if (f?.path && fs.existsSync(f.path)) fs.unlinkSync(f.path);
+          return res.status(400).json({
+            error: { code: 'MAX_ATTACHMENTS', message: 'Maximum 5 active attachments per ticket' }
+          });
+        }
+        const file = (req as unknown as { file: Express.Multer.File }).file;
+        if (!file) {
+          return res.status(400).json({
+            error: { code: 'INVALID_FILE_TYPE', message: 'File is required' }
+          });
+        }
+        const attachment = await prisma.attachment.create({
+          data: {
+            filename: file.originalname,
+            storedFilename: path.basename(file.path),
+            mimeType: file.mimetype,
+            fileSize: file.size,
+            ticketId
+          },
+          select: {
+            id: true,
+            filename: true,
+            mimeType: true,
+            fileSize: true,
+            isRemoved: true,
+            createdAt: true
+          }
+        });
+        res.status(201).json(attachment);
+      } catch {
+        const f = (req as unknown as { file?: { path: string } }).file;
+        if (f?.path && fs.existsSync(f.path)) {
+          try {
+            fs.unlinkSync(f.path);
+          } catch {}
+        }
+        res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to upload attachment' } });
+      }
+    });
+  });
+
+  app.get('/api/attachments/:id/download', async (req, res) => {
+    try {
+      const rawRequesterId =
+        (req.query.requesterId as string | undefined) ??
+        (req.header('X-Requester-Id') as string | undefined);
+      const requesterId = Number(rawRequesterId);
+      if (!rawRequesterId || !Number.isInteger(requesterId) || requesterId <= 0) {
+        return res.status(400).json({
+          error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' }
+        });
+      }
+      const attachmentId = Number(req.params.id);
+      if (!Number.isInteger(attachmentId) || attachmentId <= 0) {
+        return res.status(400).json({ error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' } });
+      }
+      const attachment = await prisma.attachment.findUnique({
+        where: { id: attachmentId },
+        include: { ticket: { select: { requesterId: true } } }
+      });
+      if (!attachment) {
+        return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Attachment not found' } });
+      }
+      if (attachment.ticket.requesterId !== requesterId) {
+        return res.status(403).json({ error: { code: 'ACCESS_DENIED', message: 'Access denied' } });
+      }
+      if (attachment.isRemoved) {
+        return res.status(410).json({ error: { code: 'REMOVED', message: 'Attachment has been removed' } });
+      }
+      const filePath = path.join(uploadsDir, attachment.storedFilename);
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Attachment not found' } });
+      }
+      res.setHeader('Content-Type', attachment.mimeType);
+      res.setHeader('Content-Disposition', `attachment; filename="${attachment.filename}"`);
+      const stream = fs.createReadStream(filePath);
+      stream.pipe(res);
+    } catch {
+      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to download attachment' } });
+    }
+  });
+
+  app.patch('/api/attachments/:id/remove', async (req, res) => {
+    try {
+      const rawRequesterId =
+        (req.query.requesterId as string | undefined) ??
+        (req.header('X-Requester-Id') as string | undefined);
+      const requesterId = Number(rawRequesterId);
+      if (!rawRequesterId || !Number.isInteger(requesterId) || requesterId <= 0) {
+        return res.status(400).json({
+          error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' }
+        });
+      }
+      const attachmentId = Number(req.params.id);
+      if (!Number.isInteger(attachmentId) || attachmentId <= 0) {
+        return res.status(400).json({ error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' } });
+      }
+      const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim() : '';
+      if (!reason) {
+        return res.status(400).json({
+          error: { code: 'VALIDATION_ERROR', message: 'Ticket payload is invalid', details: [{ field: 'reason', message: 'Reason is required' }] }
+        });
+      }
+      const attachment = await prisma.attachment.findUnique({
+        where: { id: attachmentId },
+        include: { ticket: { select: { requesterId: true } } }
+      });
+      if (!attachment) {
+        return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Attachment not found' } });
+      }
+      if (attachment.ticket.requesterId !== requesterId) {
+        return res.status(403).json({ error: { code: 'ACCESS_DENIED', message: 'Access denied' } });
+      }
+      if (attachment.isRemoved) {
+        return res.status(400).json({
+          error: { code: 'VALIDATION_ERROR', message: 'Attachment already removed' }
+        });
+      }
+      const updated = await prisma.attachment.update({
+        where: { id: attachmentId },
+        data: { isRemoved: true, removalReason: reason, removedAt: new Date() },
+        select: { id: true, filename: true, isRemoved: true, removalReason: true, removedAt: true }
+      });
+      res.json(updated);
+    } catch {
+      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to remove attachment' } });
     }
   });
 

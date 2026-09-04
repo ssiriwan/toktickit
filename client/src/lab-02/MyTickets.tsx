@@ -18,9 +18,10 @@ type ReferenceItem = { id: number; name: string };
 
 interface MyTicketsProps {
   requester: Requester;
+  onSelectTicket?: (id: number) => void;
 }
 
-export function MyTickets({ requester }: MyTicketsProps) {
+export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'empty'>('loading');
   const [search, setSearch] = useState('');
@@ -232,7 +233,20 @@ export function MyTickets({ requester }: MyTicketsProps) {
         <>
           <div className="list-group mb-3">
             {tickets.map((t) => (
-              <div key={t.id} className="list-group-item d-flex justify-content-between align-items-center">
+              <div
+                key={t.id}
+                className="list-group-item d-flex justify-content-between align-items-center"
+                role="button"
+                tabIndex={onSelectTicket ? 0 : undefined}
+                style={{ cursor: onSelectTicket ? 'pointer' : undefined }}
+                onClick={() => onSelectTicket?.(t.id)}
+                onKeyDown={(e) => {
+                  if ((e.key === 'Enter' || e.key === ' ') && onSelectTicket) {
+                    e.preventDefault();
+                    onSelectTicket(t.id);
+                  }
+                }}
+              >
                 <div>
                   <strong>{t.ticketNumber}</strong> — {t.summary}
                   <div className="small text-muted">
