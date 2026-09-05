@@ -143,6 +143,17 @@ html, body {
 .badge-priority-HIGH { background: #FEE2E2 !important; color: #991B1B !important; }
 .badge-priority-URGENT { background: #DC2626 !important; color: #FFFFFF !important; }
 
+.badge-status-OPEN { background: #E0F2FE !important; color: #0284C7 !important; border: 1px solid #BAE6FD; }
+.badge-status-ASSIGNED { background: #E0E7FF !important; color: #4338CA !important; border: 1px solid #C7D2FE; }
+.badge-status-IN_PROGRESS { background: #F3E8FF !important; color: #7E22CE !important; border: 1px solid #E9D5FF; }
+.badge-status-ON_HOLD { background: #FEF3C7 !important; color: #92400E !important; border: 1px solid #FDE68A; }
+.badge-status-PENDING_FOR_APPROVAL { background: #FFEDD5 !important; color: #C2410C !important; border: 1px solid #FED7AA; }
+.badge-status-MONITORING { background: #CCFBF1 !important; color: #0F766E !important; border: 1px solid #99F6E4; }
+.badge-status-CLOSED { background: #F1F5F9 !important; color: #475569 !important; border: 1px solid #E2E8F0; }
+.badge-status-NEW { background: var(--zen-pale) !important; color: var(--zen-primary) !important; border: 1px solid var(--zen-card-border); }
+.badge-status-PENDING { background: #FFEDD5 !important; color: #C2410C !important; border: 1px solid #FED7AA; }
+.badge-status-RESOLVED { background: #DCFCE7 !important; color: #166534 !important; border: 1px solid #BBF7D0; }
+
 /* Required asterisk */
 .required-star { color: var(--zen-error-border); }
 

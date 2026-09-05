@@ -13,6 +13,11 @@ enum TicketStatus {
   IN_PROGRESS
   OPEN
   RESOLVED
+  ASSIGNED
+  ON_HOLD
+  PENDING_FOR_APPROVAL
+  MONITORING
+  CLOSED
 }
 
 enum Priority {
@@ -52,7 +57,7 @@ model Ticket {
   ticketNumber     String        @unique
   summary          String
   description      String
-  currentStatus    TicketStatus  @default(PENDING)
+  currentStatus    TicketStatus  @default(OPEN)
   requestedPriority Priority
   ticketDate       DateTime      @default(now())
   createdAt        DateTime      @default(now())

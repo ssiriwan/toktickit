@@ -205,7 +205,7 @@ export function createApp() {
               ticketNumber: candidate,
               summary,
               description,
-              currentStatus: 'PENDING',
+              currentStatus: 'OPEN',
               requestedPriority: body.requestedPriority,
               ticketDate: now,
               requesterId: requester.id,

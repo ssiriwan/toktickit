@@ -204,10 +204,13 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
                 onChange={handleFilterChange(setStatusFilter)}
               >
                 <option value="">All Statuses</option>
-                <option value="PENDING">Pending</option>
-                <option value="IN_PROGRESS">In Progress</option>
                 <option value="OPEN">Open</option>
-                <option value="RESOLVED">Resolved</option>
+                <option value="ASSIGNED">Assigned</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="ON_HOLD">On hold</option>
+                <option value="PENDING_FOR_APPROVAL">Pending for Approval</option>
+                <option value="MONITORING">Monitoring</option>
+                <option value="CLOSED">Closed</option>
               </select>
                 <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6B7280' }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
@@ -371,8 +374,8 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
                       <td style={{ fontWeight: 500, color: '#006B3C' }}>{t.ticketNumber}</td>
                       <td>{t.summary}</td>
                       <td>{t.category.name}</td>
-                      <td><span className="badge bg-light text-dark border">{t.currentStatus}</span></td>
-                      <td><span className={`badge badge-priority-${t.requestedPriority}`}>{t.requestedPriority}</span></td>
+                    <td><span className={`badge badge-status-${t.currentStatus}`}>{t.currentStatus.replace(/_/g, ' ')}</span></td>
+                    <td><span className={`badge badge-priority-${t.requestedPriority}`}>{t.requestedPriority}</span></td>
                       <td>{new Date(t.updatedAt).toLocaleDateString()}</td>
                     </tr>
                   ))}
