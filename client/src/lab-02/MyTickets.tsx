@@ -126,19 +126,36 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
 
   return (
     <main className="container py-4" style={{ maxWidth: '56rem' }}>
+      <div className="card mb-3" style={{ borderColor: '#E0E4E1' }}>
+        <div className="card-body p-2 d-flex align-items-center gap-2" style={{ background: '#F5F7F6', borderBottom: '1px solid #E0E4E1' }}>
+          <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#FF5F56', display: 'inline-block' }} />
+          <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#FFBD2E', display: 'inline-block' }} />
+          <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#27C93F', display: 'inline-block' }} />
+          <span className="ms-3 small text-muted" style={{ background: 'white', padding: '2px 8px', borderRadius: 12, border: '1px solid #E0E4E1' }}>toktickit.local</span>
+        </div>
+      </div>
+
       <h1 className="h4 mb-3">My Tickets</h1>
 
       <div className="row g-2 mb-3">
         <div className="col-md-4">
-          <input
-            placeholder="Search tickets..."
-            className="form-control"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-          />
+          <label className="form-label small text-muted mb-1">Search</label>
+          <div style={{ position: 'relative' }}>
+            <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+            </span>
+            <input
+              placeholder="Search tickets..."
+              className="form-control"
+              style={{ paddingLeft: '2rem' }}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            />
+          </div>
         </div>
         <div className="col-md-2">
+          <label className="form-label small text-muted mb-1">Category</label>
           <select
             aria-label="Filter by category"
             className="form-select"
@@ -154,6 +171,7 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
           </select>
         </div>
         <div className="col-md-2">
+          <label className="form-label small text-muted mb-1">Related System</label>
           <select
             aria-label="Filter by system"
             className="form-select"
@@ -169,6 +187,7 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
           </select>
         </div>
         <div className="col-md-2">
+          <label className="form-label small text-muted mb-1">Current Status</label>
           <select
             aria-label="Filter by status"
             className="form-select"
@@ -180,6 +199,7 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
           </select>
         </div>
         <div className="col-md-2">
+          <label className="form-label small text-muted mb-1">Requested Priority</label>
           <select
             aria-label="Filter by priority"
             className="form-select"
@@ -197,6 +217,7 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
 
       <div className="row g-2 mb-3">
         <div className="col-md-4">
+          <label className="form-label small text-muted mb-1">Sort</label>
           <select aria-label="Sort by" className="form-select" value={`${sort}:${order}`} onChange={(e) => {
             const [s, o] = e.target.value.split(':');
             setSort(s);
@@ -211,6 +232,7 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
           </select>
         </div>
         <div className="col-md-2">
+          <label className="form-label small text-muted mb-1">Page Size</label>
           <select aria-label="Page size" className="form-select" value={String(pageSize)} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}>
             <option value="5">5 / page</option>
             <option value="10">10 / page</option>
