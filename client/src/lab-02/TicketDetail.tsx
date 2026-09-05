@@ -171,7 +171,7 @@ export function TicketDetail({ ticketId, requester, onBack }: TicketDetailProps)
             <strong>Priority:</strong> <span className={`badge badge-priority-${ticket.requestedPriority} ms-1`}>{ticket.requestedPriority}</span>
           </p>
           <p>
-            <strong>Status:</strong> <span className="badge bg-light ms-1">{ticket.currentStatus}</span>
+            <strong>Status:</strong> <span className={`badge badge-status-${ticket.currentStatus} ms-1`}>{ticket.currentStatus.replace(/_/g, ' ')}</span>
           </p>
           <p>
             <strong>Requester:</strong> <span className="zen-readonly ms-1">{ticket.requester.name} ({ticket.requester.email})</span>

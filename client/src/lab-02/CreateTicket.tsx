@@ -21,6 +21,9 @@ export function CreateTicket({ requester, onViewMyTickets }: CreateTicketProps) 
   const [priority, setPriority] = useState('');
   const [summary, setSummary] = useState('');
   const [description, setDescription] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [uploadWarning, setUploadWarning] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitStatus, setSubmitStatus] = useState<SubmitStatus>('idle');
   const [createdTicketNumber, setCreatedTicketNumber] = useState<string | null>(null);
@@ -53,6 +56,9 @@ export function CreateTicket({ requester, onViewMyTickets }: CreateTicketProps) 
     setPriority('');
     setSummary('');
     setDescription('');
+    setFiles([]);
+    setFileError(null);
+    setUploadWarning(null);
     setErrors({});
     setSubmitStatus('idle');
     setCreatedTicketNumber(null);
@@ -69,9 +75,43 @@ export function CreateTicket({ requester, onViewMyTickets }: CreateTicketProps) 
     return Object.keys(next).length === 0;
   }
 
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const input = e.target as HTMLInputElement;
+    const selected = input.files ? Array.from(input.files) : [];
+    setFileError(null);
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+    const nextFiles = [...files];
+    for (const f of selected) {
+      if (!allowed.includes(f.type)) {
+        setFileError('File type not allowed. Permitted: JPG, JPEG, PNG, WEBP, PDF');
+        input.value = '';
+        return;
+      }
+      if (f.size > 5 * 1024 * 1024) {
+        setFileError('File size exceeds 5MB limit');
+        input.value = '';
+        return;
+      }
+      if (nextFiles.length >= 5) {
+        setFileError('Maximum 5 attachments per ticket');
+        input.value = '';
+        return;
+      }
+      nextFiles.push(f);
+    }
+    setFiles(nextFiles);
+    input.value = '';
+  }
+
+  function removeFile(index: number) {
+    setFiles(files.filter((_, i) => i !== index));
+    setFileError(null);
+  }
+
   async function handleSubmit() {
     if (!validate() || submitStatus === 'submitting') return;
     setSubmitStatus('submitting');
+    setUploadWarning(null);
     try {
       const response = await fetch('/api/tickets', {
         method: 'POST',
@@ -88,7 +128,18 @@ export function CreateTicket({ requester, onViewMyTickets }: CreateTicketProps) 
       if (!response.ok) {
         throw new Error(`Ticket request failed: ${response.status}`);
       }
-      const data = (await response.json()) as { ticketNumber: string };
+      const data = (await response.json()) as { id: number; ticketNumber: string };
+      let failed = 0;
+      for (const f of files) {
+        const fd = new FormData();
+        fd.append('file', f);
+        const upRes = await fetch(`/api/tickets/${data.id}/attachments?requesterId=${requester.id}`, {
+          method: 'POST',
+          body: fd
+        });
+        if (!upRes.ok) failed++;
+      }
+      if (failed > 0) setUploadWarning(`Ticket created but ${failed} attachment(s) failed — retry in Detail`);
       setCreatedTicketNumber(data.ticketNumber);
       setSubmitStatus('done');
     } catch {
@@ -113,6 +164,11 @@ export function CreateTicket({ requester, onViewMyTickets }: CreateTicketProps) 
             Ticket Number: {createdTicketNumber} — Status: NEW
           </p>
         </div>
+        {uploadWarning && (
+          <p className="text-warning mt-2" role="alert" style={{ color: '#92400E', background: '#FEF3C7', padding: '0.5rem', borderRadius: '0.25rem' }}>
+            {uploadWarning}
+          </p>
+        )}
         <div className="d-flex gap-2">
           <button type="button" className="btn btn-primary" onClick={onViewMyTickets}>
             View My Tickets
@@ -304,6 +360,44 @@ export function CreateTicket({ requester, onViewMyTickets }: CreateTicketProps) 
                   <small className="text-muted mt-1">{description.length}/2000</small>
                 </div>
               </div>
+            </div>
+          </section>
+
+          <section className="card mb-3">
+            <h2 className="h6 card-header">Attachments</h2>
+            <div className="card-body">
+              <label htmlFor="create-attachments" className="form-label">
+                Attach files (JPG, PNG, WEBP, PDF — max 5MB each, max 5)
+              </label>
+              <input
+                id="create-attachments"
+                type="file"
+                className="form-control"
+                multiple
+                accept=".jpg,.jpeg,.png,.webp,.pdf"
+                onChange={handleFileChange}
+                data-testid="create-file-input"
+              />
+              {fileError && (
+                <small className="text-danger mt-1 d-block" role="alert">
+                  {fileError}
+                </small>
+              )}
+              {files.length > 0 && (
+                <div className="mt-2">
+                  {files.map((f, idx) => (
+                    <div key={idx} className="d-flex justify-content-between align-items-center border-bottom py-1">
+                      <span>
+                        {f.name} <small className="text-muted">({(f.size / 1024).toFixed(1)} KB)</small>
+                      </span>
+                      <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => removeFile(idx)}>
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  <small className="text-muted">{files.length}/5 attachments</small>
+                </div>
+              )}
             </div>
           </section>
 

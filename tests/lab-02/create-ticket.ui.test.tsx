@@ -138,4 +138,33 @@ describe('TokTickIT Create Ticket screen', () => {
     expect(await screen.findByText(/unable to create ticket/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/summary/i)).toHaveValue('Battery issue');
   });
+
+  it('allows selecting a file and uploads it sequentially after ticket creation', async () => {
+    const file = new File(['dummy'], 'test.png', { type: 'image/png' });
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      if (url.includes('/api/categories')) return Promise.resolve(jsonResponse(categories));
+      if (url.includes('/api/related-systems')) return Promise.resolve(jsonResponse(systems));
+      if (url.includes('/api/tickets') && init?.method === 'POST') {
+        if (url.includes('/attachments')) {
+          return Promise.resolve(jsonResponse({ id: 1, filename: 'test.png', isRemoved: false }));
+        }
+        return Promise.resolve(jsonResponse({ id: 10, ticketNumber: 'TK-20260904-0001' }));
+      }
+      return Promise.resolve(jsonResponse({}, false));
+    });
+    renderForm(fetchMock);
+    await screen.findByRole('combobox', { name: /category/i });
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: /category/i }), '2');
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: /related system/i }), '1');
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: /requested priority/i }), 'HIGH');
+    await userEvent.type(screen.getByLabelText(/summary/i), 'Battery issue');
+    await userEvent.type(screen.getByLabelText(/description/i), 'Needs a replacement');
+    const fileInput = screen.getByTestId('create-file-input') as HTMLInputElement;
+    await userEvent.upload(fileInput, file);
+    expect(await screen.findByText(/test.png/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /submit ticket/i }));
+    expect(await screen.findByText(/Ticket created successfully/i)).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/api/tickets'), expect.objectContaining({ method: 'POST' }));
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/attachments'), expect.anything());
+  });
 });

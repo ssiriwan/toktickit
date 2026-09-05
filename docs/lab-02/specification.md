@@ -462,6 +462,7 @@ Soft-remove an attachment.
 - **Ownership Check**: The `requesterId` is passed as a query parameter for GET/PATCH requests and in the request body for POST requests. This is a testing mechanism, not secure authentication. Lab 3 will replace this with proper session-based auth.
 - **Attachment Naming**: Original filenames are preserved for display, but stored filenames use a UUID-based scheme to prevent conflicts and path traversal.
 - **Soft Removal**: Soft removal sets `isRemoved = true`, records `removalReason` and `removedAt`. The file remains on disk but is not served via download. A future lab may implement permanent cleanup.
+- **Create with Attachments**: Attachments selected in Create Ticket are uploaded via `POST /api/tickets/:id/attachments` after the ticket is created. If the ticket is created but an attachment upload fails, the ticket is retained and the UI shows a retry hint (upload via Ticket Detail).
 - **Status Model**: Lab 2 uses a simplified single-status model with only the `NEW` status. The `TicketStatus` enum is designed to be extended in Lab 3 with additional statuses (IN_PROGRESS, RESOLVED, CLOSED, etc.).
 - **Priority as Enum**: Requested Priority is stored as a Prisma enum (LOW, MEDIUM, HIGH, URGENT) rather than a separate table, since the values are fixed and few.
 - **No IT Priority in Lab 2**: IT Priority is excluded and will be introduced in Lab 3 when IT Staff workflow is implemented.
