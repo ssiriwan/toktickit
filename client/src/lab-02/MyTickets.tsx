@@ -242,75 +242,78 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
         </div>
         <div className="col-md-3">
           <label className="form-label small text-muted mb-1">Created Date</label>
-          <div style={{ position: 'relative' }}>
-            <select
-              aria-label="Sort by Created Date"
-              className="form-select"
-              style={{ paddingRight: '2rem' }}
-              value={sort === 'ticketDate' ? `${sort}:${order}` : ''}
-              onChange={(e) => {
-                if (!e.target.value) return;
-                const [s, o] = e.target.value.split(':');
-                setSort(s);
-                setOrder(o as 'asc' | 'desc');
-              }}
-            >
-              <option value="">Created Date</option>
-              <option value="ticketDate:desc">Created Date — Newest</option>
-              <option value="ticketDate:asc">Created Date — Oldest</option>
-            </select>
-            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6B7280' }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
+          <button
+            type="button"
+            aria-label="Sort by Created Date"
+            aria-pressed={sort === 'ticketDate'}
+            className={`btn w-100 d-flex justify-content-between align-items-center ${sort === 'ticketDate' ? 'btn-primary' : 'btn-outline-secondary'}`}
+            onClick={() => {
+              if (sort !== 'ticketDate') { setSort('ticketDate'); setOrder('asc'); }
+              else if (order === 'asc') setOrder('desc');
+              else { setSort('ticketDate'); setOrder('desc'); }
+            }}
+          >
+            <span>Created Date</span>
+            <span style={{ color: sort === 'ticketDate' ? '#FFFFFF' : '#6B7280' }}>
+              {sort !== 'ticketDate' ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m3 8 4-4 4 4" /><path d="m3 16 4 4 4-4" /></svg>
+              ) : order === 'asc' ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m5 15 7-7 7 7" /></svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m19 9-7 7-7-7" /></svg>
+              )}
             </span>
-          </div>
+          </button>
         </div>
         <div className="col-md-3">
           <label className="form-label small text-muted mb-1">Last Updated</label>
-          <div style={{ position: 'relative' }}>
-            <select
-              aria-label="Sort by Last Updated"
-              className="form-select"
-              style={{ paddingRight: '2rem' }}
-              value={sort === 'updatedAt' ? `${sort}:${order}` : ''}
-              onChange={(e) => {
-                if (!e.target.value) return;
-                const [s, o] = e.target.value.split(':');
-                setSort(s);
-                setOrder(o as 'asc' | 'desc');
-              }}
-            >
-              <option value="">Last Updated</option>
-              <option value="updatedAt:desc">Last Updated — Newest</option>
-              <option value="updatedAt:asc">Last Updated — Oldest</option>
-            </select>
-            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6B7280' }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
+          <button
+            type="button"
+            aria-label="Sort by Last Updated"
+            aria-pressed={sort === 'updatedAt'}
+            className={`btn w-100 d-flex justify-content-between align-items-center ${sort === 'updatedAt' ? 'btn-primary' : 'btn-outline-secondary'}`}
+            onClick={() => {
+              if (sort !== 'updatedAt') { setSort('updatedAt'); setOrder('asc'); }
+              else if (order === 'asc') setOrder('desc');
+              else { setSort('ticketDate'); setOrder('desc'); }
+            }}
+          >
+            <span>Last Updated</span>
+            <span style={{ color: sort === 'updatedAt' ? '#FFFFFF' : '#6B7280' }}>
+              {sort !== 'updatedAt' ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m3 8 4-4 4 4" /><path d="m3 16 4 4 4-4" /></svg>
+              ) : order === 'asc' ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m5 15 7-7 7 7" /></svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m19 9-7 7-7-7" /></svg>
+              )}
             </span>
-          </div>
+          </button>
         </div>
         <div className="col-md-3">
           <label className="form-label small text-muted mb-1">Priority</label>
-          <div style={{ position: 'relative' }}>
-            <select
-              aria-label="Sort by Priority"
-              className="form-select"
-              style={{ paddingRight: '2rem' }}
-              value={sort === 'requestedPriority' ? `${sort}:${order}` : ''}
-              onChange={(e) => {
-                if (!e.target.value) return;
-                const [s, o] = e.target.value.split(':');
-                setSort(s);
-                setOrder(o as 'asc' | 'desc');
-              }}
-            >
-              <option value="">Priority</option>
-              <option value="requestedPriority:desc">Priority — High first</option>
-              <option value="requestedPriority:asc">Priority — Low first</option>
-            </select>
-            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6B7280' }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
+          <button
+            type="button"
+            aria-label="Sort by Priority"
+            aria-pressed={sort === 'requestedPriority'}
+            className={`btn w-100 d-flex justify-content-between align-items-center ${sort === 'requestedPriority' ? 'btn-primary' : 'btn-outline-secondary'}`}
+            onClick={() => {
+              if (sort !== 'requestedPriority') { setSort('requestedPriority'); setOrder('asc'); }
+              else if (order === 'asc') setOrder('desc');
+              else { setSort('ticketDate'); setOrder('desc'); }
+            }}
+          >
+            <span>Priority</span>
+            <span style={{ color: sort === 'requestedPriority' ? '#FFFFFF' : '#6B7280' }}>
+              {sort !== 'requestedPriority' ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m3 8 4-4 4 4" /><path d="m3 16 4 4 4-4" /></svg>
+              ) : order === 'asc' ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m5 15 7-7 7 7" /></svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m19 9-7 7-7-7" /></svg>
+              )}
             </span>
-          </div>
+          </button>
         </div>
         <div className="col-md-3">
           <label className="form-label small text-muted mb-1">Page Size</label>
