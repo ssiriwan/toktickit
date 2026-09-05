@@ -123,29 +123,29 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
   const showNoResults = status === 'success' && tickets.length === 0 && hasActiveFilter;
 
   return (
-    <main className="container py-4" style={{ maxWidth: '56rem' }}>
+    <main className="container py-4" style={{ maxWidth: '72rem' }}>
       <h1 className="h4 mb-3">My Tickets</h1>
 
       <div className="card mb-3">
         <div className="card-body">
           <div className="row g-2 mb-3">
-            <div className="col-md-4">
+            <div className="col-md-3">
               <label className="form-label small text-muted mb-1">Search</label>
               <div style={{ position: 'relative' }}>
                 <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
                 </span>
-            <input
-              placeholder="Search tickets..."
-              className="form-control"
-              style={{ paddingLeft: '2rem' }}
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            />
+                <input
+                  placeholder="Search tickets..."
+                  className="form-control"
+                  style={{ paddingLeft: '2rem' }}
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setPage(1);
+                  }}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                />
               </div>
             </div>
             <div className="col-md-2">
@@ -192,7 +192,7 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
                 <option value="NEW">NEW</option>
               </select>
             </div>
-            <div className="col-md-2">
+            <div className="col-md-3">
               <label className="form-label small text-muted mb-1">Requested Priority</label>
               <select
                 aria-label="Filter by priority"
@@ -210,19 +210,19 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
           </div>
 
       <div className="row g-2">
-        <div className="col-md-4">
-          <label className="form-label small text-muted mb-1">Sort</label>
-          <select aria-label="Sort by" className="form-select" value={`${sort}:${order}`} onChange={(e) => {
-            const [s, o] = e.target.value.split(':');
-            setSort(s);
-            setOrder(o as 'asc' | 'desc');
-          }}>
-            <option value="ticketDate:desc">Ticket Date (newest)</option>
-            <option value="ticketDate:asc">Ticket Date (oldest)</option>
-            <option value="updatedAt:desc">Last Updated (newest)</option>
-            <option value="updatedAt:asc">Last Updated (oldest)</option>
-            <option value="requestedPriority:desc">Priority (high first)</option>
-            <option value="requestedPriority:asc">Priority (low first)</option>
+        <div className="col-md-3">
+          <label className="form-label small text-muted mb-1">Sort by</label>
+          <select aria-label="Sort by" className="form-select" value={sort} onChange={(e) => setSort(e.target.value)}>
+            <option value="ticketDate">Ticket Date</option>
+            <option value="updatedAt">Last Updated</option>
+            <option value="requestedPriority">Priority</option>
+          </select>
+        </div>
+        <div className="col-md-2">
+          <label className="form-label small text-muted mb-1">Order</label>
+          <select aria-label="Sort order" className="form-select" value={order} onChange={(e) => setOrder(e.target.value as 'asc' | 'desc')}>
+            <option value="desc">Descending</option>
+            <option value="asc">Ascending</option>
           </select>
         </div>
         <div className="col-md-2">
