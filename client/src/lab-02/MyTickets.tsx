@@ -241,85 +241,7 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
           </div>
 
       <div className="row g-2">
-        <div className="col-12">
-          <label className="form-label small text-muted mb-1">Sort by</label>
-        </div>
-        <div className="col-md-3">
-          <label className="form-label small text-muted mb-1">Created Date</label>
-          <button
-            type="button"
-            aria-label="Sort by Created Date"
-            aria-pressed={hasUserSorted && sort === 'ticketDate'}
-            className={`btn w-100 d-flex justify-content-between align-items-center ${hasUserSorted && sort === 'ticketDate' ? 'btn-primary' : 'btn-outline-secondary'}`}
-            onClick={() => {
-              if (!hasUserSorted || sort !== 'ticketDate') { setSort('ticketDate'); setOrder('asc'); setHasUserSorted(true); }
-              else if (order === 'asc') setOrder('desc');
-              else { setSort('ticketDate'); setOrder('desc'); setHasUserSorted(false); }
-            }}
-          >
-            <span>Created Date</span>
-            <span style={{ color: hasUserSorted && sort === 'ticketDate' ? '#FFFFFF' : '#6B7280' }}>
-              {!hasUserSorted || sort !== 'ticketDate' ? (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m3 8 4-4 4 4" /><path d="m3 16 4 4 4-4" /></svg>
-              ) : order === 'asc' ? (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m5 15 7-7 7 7" /></svg>
-              ) : (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m19 9-7 7-7-7" /></svg>
-              )}
-            </span>
-          </button>
-        </div>
-        <div className="col-md-3">
-          <label className="form-label small text-muted mb-1">Last Updated</label>
-          <button
-            type="button"
-            aria-label="Sort by Last Updated"
-            aria-pressed={hasUserSorted && sort === 'updatedAt'}
-            className={`btn w-100 d-flex justify-content-between align-items-center ${hasUserSorted && sort === 'updatedAt' ? 'btn-primary' : 'btn-outline-secondary'}`}
-            onClick={() => {
-              if (!hasUserSorted || sort !== 'updatedAt') { setSort('updatedAt'); setOrder('asc'); setHasUserSorted(true); }
-              else if (order === 'asc') setOrder('desc');
-              else { setSort('ticketDate'); setOrder('desc'); setHasUserSorted(false); }
-            }}
-          >
-            <span>Last Updated</span>
-            <span style={{ color: hasUserSorted && sort === 'updatedAt' ? '#FFFFFF' : '#6B7280' }}>
-              {!hasUserSorted || sort !== 'updatedAt' ? (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m3 8 4-4 4 4" /><path d="m3 16 4 4 4-4" /></svg>
-              ) : order === 'asc' ? (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m5 15 7-7 7 7" /></svg>
-              ) : (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m19 9-7 7-7-7" /></svg>
-              )}
-            </span>
-          </button>
-        </div>
-        <div className="col-md-3">
-          <label className="form-label small text-muted mb-1">Priority</label>
-          <button
-            type="button"
-            aria-label="Sort by Priority"
-            aria-pressed={hasUserSorted && sort === 'requestedPriority'}
-            className={`btn w-100 d-flex justify-content-between align-items-center ${hasUserSorted && sort === 'requestedPriority' ? 'btn-primary' : 'btn-outline-secondary'}`}
-            onClick={() => {
-              if (!hasUserSorted || sort !== 'requestedPriority') { setSort('requestedPriority'); setOrder('asc'); setHasUserSorted(true); }
-              else if (order === 'asc') setOrder('desc');
-              else { setSort('ticketDate'); setOrder('desc'); setHasUserSorted(false); }
-            }}
-          >
-            <span>Priority</span>
-            <span style={{ color: hasUserSorted && sort === 'requestedPriority' ? '#FFFFFF' : '#6B7280' }}>
-              {!hasUserSorted || sort !== 'requestedPriority' ? (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m3 8 4-4 4 4" /><path d="m3 16 4 4 4-4" /></svg>
-              ) : order === 'asc' ? (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m5 15 7-7 7 7" /></svg>
-              ) : (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m19 9-7 7-7-7" /></svg>
-              )}
-            </span>
-          </button>
-        </div>
-        <div className="col-md-3">
+        <div className="col-md-3 ms-auto">
           <label className="form-label small text-muted mb-1">Page Size</label>
           <div style={{ position: 'relative' }}>
             <select aria-label="Page size" className="form-select" style={{ paddingRight: '2rem' }} value={String(pageSize)} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}>
@@ -352,8 +274,93 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
                     <th style={{ fontWeight: 500, color: '#006B3C', background: '#EAF6EF', borderBottom: '1px solid #E0E4E1' }}>Summary</th>
                     <th style={{ fontWeight: 500, color: '#006B3C', background: '#EAF6EF', borderBottom: '1px solid #E0E4E1' }}>Category</th>
                     <th style={{ fontWeight: 500, color: '#006B3C', background: '#EAF6EF', borderBottom: '1px solid #E0E4E1' }}>Current Status</th>
-                    <th style={{ fontWeight: 500, color: '#006B3C', background: '#EAF6EF', borderBottom: '1px solid #E0E4E1' }}>Priority</th>
-                    <th style={{ fontWeight: 500, color: '#006B3C', background: '#EAF6EF', borderBottom: '1px solid #E0E4E1' }}>Last Updated</th>
+                    <th
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => {
+                        if (sort !== 'requestedPriority') { setSort('requestedPriority'); setOrder('desc'); setHasUserSorted(true); }
+                        else if (order === 'desc') setOrder('asc');
+                        else setOrder('desc');
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          if (sort !== 'requestedPriority') { setSort('requestedPriority'); setOrder('desc'); setHasUserSorted(true); }
+                          else if (order === 'desc') setOrder('asc');
+                          else setOrder('desc');
+                        }
+                      }}
+                      style={{ fontWeight: 500, color: '#006B3C', background: '#EAF6EF', borderBottom: '1px solid #E0E4E1', cursor: 'pointer', userSelect: 'none' }}
+                    >
+                      Priority{' '}
+                      {sort === 'requestedPriority' ? (
+                        order === 'asc' ? (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle' }}><path d="m5 15 7-7 7 7" /></svg>
+                        ) : (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle' }}><path d="m19 9-7 7-7-7" /></svg>
+                        )
+                      ) : (
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle' }}><path d="m3 8 4-4 4 4" /><path d="m3 16 4 4 4-4" /></svg>
+                      )}
+                    </th>
+                    <th
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => {
+                        if (sort !== 'ticketDate') { setSort('ticketDate'); setOrder('desc'); setHasUserSorted(true); }
+                        else if (order === 'desc') setOrder('asc');
+                        else setOrder('desc');
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          if (sort !== 'ticketDate') { setSort('ticketDate'); setOrder('desc'); setHasUserSorted(true); }
+                          else if (order === 'desc') setOrder('asc');
+                          else setOrder('desc');
+                        }
+                      }}
+                      style={{ fontWeight: 500, color: '#006B3C', background: '#EAF6EF', borderBottom: '1px solid #E0E4E1', cursor: 'pointer', userSelect: 'none' }}
+                    >
+                      Create Date{' '}
+                      {sort === 'ticketDate' ? (
+                        order === 'asc' ? (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle' }}><path d="m5 15 7-7 7 7" /></svg>
+                        ) : (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle' }}><path d="m19 9-7 7-7-7" /></svg>
+                        )
+                      ) : (
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle' }}><path d="m3 8 4-4 4 4" /><path d="m3 16 4 4 4-4" /></svg>
+                      )}
+                    </th>
+                    <th
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => {
+                        if (sort !== 'updatedAt') { setSort('updatedAt'); setOrder('desc'); setHasUserSorted(true); }
+                        else if (order === 'desc') setOrder('asc');
+                        else setOrder('desc');
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          if (sort !== 'updatedAt') { setSort('updatedAt'); setOrder('desc'); setHasUserSorted(true); }
+                          else if (order === 'desc') setOrder('asc');
+                          else setOrder('desc');
+                        }
+                      }}
+                      style={{ fontWeight: 500, color: '#006B3C', background: '#EAF6EF', borderBottom: '1px solid #E0E4E1', cursor: 'pointer', userSelect: 'none' }}
+                    >
+                      Last Updated{' '}
+                      {sort === 'updatedAt' ? (
+                        order === 'asc' ? (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle' }}><path d="m5 15 7-7 7 7" /></svg>
+                        ) : (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle' }}><path d="m19 9-7 7-7-7" /></svg>
+                        )
+                      ) : (
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle' }}><path d="m3 8 4-4 4 4" /><path d="m3 16 4 4 4-4" /></svg>
+                      )}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -376,7 +383,8 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
                       <td>{t.category.name}</td>
                     <td><span className={`badge badge-status-${t.currentStatus}`}>{t.currentStatus.replace(/_/g, ' ')}</span></td>
                     <td><span className={`badge badge-priority-${t.requestedPriority}`}>{t.requestedPriority}</span></td>
-                      <td>{new Date(t.updatedAt).toLocaleDateString()}</td>
+                      <td>{new Date(t.ticketDate).toLocaleString()}</td>
+                      <td>{new Date(t.updatedAt).toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>
