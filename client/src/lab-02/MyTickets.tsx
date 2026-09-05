@@ -240,21 +240,6 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
             </div>
           </div>
 
-      <div className="row g-2">
-        <div className="col-md-3 ms-auto">
-          <label className="form-label small text-muted mb-1">Page Size</label>
-          <div style={{ position: 'relative' }}>
-            <select aria-label="Page size" className="form-select" style={{ paddingRight: '2rem' }} value={String(pageSize)} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}>
-              <option value="5">5 / page</option>
-              <option value="10">10 / page</option>
-              <option value="25">25 / page</option>
-            </select>
-            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6B7280' }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
-            </span>
-          </div>
-        </div>
-      </div>
         </div>
       </div>
 
@@ -271,6 +256,35 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
                 <thead>
                   <tr style={{ background: '#EAF6EF' }}>
                     <th style={{ fontWeight: 500, color: '#006B3C', background: '#EAF6EF', borderBottom: '1px solid #E0E4E1' }}>Ticket Number</th>
+                    <th
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => {
+                        if (sort !== 'ticketDate') { setSort('ticketDate'); setOrder('desc'); setHasUserSorted(true); }
+                        else if (order === 'desc') setOrder('asc');
+                        else setOrder('desc');
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          if (sort !== 'ticketDate') { setSort('ticketDate'); setOrder('desc'); setHasUserSorted(true); }
+                          else if (order === 'desc') setOrder('asc');
+                          else setOrder('desc');
+                        }
+                      }}
+                      style={{ fontWeight: 500, color: '#006B3C', background: '#EAF6EF', borderBottom: '1px solid #E0E4E1', cursor: 'pointer', userSelect: 'none' }}
+                    >
+                      Create Date{' '}
+                      {sort === 'ticketDate' ? (
+                        order === 'asc' ? (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle' }}><path d="m5 15 7-7 7 7" /></svg>
+                        ) : (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle' }}><path d="m19 9-7 7-7-7" /></svg>
+                        )
+                      ) : (
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle' }}><path d="m3 8 4-4 4 4" /><path d="m3 16 4 4 4-4" /></svg>
+                      )}
+                    </th>
                     <th style={{ fontWeight: 500, color: '#006B3C', background: '#EAF6EF', borderBottom: '1px solid #E0E4E1' }}>Summary</th>
                     <th style={{ fontWeight: 500, color: '#006B3C', background: '#EAF6EF', borderBottom: '1px solid #E0E4E1' }}>Category</th>
                     <th style={{ fontWeight: 500, color: '#006B3C', background: '#EAF6EF', borderBottom: '1px solid #E0E4E1' }}>Current Status</th>
@@ -294,35 +308,6 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
                     >
                       Priority{' '}
                       {sort === 'requestedPriority' ? (
-                        order === 'asc' ? (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle' }}><path d="m5 15 7-7 7 7" /></svg>
-                        ) : (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle' }}><path d="m19 9-7 7-7-7" /></svg>
-                        )
-                      ) : (
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle' }}><path d="m3 8 4-4 4 4" /><path d="m3 16 4 4 4-4" /></svg>
-                      )}
-                    </th>
-                    <th
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => {
-                        if (sort !== 'ticketDate') { setSort('ticketDate'); setOrder('desc'); setHasUserSorted(true); }
-                        else if (order === 'desc') setOrder('asc');
-                        else setOrder('desc');
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          if (sort !== 'ticketDate') { setSort('ticketDate'); setOrder('desc'); setHasUserSorted(true); }
-                          else if (order === 'desc') setOrder('asc');
-                          else setOrder('desc');
-                        }
-                      }}
-                      style={{ fontWeight: 500, color: '#006B3C', background: '#EAF6EF', borderBottom: '1px solid #E0E4E1', cursor: 'pointer', userSelect: 'none' }}
-                    >
-                      Create Date{' '}
-                      {sort === 'ticketDate' ? (
                         order === 'asc' ? (
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle' }}><path d="m5 15 7-7 7 7" /></svg>
                         ) : (
@@ -379,11 +364,11 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
                       }}
                     >
                       <td style={{ fontWeight: 500, color: '#006B3C' }}>{t.ticketNumber}</td>
+                      <td>{new Date(t.ticketDate).toLocaleString()}</td>
                       <td>{t.summary}</td>
                       <td>{t.category.name}</td>
                     <td><span className={`badge badge-status-${t.currentStatus}`}>{t.currentStatus.replace(/_/g, ' ')}</span></td>
                     <td><span className={`badge badge-priority-${t.requestedPriority}`}>{t.requestedPriority}</span></td>
-                      <td>{new Date(t.ticketDate).toLocaleString()}</td>
                       <td>{new Date(t.updatedAt).toLocaleString()}</td>
                     </tr>
                   ))}
@@ -392,9 +377,21 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
             </div>
           </div>
           <div className="d-flex justify-content-between align-items-center">
-            <small className="text-muted">
-              Showing {(pagination.page - 1) * pagination.pageSize + 1}-{Math.min(pagination.page * pagination.pageSize, pagination.totalItems)} of {pagination.totalItems} tickets
-            </small>
+            <div className="d-flex align-items-center gap-2">
+              <small className="text-muted">
+                Showing {(pagination.page - 1) * pagination.pageSize + 1}-{Math.min(pagination.page * pagination.pageSize, pagination.totalItems)} of {pagination.totalItems} tickets
+              </small>
+              <div style={{ position: 'relative', width: '120px' }}>
+                <select aria-label="Page size" className="form-select form-select-sm" style={{ paddingRight: '1.5rem' }} value={String(pageSize)} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}>
+                  <option value="5">5 / page</option>
+                  <option value="10">10 / page</option>
+                  <option value="25">25 / page</option>
+                </select>
+                <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6B7280' }}>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
+                </span>
+              </div>
+            </div>
             <div className="btn-group">
               <button type="button" className="btn btn-outline-secondary btn-sm" disabled={pagination.page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
                 Prev
