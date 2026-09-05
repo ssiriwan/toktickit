@@ -31,6 +31,7 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
   const [priorityFilter, setPriorityFilter] = useState('');
   const [sort, setSort] = useState('ticketDate');
   const [order, setOrder] = useState<'asc' | 'desc'>('desc');
+  const [hasUserSorted, setHasUserSorted] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [pagination, setPagination] = useState({ page: 1, pageSize: 10, totalItems: 0, totalPages: 1 });
@@ -245,17 +246,17 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
           <button
             type="button"
             aria-label="Sort by Created Date"
-            aria-pressed={sort === 'ticketDate'}
-            className={`btn w-100 d-flex justify-content-between align-items-center ${sort === 'ticketDate' ? 'btn-primary' : 'btn-outline-secondary'}`}
+            aria-pressed={hasUserSorted && sort === 'ticketDate'}
+            className={`btn w-100 d-flex justify-content-between align-items-center ${hasUserSorted && sort === 'ticketDate' ? 'btn-primary' : 'btn-outline-secondary'}`}
             onClick={() => {
-              if (sort !== 'ticketDate') { setSort('ticketDate'); setOrder('asc'); }
+              if (!hasUserSorted || sort !== 'ticketDate') { setSort('ticketDate'); setOrder('asc'); setHasUserSorted(true); }
               else if (order === 'asc') setOrder('desc');
-              else { setSort('ticketDate'); setOrder('desc'); }
+              else { setSort('ticketDate'); setOrder('desc'); setHasUserSorted(false); }
             }}
           >
             <span>Created Date</span>
-            <span style={{ color: sort === 'ticketDate' ? '#FFFFFF' : '#6B7280' }}>
-              {sort !== 'ticketDate' ? (
+            <span style={{ color: hasUserSorted && sort === 'ticketDate' ? '#FFFFFF' : '#6B7280' }}>
+              {!hasUserSorted || sort !== 'ticketDate' ? (
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m3 8 4-4 4 4" /><path d="m3 16 4 4 4-4" /></svg>
               ) : order === 'asc' ? (
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m5 15 7-7 7 7" /></svg>
@@ -270,17 +271,17 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
           <button
             type="button"
             aria-label="Sort by Last Updated"
-            aria-pressed={sort === 'updatedAt'}
-            className={`btn w-100 d-flex justify-content-between align-items-center ${sort === 'updatedAt' ? 'btn-primary' : 'btn-outline-secondary'}`}
+            aria-pressed={hasUserSorted && sort === 'updatedAt'}
+            className={`btn w-100 d-flex justify-content-between align-items-center ${hasUserSorted && sort === 'updatedAt' ? 'btn-primary' : 'btn-outline-secondary'}`}
             onClick={() => {
-              if (sort !== 'updatedAt') { setSort('updatedAt'); setOrder('asc'); }
+              if (!hasUserSorted || sort !== 'updatedAt') { setSort('updatedAt'); setOrder('asc'); setHasUserSorted(true); }
               else if (order === 'asc') setOrder('desc');
-              else { setSort('ticketDate'); setOrder('desc'); }
+              else { setSort('ticketDate'); setOrder('desc'); setHasUserSorted(false); }
             }}
           >
             <span>Last Updated</span>
-            <span style={{ color: sort === 'updatedAt' ? '#FFFFFF' : '#6B7280' }}>
-              {sort !== 'updatedAt' ? (
+            <span style={{ color: hasUserSorted && sort === 'updatedAt' ? '#FFFFFF' : '#6B7280' }}>
+              {!hasUserSorted || sort !== 'updatedAt' ? (
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m3 8 4-4 4 4" /><path d="m3 16 4 4 4-4" /></svg>
               ) : order === 'asc' ? (
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m5 15 7-7 7 7" /></svg>
@@ -295,17 +296,17 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
           <button
             type="button"
             aria-label="Sort by Priority"
-            aria-pressed={sort === 'requestedPriority'}
-            className={`btn w-100 d-flex justify-content-between align-items-center ${sort === 'requestedPriority' ? 'btn-primary' : 'btn-outline-secondary'}`}
+            aria-pressed={hasUserSorted && sort === 'requestedPriority'}
+            className={`btn w-100 d-flex justify-content-between align-items-center ${hasUserSorted && sort === 'requestedPriority' ? 'btn-primary' : 'btn-outline-secondary'}`}
             onClick={() => {
-              if (sort !== 'requestedPriority') { setSort('requestedPriority'); setOrder('asc'); }
+              if (!hasUserSorted || sort !== 'requestedPriority') { setSort('requestedPriority'); setOrder('asc'); setHasUserSorted(true); }
               else if (order === 'asc') setOrder('desc');
-              else { setSort('ticketDate'); setOrder('desc'); }
+              else { setSort('ticketDate'); setOrder('desc'); setHasUserSorted(false); }
             }}
           >
             <span>Priority</span>
-            <span style={{ color: sort === 'requestedPriority' ? '#FFFFFF' : '#6B7280' }}>
-              {sort !== 'requestedPriority' ? (
+            <span style={{ color: hasUserSorted && sort === 'requestedPriority' ? '#FFFFFF' : '#6B7280' }}>
+              {!hasUserSorted || sort !== 'requestedPriority' ? (
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m3 8 4-4 4 4" /><path d="m3 16 4 4 4-4" /></svg>
               ) : order === 'asc' ? (
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m5 15 7-7 7 7" /></svg>
