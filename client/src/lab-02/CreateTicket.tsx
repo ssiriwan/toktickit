@@ -401,11 +401,6 @@ export function CreateTicket({ requester, onViewMyTickets }: CreateTicketProps) 
             </div>
           </section>
 
-          {uploadWarning && (
-            <p className="text-warning mt-2" role="alert" style={{ color: '#92400E', background: '#FEF3C7', padding: '0.5rem', borderRadius: '0.25rem' }}>
-              {uploadWarning}
-            </p>
-          )}
           {submitStatus === 'error' && (
             <p className="text-danger mt-2" role="alert">
               Unable to create ticket. Please try again.

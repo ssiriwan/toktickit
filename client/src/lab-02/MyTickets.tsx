@@ -25,6 +25,7 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'empty'>('loading');
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [systemFilter, setSystemFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -63,7 +64,7 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
     setStatus('loading');
     try {
       const params = new URLSearchParams({ requesterId: String(requester.id) });
-      if (search.trim()) params.set('search', search.trim());
+      if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
       if (categoryFilter) params.set('categoryId', categoryFilter);
       if (systemFilter) params.set('relatedSystemId', systemFilter);
       if (statusFilter) params.set('status', statusFilter);
@@ -82,14 +83,10 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
       setTickets(data.tickets);
       setPagination(data.pagination);
       if (data.tickets.length === 0) {
-        // distinguish empty (no tickets at all) vs no-results (search/filter returned 0 but totalItems>0? but we treat same as empty for now)
-        // If search/filter active and no results, show no-results, else empty
-        const hasActiveFilter = !!(search.trim() || categoryFilter || systemFilter || statusFilter || priorityFilter);
+        const hasActiveFilter = !!(debouncedSearch.trim() || categoryFilter || systemFilter || statusFilter || priorityFilter);
         setStatus(hasActiveFilter ? 'success' : 'empty');
-        // For UI tests: empty state expects "No tickets yet", so keep 'empty' when no filter
         if (data.tickets.length === 0 && !hasActiveFilter) setStatus('empty');
         else if (data.tickets.length === 0 && hasActiveFilter) {
-          // we will show no-results via filtered check below, keep success to allow no-results rendering
           setStatus('success');
         }
       } else {
@@ -101,9 +98,14 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
   }
 
   useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
     loadTickets();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requester.id, page, pageSize, sort, order, search, categoryFilter, systemFilter, statusFilter, priorityFilter]);
+  }, [requester.id, page, pageSize, sort, order, debouncedSearch, categoryFilter, systemFilter, statusFilter, priorityFilter]);
 
   const handleSearch = () => {
     setPage(1);
@@ -118,7 +120,7 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
   // Auto-search is handled via main useEffect dependencies; page reset is done in handlers
 
   // Determine no-results vs empty for rendering
-  const hasActiveFilter = !!(search.trim() || categoryFilter || systemFilter || statusFilter || priorityFilter);
+  const hasActiveFilter = !!(debouncedSearch.trim() || categoryFilter || systemFilter || statusFilter || priorityFilter);
   const showEmpty = status === 'empty' && !hasActiveFilter;
   const showNoResults = status === 'success' && tickets.length === 0 && hasActiveFilter;
 
