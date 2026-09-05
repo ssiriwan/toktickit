@@ -340,34 +340,43 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
 
       {status === 'success' && tickets.length > 0 && (
         <>
-          <div className="list-group mb-3">
-            {tickets.map((t) => (
-              <div
-                key={t.id}
-                className="list-group-item d-flex justify-content-between align-items-center"
-                role="button"
-                tabIndex={onSelectTicket ? 0 : undefined}
-                style={{ cursor: onSelectTicket ? 'pointer' : undefined }}
-                onClick={() => onSelectTicket?.(t.id)}
-                onKeyDown={(e) => {
-                  if ((e.key === 'Enter' || e.key === ' ') && onSelectTicket) {
-                    e.preventDefault();
-                    onSelectTicket(t.id);
-                  }
-                }}
-              >
-                <div>
-                  <strong>{t.ticketNumber}</strong> — {t.summary}
-                  <div className="small text-muted">
-                    {t.category.name} • {t.relatedSystem.name} • {new Date(t.ticketDate).toLocaleDateString()}
-                  </div>
-                </div>
-                <div className="d-flex gap-1">
-                  <span className={`badge badge-priority-${t.requestedPriority}`}>{t.requestedPriority}</span>
-                  <span className="badge bg-light text-dark border">{t.currentStatus}</span>
-                </div>
-              </div>
-            ))}
+          <div className="table-responsive mb-3">
+            <table className="table table-hover align-middle">
+              <thead style={{ background: '#F5F7F6' }}>
+                <tr>
+                  <th>Ticket Number</th>
+                  <th>Summary</th>
+                  <th>Category</th>
+                  <th>Status</th>
+                  <th>Priority</th>
+                  <th>Last Updated</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tickets.map((t) => (
+                  <tr
+                    key={t.id}
+                    role="button"
+                    tabIndex={onSelectTicket ? 0 : undefined}
+                    style={{ cursor: onSelectTicket ? 'pointer' : undefined }}
+                    onClick={() => onSelectTicket?.(t.id)}
+                    onKeyDown={(e) => {
+                      if ((e.key === 'Enter' || e.key === ' ') && onSelectTicket) {
+                        e.preventDefault();
+                        onSelectTicket(t.id);
+                      }
+                    }}
+                  >
+                    <td><strong>{t.ticketNumber}</strong></td>
+                    <td>{t.summary}</td>
+                    <td>{t.category.name}</td>
+                    <td><span className="badge bg-light text-dark border">{t.currentStatus}</span></td>
+                    <td><span className={`badge badge-priority-${t.requestedPriority}`}>{t.requestedPriority}</span></td>
+                    <td>{new Date(t.updatedAt).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
           <div className="d-flex justify-content-between align-items-center">
             <small className="text-muted">
