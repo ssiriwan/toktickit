@@ -203,7 +203,10 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
                   onChange={handleFilterChange(setStatusFilter)}
                 >
                   <option value="">All Statuses</option>
-                  <option value="NEW">NEW</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Open">Open</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Resolved">Resolved</option>
                 </select>
                 <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6B7280' }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
@@ -238,6 +241,7 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
           <label className="form-label small text-muted mb-1">Sort by</label>
         </div>
         <div className="col-md-3">
+          <label className="form-label small text-muted mb-1">Created Date</label>
           <div style={{ position: 'relative' }}>
             <select
               aria-label="Sort by Created Date"
@@ -261,6 +265,7 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
           </div>
         </div>
         <div className="col-md-3">
+          <label className="form-label small text-muted mb-1">Last Updated</label>
           <div style={{ position: 'relative' }}>
             <select
               aria-label="Sort by Last Updated"
@@ -284,6 +289,7 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
           </div>
         </div>
         <div className="col-md-3">
+          <label className="form-label small text-muted mb-1">Priority</label>
           <div style={{ position: 'relative' }}>
             <select
               aria-label="Sort by Priority"

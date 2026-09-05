@@ -82,6 +82,12 @@ html, body {
   background: var(--zen-primary-active) !important;
   border-color: var(--zen-primary-active) !important;
 }
+.btn-primary:disabled, .btn-primary.disabled {
+  background: #D8DDD9 !important;
+  border-color: #D8DDD9 !important;
+  color: #6B7280 !important;
+  opacity: 1;
+}
 .btn-outline-secondary {
   background: var(--zen-surface);
   color: var(--zen-primary);

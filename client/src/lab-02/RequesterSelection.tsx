@@ -35,13 +35,15 @@ export function RequesterSelection({ onContinue }: RequesterSelectionProps) {
   const selected = requesters.find((r) => r.id === Number(selectedId));
 
   return (
-    <main className="d-flex justify-content-center align-items-center vh-100 bg-light">
-      <section className="card shadow-sm p-4" style={{ maxWidth: '28rem', width: '100%' }}>
-        <h1 className="h4 mb-1">TokTickIT</h1>
-        <p className="text-muted mb-4">
-          Select a Development Requester to test requester-specific ticket
-          behavior. This is not a login screen.
+    <main className="d-flex justify-content-center align-items-center vh-100" style={{ background: '#F5F7F6' }}>
+      <section className="card shadow-sm p-4" style={{ maxWidth: '28rem', width: '100%', borderColor: '#E0E4E1' }}>
+        <h1 className="h4 mb-1" style={{ color: '#1A2E1A' }}>TokTickIT</h1>
+        <p className="mb-3" style={{ color: '#5A6B5A', fontSize: '0.95rem' }}>
+          Choose a development requester to simulate the current requester context for Lab2.
+          <br />
+          This is for testing only and is not a login screen.
         </p>
+        <hr className="my-3" style={{ borderColor: '#E0E4E1', opacity: 1 }} />
 
         {status === 'loading' && (
           <p role="status" className="text-muted">
