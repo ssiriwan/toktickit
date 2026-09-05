@@ -340,43 +340,45 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
 
       {status === 'success' && tickets.length > 0 && (
         <>
-          <div className="table-responsive mb-3">
-            <table className="table table-hover align-middle">
-              <thead style={{ background: '#F5F7F6' }}>
-                <tr>
-                  <th>Ticket Number</th>
-                  <th>Summary</th>
-                  <th>Category</th>
-                  <th>Current Status</th>
-                  <th>Priority</th>
-                  <th>Last Updated</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tickets.map((t) => (
-                  <tr
-                    key={t.id}
-                    role="button"
-                    tabIndex={onSelectTicket ? 0 : undefined}
-                    style={{ cursor: onSelectTicket ? 'pointer' : undefined }}
-                    onClick={() => onSelectTicket?.(t.id)}
-                    onKeyDown={(e) => {
-                      if ((e.key === 'Enter' || e.key === ' ') && onSelectTicket) {
-                        e.preventDefault();
-                        onSelectTicket(t.id);
-                      }
-                    }}
-                  >
-                    <td><strong>{t.ticketNumber}</strong></td>
-                    <td>{t.summary}</td>
-                    <td>{t.category.name}</td>
-                    <td><span className="badge bg-light text-dark border">{t.currentStatus}</span></td>
-                    <td><span className={`badge badge-priority-${t.requestedPriority}`}>{t.requestedPriority}</span></td>
-                    <td>{new Date(t.updatedAt).toLocaleDateString()}</td>
+          <div className="card mb-3" style={{ borderRadius: '0.375rem', overflow: 'hidden' }}>
+            <div className="table-responsive mb-0">
+              <table className="table table-hover align-middle mb-0">
+                <thead>
+                  <tr style={{ background: '#EAF6EF' }}>
+                    <th style={{ fontWeight: 500, color: '#006B3C', background: '#EAF6EF', borderBottom: '1px solid #E0E4E1' }}>Ticket Number</th>
+                    <th style={{ fontWeight: 500, color: '#006B3C', background: '#EAF6EF', borderBottom: '1px solid #E0E4E1' }}>Summary</th>
+                    <th style={{ fontWeight: 500, color: '#006B3C', background: '#EAF6EF', borderBottom: '1px solid #E0E4E1' }}>Category</th>
+                    <th style={{ fontWeight: 500, color: '#006B3C', background: '#EAF6EF', borderBottom: '1px solid #E0E4E1' }}>Current Status</th>
+                    <th style={{ fontWeight: 500, color: '#006B3C', background: '#EAF6EF', borderBottom: '1px solid #E0E4E1' }}>Priority</th>
+                    <th style={{ fontWeight: 500, color: '#006B3C', background: '#EAF6EF', borderBottom: '1px solid #E0E4E1' }}>Last Updated</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {tickets.map((t) => (
+                    <tr
+                      key={t.id}
+                      role="button"
+                      tabIndex={onSelectTicket ? 0 : undefined}
+                      style={{ cursor: onSelectTicket ? 'pointer' : undefined }}
+                      onClick={() => onSelectTicket?.(t.id)}
+                      onKeyDown={(e) => {
+                        if ((e.key === 'Enter' || e.key === ' ') && onSelectTicket) {
+                          e.preventDefault();
+                          onSelectTicket(t.id);
+                        }
+                      }}
+                    >
+                      <td style={{ fontWeight: 500, color: '#006B3C' }}>{t.ticketNumber}</td>
+                      <td>{t.summary}</td>
+                      <td>{t.category.name}</td>
+                      <td><span className="badge bg-light text-dark border">{t.currentStatus}</span></td>
+                      <td><span className={`badge badge-priority-${t.requestedPriority}`}>{t.requestedPriority}</span></td>
+                      <td>{new Date(t.updatedAt).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
           <div className="d-flex justify-content-between align-items-center">
             <small className="text-muted">
