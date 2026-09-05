@@ -9,15 +9,6 @@ datasource db {
 
 enum TicketStatus {
   NEW
-  PENDING
-  IN_PROGRESS
-  OPEN
-  RESOLVED
-  ASSIGNED
-  ON_HOLD
-  PENDING_FOR_APPROVAL
-  MONITORING
-  CLOSED
 }
 
 enum Priority {
@@ -57,7 +48,7 @@ model Ticket {
   ticketNumber     String        @unique
   summary          String
   description      String
-  currentStatus    TicketStatus  @default(OPEN)
+  currentStatus    TicketStatus  @default(NEW)
   requestedPriority Priority
   ticketDate       DateTime      @default(now())
   createdAt        DateTime      @default(now())

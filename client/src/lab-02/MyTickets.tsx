@@ -31,7 +31,6 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
   const [priorityFilter, setPriorityFilter] = useState('');
   const [sort, setSort] = useState('ticketDate');
   const [order, setOrder] = useState<'asc' | 'desc'>('desc');
-  const [hasUserSorted, setHasUserSorted] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [pagination, setPagination] = useState({ page: 1, pageSize: 10, totalItems: 0, totalPages: 1 });
@@ -255,47 +254,19 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
               <table className="table table-hover align-middle mb-0">
                 <thead>
                   <tr style={{ background: '#EAF6EF' }}>
+                    <th style={{ fontWeight: 500, color: '#006B3C', background: '#EAF6EF', borderBottom: '1px solid #E0E4E1' }}>Ticket Number</th>
                     <th
                       role="button"
                       tabIndex={0}
                       onClick={() => {
-                        if (sort !== 'ticketNumber') { setSort('ticketNumber'); setOrder('desc'); setHasUserSorted(true); }
+                        if (sort !== 'ticketDate') { setSort('ticketDate'); setOrder('desc'); }
                         else if (order === 'desc') setOrder('asc');
                         else setOrder('desc');
                       }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
-                          if (sort !== 'ticketNumber') { setSort('ticketNumber'); setOrder('desc'); setHasUserSorted(true); }
-                          else if (order === 'desc') setOrder('asc');
-                          else setOrder('desc');
-                        }
-                      }}
-                      style={{ fontWeight: 500, color: '#006B3C', background: '#EAF6EF', borderBottom: '1px solid #E0E4E1', cursor: 'pointer', userSelect: 'none' }}
-                    >
-                      Ticket Number{' '}
-                      {sort === 'ticketNumber' ? (
-                        order === 'asc' ? (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle' }}><path d="m5 15 7-7 7 7" /></svg>
-                        ) : (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle' }}><path d="m19 9-7 7-7-7" /></svg>
-                        )
-                      ) : (
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle' }}><path d="m3 8 4-4 4 4" /><path d="m3 16 4 4 4-4" /></svg>
-                      )}
-                    </th>
-                    <th
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => {
-                        if (sort !== 'ticketDate') { setSort('ticketDate'); setOrder('desc'); setHasUserSorted(true); }
-                        else if (order === 'desc') setOrder('asc');
-                        else setOrder('desc');
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          if (sort !== 'ticketDate') { setSort('ticketDate'); setOrder('desc'); setHasUserSorted(true); }
+                          if (sort !== 'ticketDate') { setSort('ticketDate'); setOrder('desc'); }
                           else if (order === 'desc') setOrder('asc');
                           else setOrder('desc');
                         }
@@ -320,14 +291,14 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
                       role="button"
                       tabIndex={0}
                       onClick={() => {
-                        if (sort !== 'requestedPriority') { setSort('requestedPriority'); setOrder('desc'); setHasUserSorted(true); }
+                        if (sort !== 'requestedPriority') { setSort('requestedPriority'); setOrder('desc'); }
                         else if (order === 'desc') setOrder('asc');
                         else setOrder('desc');
                       }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
-                          if (sort !== 'requestedPriority') { setSort('requestedPriority'); setOrder('desc'); setHasUserSorted(true); }
+                          if (sort !== 'requestedPriority') { setSort('requestedPriority'); setOrder('desc'); }
                           else if (order === 'desc') setOrder('asc');
                           else setOrder('desc');
                         }
@@ -349,14 +320,14 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
                       role="button"
                       tabIndex={0}
                       onClick={() => {
-                        if (sort !== 'updatedAt') { setSort('updatedAt'); setOrder('desc'); setHasUserSorted(true); }
+                        if (sort !== 'updatedAt') { setSort('updatedAt'); setOrder('desc'); }
                         else if (order === 'desc') setOrder('asc');
                         else setOrder('desc');
                       }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
-                          if (sort !== 'updatedAt') { setSort('updatedAt'); setOrder('desc'); setHasUserSorted(true); }
+                          if (sort !== 'updatedAt') { setSort('updatedAt'); setOrder('desc'); }
                           else if (order === 'desc') setOrder('asc');
                           else setOrder('desc');
                         }

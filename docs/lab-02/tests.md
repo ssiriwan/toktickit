@@ -18,7 +18,7 @@ Lab 2 tests are organized into four levels: unit tests, API (integration) tests,
 | API-REQ-03 | API | AC-02 | GET /api/requesters handles DB failure | 500 with safe error message | `server/tests/lab-02/requesters.api.test.ts` | |
 | API-CAT-01 | API | FR-08 | GET /api/categories returns seeded categories | 200 with 4 categories | `server/tests/lab-02/requesters.api.test.ts` | |
 | API-SYS-01 | API | FR-08 | GET /api/related-systems returns seeded systems | 200 with 6+ systems | `server/tests/lab-02/requesters.api.test.ts` | |
-| API-TICKET-01 | API | AC-01 | POST /api/tickets creates a valid ticket | 201 with ticketNumber, status OPEN, correct requester | `server/tests/lab-02/create-ticket.api.test.ts` | |
+| API-TICKET-01 | API | AC-01 | POST /api/tickets creates a valid ticket | 201 with ticketNumber, status NEW, correct requester | `server/tests/lab-02/create-ticket.api.test.ts` | |
 | API-TICKET-02 | API | AC-04 | POST /api/tickets rejects missing summary | 400 with field-level error for summary | `server/tests/lab-02/create-ticket.api.test.ts` | |
 | API-TICKET-03 | API | AC-04 | POST /api/tickets rejects empty description | 400 with field-level error for description | `server/tests/lab-02/create-ticket.api.test.ts` | |
 | API-TICKET-04 | API | BR-08 | POST /api/tickets rejects invalid categoryId | 400 with error for invalid category | `server/tests/lab-02/create-ticket.api.test.ts` | |
@@ -27,7 +27,7 @@ Lab 2 tests are organized into four levels: unit tests, API (integration) tests,
 | API-TICKET-07 | API | BR-03 | POST /api/tickets rejects inactive requester | 404 with error for inactive requester | `server/tests/lab-02/create-ticket.api.test.ts` | |
 | API-TICKET-08 | API | BR-17 | POST /api/tickets trims whitespace from summary | Summary is trimmed before save | `server/tests/lab-02/create-ticket.api.test.ts` | |
 | API-TICKET-09 | API | BR-01 | Ticket numbers are unique | Two tickets get different ticket numbers | `server/tests/lab-02/create-ticket.api.test.ts` | |
-| API-TICKET-10 | API | BR-02 | New ticket has status OPEN | currentStatus is OPEN in response | `server/tests/lab-02/create-ticket.api.test.ts` | |
+| API-TICKET-10 | API | BR-02 | New ticket has status NEW | currentStatus is NEW in response | `server/tests/lab-02/create-ticket.api.test.ts` | |
 | API-LIST-01 | API | AC-05 | GET /api/tickets returns requester's tickets | 200 with tickets for the specified requester | `server/tests/lab-02/my-tickets.api.test.ts` | |
 | API-LIST-02 | API | AC-06 | GET /api/tickets filters by requester | Other requester's tickets are not returned | `server/tests/lab-02/my-tickets.api.test.ts` | |
 | API-LIST-03 | API | AC-10 | GET /api/tickets search by summary | Only matching tickets returned | `server/tests/lab-02/my-tickets.api.test.ts` | |

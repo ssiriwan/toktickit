@@ -39,11 +39,8 @@ export function RequesterSelection({ onContinue }: RequesterSelectionProps) {
       <section className="card shadow-sm p-4" style={{ maxWidth: '28rem', width: '100%', borderColor: '#E0E4E1' }}>
         <h1 className="h4 mb-1" style={{ color: '#1A2E1A' }}>TokTickIT</h1>
         <p className="mb-3" style={{ color: '#5A6B5A', fontSize: '0.95rem' }}>
-          Choose a development requester to simulate the current requester context for Lab2.
-          <br />
-          This is for testing only and is not a login screen.
+          Select a Development Requester to test requester-specific ticket behavior. This is not a login screen.
         </p>
-        <hr className="my-3" style={{ borderColor: '#E0E4E1', opacity: 1 }} />
 
         {status === 'loading' && (
           <p role="status" className="text-muted">

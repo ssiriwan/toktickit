@@ -95,13 +95,7 @@
 | Priority: MEDIUM | #FEF3C7 | #92400E |
 | Priority: HIGH | #FEE2E2 | #991B1B |
 | Priority: URGENT | #DC2626 | #FFFFFF |
-| Status: Open | #E0F2FE | #0284C7 |
-| Status: Assigned | #E0E7FF | #4338CA |
-| Status: In Progress | #F3E8FF | #7E22CE |
-| Status: On hold | #FEF3C7 | #92400E |
-| Status: Pending for Approval | #FFEDD5 | #C2410C |
-| Status: Monitoring | #CCFBF1 | #0F766E |
-| Status: Closed | #F1F5F9 | #475569 |
+| Status: NEW | #EAF6EF | #006B3C |
 
 ## 4. Application Shell
 
@@ -211,9 +205,9 @@
 │                                                     │
 │ ┌─ Ticket List ───────────────────────────────────┐ │
 │ │ #  │ Ticket No.    │ Summary        │ Status │ ⋮ │ │
-│ │ 1  │ TK-20260831-01│ Laptop issue   │ Open   │ → │ │
-│ │ 2  │ TK-20260831-02│ VPN not working│ Open   │ → │ │
-│ │ 3  │ TK-20260831-03│ Email problem  │ Open   │ → │ │
+│ │ 1  │ TK-20260831-01│ Laptop issue   │ NEW    │ → │ │
+│ │ 2  │ TK-20260831-02│ VPN not working│ NEW    │ → │ │
+│ │ 3  │ TK-20260831-03│ Email problem  │ NEW    │ → │ │
 │ └─────────────────────────────────────────────────┘ │
 │                                                     │
 │ Showing 1-3 of 3 tickets          [< Prev] [Next >]│
@@ -247,7 +241,7 @@
 │ │ Category:    Hardware                            │ │
 │ │ System:      Corporate Laptop                    │ │
 │ │ Priority:    MEDIUM                              │ │
-│ │ Status:      Open                                 │ │
+│ │ Status:      NEW                                 │ │
 │ │ Created:     31 Aug 2026 10:30                   │ │
 │ │ Updated:     31 Aug 2026 10:30                   │ │
 │ │                                                   │ │
