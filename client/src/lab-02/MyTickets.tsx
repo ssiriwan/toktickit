@@ -196,19 +196,19 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
             <div className="col-md-2">
               <label className="form-label small text-muted mb-1">Current Status</label>
               <div style={{ position: 'relative' }}>
-                <select
-                  aria-label="Filter by status"
-                  className="form-select"
-                  style={{ paddingRight: '2rem' }}
-                  value={statusFilter}
-                  onChange={handleFilterChange(setStatusFilter)}
-                >
-                  <option value="">All Statuses</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Open">Open</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Resolved">Resolved</option>
-                </select>
+              <select
+                aria-label="Filter by status"
+                className="form-select"
+                style={{ paddingRight: '2rem' }}
+                value={statusFilter}
+                onChange={handleFilterChange(setStatusFilter)}
+              >
+                <option value="">All Statuses</option>
+                <option value="PENDING">Pending</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="OPEN">Open</option>
+                <option value="RESOLVED">Resolved</option>
+              </select>
                 <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6B7280' }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
                 </span>
@@ -347,7 +347,7 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
                   <th>Ticket Number</th>
                   <th>Summary</th>
                   <th>Category</th>
-                  <th>Status</th>
+                  <th>Current Status</th>
                   <th>Priority</th>
                   <th>Last Updated</th>
                 </tr>

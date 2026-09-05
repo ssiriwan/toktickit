@@ -20,12 +20,12 @@ describe('TokTickIT API POST /api/tickets', () => {
     await prisma.ticket.deleteMany({});
   });
 
-  it('creates a valid ticket with number, status NEW, and correct requester', async () => {
+  it('creates a valid ticket with number, status PENDING, and correct requester', async () => {
     const response = await request(app).post('/api/tickets').send(validPayload);
 
     expect(response.status).toBe(201);
     expect(response.body.ticketNumber).toMatch(/^TK-\d{8}-\d{4}$/);
-    expect(response.body.currentStatus).toBe('NEW');
+    expect(response.body.currentStatus).toBe('PENDING');
     expect(response.body.summary).toBe(validPayload.summary);
     expect(response.body.requester).toEqual({ id: 1, name: 'Alice Carter' });
     expect(response.body.category).toEqual({ id: 2, name: 'Hardware' });
@@ -150,10 +150,10 @@ describe('TokTickIT API POST /api/tickets', () => {
     expect(second.body.ticketNumber).toMatch(/^TK-\d{8}-\d{4}$/);
   });
 
-  it('new ticket has currentStatus NEW', async () => {
+  it('new ticket has currentStatus PENDING', async () => {
     const response = await request(app).post('/api/tickets').send(validPayload);
 
     expect(response.status).toBe(201);
-    expect(response.body.currentStatus).toBe('NEW');
+    expect(response.body.currentStatus).toBe('PENDING');
   });
 });

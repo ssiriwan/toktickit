@@ -1,0 +1,5 @@
+-- AlterEnum
+ALTER TYPE "TicketStatus" ADD VALUE 'PENDING';
+ALTER TYPE "TicketStatus" ADD VALUE 'IN_PROGRESS';
+ALTER TYPE "TicketStatus" ADD VALUE 'OPEN';
+ALTER TYPE "TicketStatus" ADD VALUE 'RESOLVED';
