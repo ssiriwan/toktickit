@@ -302,7 +302,7 @@ export function createApp() {
         pageSize = n;
       }
 
-      const validSorts = new Set(['ticketDate', 'updatedAt', 'requestedPriority']);
+      const validSorts = new Set(['ticketNumber', 'ticketDate', 'updatedAt', 'requestedPriority']);
       if (!validSorts.has(sort)) {
         return res.status(400).json({
           error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' }
