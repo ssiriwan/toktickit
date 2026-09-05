@@ -103,11 +103,7 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
   useEffect(() => {
     loadTickets();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requester.id, page, pageSize, sort, order]);
-
-  // Trigger reload when search/filter changes via explicit button or debounced? For now, reload on Enter or via effect
-  // To keep tests simple, we do not auto-reload on every keystroke; the search input is controlled but filtering for display is via server on next load.
-  // We provide a Search button for explicit reload; however tests only check input value, so no need to auto-fetch.
+  }, [requester.id, page, pageSize, sort, order, search, categoryFilter, systemFilter, statusFilter, priorityFilter]);
 
   const handleSearch = () => {
     setPage(1);
@@ -119,6 +115,8 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
     setPage(1);
   };
 
+  // Auto-search is handled via main useEffect dependencies; page reset is done in handlers
+
   // Determine no-results vs empty for rendering
   const hasActiveFilter = !!(search.trim() || categoryFilter || systemFilter || statusFilter || priorityFilter);
   const showEmpty = status === 'empty' && !hasActiveFilter;
@@ -126,96 +124,92 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
 
   return (
     <main className="container py-4" style={{ maxWidth: '56rem' }}>
-      <div className="card mb-3" style={{ borderColor: '#E0E4E1' }}>
-        <div className="card-body p-2 d-flex align-items-center gap-2" style={{ background: '#F5F7F6', borderBottom: '1px solid #E0E4E1' }}>
-          <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#FF5F56', display: 'inline-block' }} />
-          <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#FFBD2E', display: 'inline-block' }} />
-          <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#27C93F', display: 'inline-block' }} />
-          <span className="ms-3 small text-muted" style={{ background: 'white', padding: '2px 8px', borderRadius: 12, border: '1px solid #E0E4E1' }}>toktickit.local</span>
-        </div>
-      </div>
-
       <h1 className="h4 mb-3">My Tickets</h1>
 
-      <div className="row g-2 mb-3">
-        <div className="col-md-4">
-          <label className="form-label small text-muted mb-1">Search</label>
-          <div style={{ position: 'relative' }}>
-            <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
-            </span>
+      <div className="card mb-3">
+        <div className="card-body">
+          <div className="row g-2 mb-3">
+            <div className="col-md-4">
+              <label className="form-label small text-muted mb-1">Search</label>
+              <div style={{ position: 'relative' }}>
+                <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+                </span>
             <input
               placeholder="Search tickets..."
               className="form-control"
               style={{ paddingLeft: '2rem' }}
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
+              </div>
+            </div>
+            <div className="col-md-2">
+              <label className="form-label small text-muted mb-1">Category</label>
+              <select
+                aria-label="Filter by category"
+                className="form-select"
+                value={categoryFilter}
+                onChange={handleFilterChange(setCategoryFilter)}
+              >
+                <option value="">All Categories</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="col-md-2">
+              <label className="form-label small text-muted mb-1">Related System</label>
+              <select
+                aria-label="Filter by system"
+                className="form-select"
+                value={systemFilter}
+                onChange={handleFilterChange(setSystemFilter)}
+              >
+                <option value="">All Systems</option>
+                {systems.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="col-md-2">
+              <label className="form-label small text-muted mb-1">Current Status</label>
+              <select
+                aria-label="Filter by status"
+                className="form-select"
+                value={statusFilter}
+                onChange={handleFilterChange(setStatusFilter)}
+              >
+                <option value="">All Statuses</option>
+                <option value="NEW">NEW</option>
+              </select>
+            </div>
+            <div className="col-md-2">
+              <label className="form-label small text-muted mb-1">Requested Priority</label>
+              <select
+                aria-label="Filter by priority"
+                className="form-select"
+                value={priorityFilter}
+                onChange={handleFilterChange(setPriorityFilter)}
+              >
+                <option value="">All Priorities</option>
+                <option value="LOW">LOW</option>
+                <option value="MEDIUM">MEDIUM</option>
+                <option value="HIGH">HIGH</option>
+                <option value="URGENT">URGENT</option>
+              </select>
+            </div>
           </div>
-        </div>
-        <div className="col-md-2">
-          <label className="form-label small text-muted mb-1">Category</label>
-          <select
-            aria-label="Filter by category"
-            className="form-select"
-            value={categoryFilter}
-            onChange={handleFilterChange(setCategoryFilter)}
-          >
-            <option value="">All Categories</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="col-md-2">
-          <label className="form-label small text-muted mb-1">Related System</label>
-          <select
-            aria-label="Filter by system"
-            className="form-select"
-            value={systemFilter}
-            onChange={handleFilterChange(setSystemFilter)}
-          >
-            <option value="">All Systems</option>
-            {systems.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="col-md-2">
-          <label className="form-label small text-muted mb-1">Current Status</label>
-          <select
-            aria-label="Filter by status"
-            className="form-select"
-            value={statusFilter}
-            onChange={handleFilterChange(setStatusFilter)}
-          >
-            <option value="">All Statuses</option>
-            <option value="NEW">NEW</option>
-          </select>
-        </div>
-        <div className="col-md-2">
-          <label className="form-label small text-muted mb-1">Requested Priority</label>
-          <select
-            aria-label="Filter by priority"
-            className="form-select"
-            value={priorityFilter}
-            onChange={handleFilterChange(setPriorityFilter)}
-          >
-            <option value="">All Priorities</option>
-            <option value="LOW">LOW</option>
-            <option value="MEDIUM">MEDIUM</option>
-            <option value="HIGH">HIGH</option>
-            <option value="URGENT">URGENT</option>
-          </select>
-        </div>
-      </div>
 
-      <div className="row g-2 mb-3">
+      <div className="row g-2">
         <div className="col-md-4">
           <label className="form-label small text-muted mb-1">Sort</label>
           <select aria-label="Sort by" className="form-select" value={`${sort}:${order}`} onChange={(e) => {
@@ -239,10 +233,7 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
             <option value="25">25 / page</option>
           </select>
         </div>
-        <div className="col-md-2">
-          <button type="button" className="btn btn-outline-secondary w-100" onClick={handleSearch}>
-            Search
-          </button>
+      </div>
         </div>
       </div>
 
