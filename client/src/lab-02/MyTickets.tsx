@@ -150,62 +150,86 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
             </div>
             <div className="col-md-2">
               <label className="form-label small text-muted mb-1">Category</label>
-              <select
-                aria-label="Filter by category"
-                className="form-select"
-                value={categoryFilter}
-                onChange={handleFilterChange(setCategoryFilter)}
-              >
-                <option value="">All Categories</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+              <div style={{ position: 'relative' }}>
+                <select
+                  aria-label="Filter by category"
+                  className="form-select"
+                  style={{ paddingRight: '2rem' }}
+                  value={categoryFilter}
+                  onChange={handleFilterChange(setCategoryFilter)}
+                >
+                  <option value="">All Categories</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+                <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6B7280' }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
+                </span>
+              </div>
             </div>
             <div className="col-md-2">
               <label className="form-label small text-muted mb-1">Related System</label>
-              <select
-                aria-label="Filter by system"
-                className="form-select"
-                value={systemFilter}
-                onChange={handleFilterChange(setSystemFilter)}
-              >
-                <option value="">All Systems</option>
-                {systems.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
+              <div style={{ position: 'relative' }}>
+                <select
+                  aria-label="Filter by system"
+                  className="form-select"
+                  style={{ paddingRight: '2rem' }}
+                  value={systemFilter}
+                  onChange={handleFilterChange(setSystemFilter)}
+                >
+                  <option value="">All Systems</option>
+                  {systems.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+                <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6B7280' }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
+                </span>
+              </div>
             </div>
             <div className="col-md-2">
               <label className="form-label small text-muted mb-1">Current Status</label>
-              <select
-                aria-label="Filter by status"
-                className="form-select"
-                value={statusFilter}
-                onChange={handleFilterChange(setStatusFilter)}
-              >
-                <option value="">All Statuses</option>
-                <option value="NEW">NEW</option>
-              </select>
+              <div style={{ position: 'relative' }}>
+                <select
+                  aria-label="Filter by status"
+                  className="form-select"
+                  style={{ paddingRight: '2rem' }}
+                  value={statusFilter}
+                  onChange={handleFilterChange(setStatusFilter)}
+                >
+                  <option value="">All Statuses</option>
+                  <option value="NEW">NEW</option>
+                </select>
+                <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6B7280' }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
+                </span>
+              </div>
             </div>
             <div className="col-md-3">
               <label className="form-label small text-muted mb-1">Requested Priority</label>
-              <select
-                aria-label="Filter by priority"
-                className="form-select"
-                value={priorityFilter}
-                onChange={handleFilterChange(setPriorityFilter)}
-              >
-                <option value="">All Priorities</option>
-                <option value="LOW">LOW</option>
-                <option value="MEDIUM">MEDIUM</option>
-                <option value="HIGH">HIGH</option>
-                <option value="URGENT">URGENT</option>
-              </select>
+              <div style={{ position: 'relative' }}>
+                <select
+                  aria-label="Filter by priority"
+                  className="form-select"
+                  style={{ paddingRight: '2rem' }}
+                  value={priorityFilter}
+                  onChange={handleFilterChange(setPriorityFilter)}
+                >
+                  <option value="">All Priorities</option>
+                  <option value="LOW">LOW</option>
+                  <option value="MEDIUM">MEDIUM</option>
+                  <option value="HIGH">HIGH</option>
+                  <option value="URGENT">URGENT</option>
+                </select>
+                <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6B7280' }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
+                </span>
+              </div>
             </div>
           </div>
 
@@ -214,63 +238,86 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
           <label className="form-label small text-muted mb-1">Sort by</label>
         </div>
         <div className="col-md-3">
-          <select
-            aria-label="Sort by Created Date"
-            className="form-select"
-            value={sort === 'ticketDate' ? `${sort}:${order}` : ''}
-            onChange={(e) => {
-              if (!e.target.value) return;
-              const [s, o] = e.target.value.split(':');
-              setSort(s);
-              setOrder(o as 'asc' | 'desc');
-            }}
-          >
-            <option value="">Created Date</option>
-            <option value="ticketDate:desc">Created Date — Newest</option>
-            <option value="ticketDate:asc">Created Date — Oldest</option>
-          </select>
+          <div style={{ position: 'relative' }}>
+            <select
+              aria-label="Sort by Created Date"
+              className="form-select"
+              style={{ paddingRight: '2rem' }}
+              value={sort === 'ticketDate' ? `${sort}:${order}` : ''}
+              onChange={(e) => {
+                if (!e.target.value) return;
+                const [s, o] = e.target.value.split(':');
+                setSort(s);
+                setOrder(o as 'asc' | 'desc');
+              }}
+            >
+              <option value="">Created Date</option>
+              <option value="ticketDate:desc">Created Date — Newest</option>
+              <option value="ticketDate:asc">Created Date — Oldest</option>
+            </select>
+            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6B7280' }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
+            </span>
+          </div>
         </div>
         <div className="col-md-3">
-          <select
-            aria-label="Sort by Last Updated"
-            className="form-select"
-            value={sort === 'updatedAt' ? `${sort}:${order}` : ''}
-            onChange={(e) => {
-              if (!e.target.value) return;
-              const [s, o] = e.target.value.split(':');
-              setSort(s);
-              setOrder(o as 'asc' | 'desc');
-            }}
-          >
-            <option value="">Last Updated</option>
-            <option value="updatedAt:desc">Last Updated — Newest</option>
-            <option value="updatedAt:asc">Last Updated — Oldest</option>
-          </select>
+          <div style={{ position: 'relative' }}>
+            <select
+              aria-label="Sort by Last Updated"
+              className="form-select"
+              style={{ paddingRight: '2rem' }}
+              value={sort === 'updatedAt' ? `${sort}:${order}` : ''}
+              onChange={(e) => {
+                if (!e.target.value) return;
+                const [s, o] = e.target.value.split(':');
+                setSort(s);
+                setOrder(o as 'asc' | 'desc');
+              }}
+            >
+              <option value="">Last Updated</option>
+              <option value="updatedAt:desc">Last Updated — Newest</option>
+              <option value="updatedAt:asc">Last Updated — Oldest</option>
+            </select>
+            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6B7280' }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
+            </span>
+          </div>
         </div>
         <div className="col-md-3">
-          <select
-            aria-label="Sort by Priority"
-            className="form-select"
-            value={sort === 'requestedPriority' ? `${sort}:${order}` : ''}
-            onChange={(e) => {
-              if (!e.target.value) return;
-              const [s, o] = e.target.value.split(':');
-              setSort(s);
-              setOrder(o as 'asc' | 'desc');
-            }}
-          >
-            <option value="">Priority</option>
-            <option value="requestedPriority:desc">Priority — High first</option>
-            <option value="requestedPriority:asc">Priority — Low first</option>
-          </select>
+          <div style={{ position: 'relative' }}>
+            <select
+              aria-label="Sort by Priority"
+              className="form-select"
+              style={{ paddingRight: '2rem' }}
+              value={sort === 'requestedPriority' ? `${sort}:${order}` : ''}
+              onChange={(e) => {
+                if (!e.target.value) return;
+                const [s, o] = e.target.value.split(':');
+                setSort(s);
+                setOrder(o as 'asc' | 'desc');
+              }}
+            >
+              <option value="">Priority</option>
+              <option value="requestedPriority:desc">Priority — High first</option>
+              <option value="requestedPriority:asc">Priority — Low first</option>
+            </select>
+            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6B7280' }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
+            </span>
+          </div>
         </div>
         <div className="col-md-3">
           <label className="form-label small text-muted mb-1">Page Size</label>
-          <select aria-label="Page size" className="form-select" value={String(pageSize)} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}>
-            <option value="5">5 / page</option>
-            <option value="10">10 / page</option>
-            <option value="25">25 / page</option>
-          </select>
+          <div style={{ position: 'relative' }}>
+            <select aria-label="Page size" className="form-select" style={{ paddingRight: '2rem' }} value={String(pageSize)} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}>
+              <option value="5">5 / page</option>
+              <option value="10">10 / page</option>
+              <option value="25">25 / page</option>
+            </select>
+            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6B7280' }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
+            </span>
+          </div>
         </div>
       </div>
         </div>
