@@ -210,22 +210,61 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
           </div>
 
       <div className="row g-2">
-        <div className="col-md-3">
+        <div className="col-12">
           <label className="form-label small text-muted mb-1">Sort by</label>
-          <select aria-label="Sort by" className="form-select" value={sort} onChange={(e) => setSort(e.target.value)}>
-            <option value="ticketDate">Ticket Date</option>
-            <option value="updatedAt">Last Updated</option>
-            <option value="requestedPriority">Priority</option>
+        </div>
+        <div className="col-md-3">
+          <select
+            aria-label="Sort by Created Date"
+            className="form-select"
+            value={sort === 'ticketDate' ? `${sort}:${order}` : ''}
+            onChange={(e) => {
+              if (!e.target.value) return;
+              const [s, o] = e.target.value.split(':');
+              setSort(s);
+              setOrder(o as 'asc' | 'desc');
+            }}
+          >
+            <option value="">Created Date</option>
+            <option value="ticketDate:desc">Created Date — Newest</option>
+            <option value="ticketDate:asc">Created Date — Oldest</option>
           </select>
         </div>
-        <div className="col-md-2">
-          <label className="form-label small text-muted mb-1">Order</label>
-          <select aria-label="Sort order" className="form-select" value={order} onChange={(e) => setOrder(e.target.value as 'asc' | 'desc')}>
-            <option value="desc">Descending</option>
-            <option value="asc">Ascending</option>
+        <div className="col-md-3">
+          <select
+            aria-label="Sort by Last Updated"
+            className="form-select"
+            value={sort === 'updatedAt' ? `${sort}:${order}` : ''}
+            onChange={(e) => {
+              if (!e.target.value) return;
+              const [s, o] = e.target.value.split(':');
+              setSort(s);
+              setOrder(o as 'asc' | 'desc');
+            }}
+          >
+            <option value="">Last Updated</option>
+            <option value="updatedAt:desc">Last Updated — Newest</option>
+            <option value="updatedAt:asc">Last Updated — Oldest</option>
           </select>
         </div>
-        <div className="col-md-2">
+        <div className="col-md-3">
+          <select
+            aria-label="Sort by Priority"
+            className="form-select"
+            value={sort === 'requestedPriority' ? `${sort}:${order}` : ''}
+            onChange={(e) => {
+              if (!e.target.value) return;
+              const [s, o] = e.target.value.split(':');
+              setSort(s);
+              setOrder(o as 'asc' | 'desc');
+            }}
+          >
+            <option value="">Priority</option>
+            <option value="requestedPriority:desc">Priority — High first</option>
+            <option value="requestedPriority:asc">Priority — Low first</option>
+          </select>
+        </div>
+        <div className="col-md-3">
           <label className="form-label small text-muted mb-1">Page Size</label>
           <select aria-label="Page size" className="form-select" value={String(pageSize)} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}>
             <option value="5">5 / page</option>
