@@ -9,3 +9,5 @@ coverage/
 npm-debug.log*
 prisma/dev.db
 prisma/*.db
+uploads/
+server/uploads/
