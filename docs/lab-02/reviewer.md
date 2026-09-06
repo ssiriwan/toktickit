@@ -17,7 +17,7 @@
 | https://github.com/ssiriwan/toktickit/pull/21 | #20 | Lab 2 Issue 6: Ticket Detail and Attachments | Approved — 8 fixes (tests, a11y, fileFilter, uploads, detail fields) + follow-up nits |
 | https://github.com/ssiriwan/toktickit/pull/23 | #22 | Lab 2 Issue 7: Zen Green Theme Polish | Approved — 6 fixes (NavLink, badges, readonly, tokens, responsive) |
 | https://github.com/ssiriwan/toktickit/pull/25 | #24 | Lab 2 Issue 8: E2E Flows and Release Prep | Approved — 3 fixes (duplicate warning, debounce, Playwright) + 7-status revert per labsheet |
-| https://github.com/ssiriwan/toktickit/pull/28 | #26 | Lab 2 Docs Finalization: ai-use, reviewer, AGENTS | Pending review |
+| https://github.com/ssiriwan/toktickit/pull/28 | #26 | Lab 2 Docs Finalization: ai-use, reviewer, AGENTS | Approved |
 
 ### Reviews Received — Details
 
@@ -27,6 +27,7 @@
 - **PR #21 (Issue 6):** Approved after 8 fixes + 5 follow-up nits — added `API-ATT`/`UI-DETAIL` tests, `download` 403/410 handling, per-row `removeError`, `tabIndex`/`onKeyDown`, strict `mime` check, `server/uploads` via `fileURLToPath`, `requester/updatedAt` in detail.
 - **PR #23 (Issue 7):** Approved after 6 theme nits — `NavLink`/`Link`, `badge-priority-*` wired, `required-star`/`zen-readonly`, missing `--zen-warning`/`--zen-success` + tablet breakpoint, style test.
 - **PR #25 (Issue 8):** Approved after revert to `NEW` per labsheet `§4.2` (was `OPEN` + 10-value enum) + E2E rename to integration + `validSorts` doc fix + `hasUserSorted` + `RequesterSelection` verbatim.
+- **PR #28 (Issue 9 Docs):** Approved — docs finalization with 8 Sessions and peer reviews.
 
 ## Pull Requests I Reviewed (in my partner's repository, thhanabun/Software_Eng_Lab)
 
