@@ -7,6 +7,7 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
 import {
+  DUMMY_PASSWORD_HASH,
   SESSION_COOKIE,
   hashPassword,
   sessionCookieOptions,
@@ -15,7 +16,10 @@ import {
   validatePasswordPolicy,
   verifyPassword
 } from './auth.js';
-import { requireAuth } from './auth-middleware.js';
+import {
+  requireAuth,
+  requirePasswordChanged
+} from './auth-middleware.js';
 
 import { prisma } from './db.js';
 import { nextTicketNumber, toDateStamp } from './ticket-number.js';
@@ -85,9 +89,11 @@ export function createApp() {
       const user = await prisma.user.findFirst({
         where: { email: { equals: email, mode: 'insensitive' } }
       });
-      const ok = user
-        ? await verifyPassword(password, user.passwordHash)
-        : false;
+      // Same timing path whether or not the user exists (anti-enumeration).
+      const ok = await verifyPassword(
+        password,
+        user ? user.passwordHash : DUMMY_PASSWORD_HASH
+      );
       if (!user || !ok) {
         return res.status(401).json({
           error: {
@@ -235,20 +241,26 @@ export function createApp() {
   });
 
   // DEPRECATED in Lab 3 (kept compiling for Phase 3; removed in Phase 4 Requester regression).
-  app.get('/api/requesters', async (_req, res) => {
-    try {
-      const requesters = await prisma.user.findMany({
-        where: { isActive: true, role: 'REQUESTER' },
-        orderBy: { name: 'asc' },
-        select: { id: true, name: true, email: true }
-      });
-      res.json(requesters);
-    } catch {
-      res.status(500).json({
-        error: { code: 'INTERNAL_ERROR', message: 'Failed to load requesters' }
-      });
+  // requireAuth + requirePasswordChanged prove the spec middleware order over HTTP (API-04).
+  app.get(
+    '/api/requesters',
+    requireAuth,
+    requirePasswordChanged,
+    async (_req, res) => {
+      try {
+        const requesters = await prisma.user.findMany({
+          where: { isActive: true, role: 'REQUESTER' },
+          orderBy: { name: 'asc' },
+          select: { id: true, name: true, email: true }
+        });
+        res.json(requesters);
+      } catch {
+        res.status(500).json({
+          error: { code: 'INTERNAL_ERROR', message: 'Failed to load requesters' }
+        });
+      }
     }
-  });
+  );
 
   app.get('/api/related-systems', async (_req, res) => {
     try {
@@ -303,6 +315,8 @@ export function createApp() {
         });
       }
 
+      // TODO(Phase 4): known authz gap — owner still comes from body.requesterId.
+      // Phase 4 Requester regression switches this to session identity and ignores client-supplied ids.
       const requesterIdNum = Number(body.requesterId);
       if (!Number.isInteger(requesterIdNum) || requesterIdNum <= 0) {
         details.push({ field: 'requesterId', message: 'Requester is required' });

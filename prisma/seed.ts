@@ -67,7 +67,7 @@ interface TicketSeed {
 
 const TICKETS: TicketSeed[] = [
   {
-    ticketNumber: 'TKT-20260910-0001',
+    ticketNumber: 'TK-20260910-0001',
     summary: 'Laptop battery drains quickly',
     description: 'Battery drops 50% in an hour even when idle after the latest update.',
     currentStatus: 'IN_PROGRESS',
@@ -79,7 +79,7 @@ const TICKETS: TicketSeed[] = [
     system: 'Corporate Laptop'
   },
   {
-    ticketNumber: 'TKT-20260910-0002',
+    ticketNumber: 'TK-20260910-0002',
     summary: 'Cannot connect to VPN',
     description: 'VPN client fails with timeout from home network.',
     currentStatus: 'OPEN',
@@ -91,7 +91,7 @@ const TICKETS: TicketSeed[] = [
     system: 'VPN'
   },
   {
-    ticketNumber: 'TKT-20260910-0003',
+    ticketNumber: 'TK-20260910-0003',
     summary: 'Email not syncing on mobile',
     description: 'Inbox stopped syncing yesterday morning.',
     currentStatus: 'WAITING_FOR_REQUESTER',
@@ -103,7 +103,7 @@ const TICKETS: TicketSeed[] = [
     system: 'Email'
   },
   {
-    ticketNumber: 'TKT-20260910-0004',
+    ticketNumber: 'TK-20260910-0004',
     summary: 'New employee setup request',
     description: 'Account and laptop needed for a new hire starting Monday.',
     currentStatus: 'RESOLVED',
@@ -115,7 +115,7 @@ const TICKETS: TicketSeed[] = [
     system: 'Email'
   },
   {
-    ticketNumber: 'TKT-20260910-0005',
+    ticketNumber: 'TK-20260910-0005',
     summary: 'Printer keeps showing offline',
     description: 'Third-floor printer shows offline though powered on.',
     currentStatus: 'NEW',
@@ -127,7 +127,7 @@ const TICKETS: TicketSeed[] = [
     system: 'Printer'
   },
   {
-    ticketNumber: 'TKT-20260910-0006',
+    ticketNumber: 'TK-20260910-0006',
     summary: 'Campus Wi-Fi drops in library',
     description: 'Connection drops every few minutes in the reading room.',
     currentStatus: 'REOPENED',
@@ -139,7 +139,7 @@ const TICKETS: TicketSeed[] = [
     system: 'Campus Wi-Fi'
   },
   {
-    ticketNumber: 'TKT-20260910-0007',
+    ticketNumber: 'TK-20260910-0007',
     summary: 'Grade app export fails',
     description: 'CSV export spins forever for large courses.',
     currentStatus: 'CLOSED',
@@ -151,7 +151,7 @@ const TICKETS: TicketSeed[] = [
     system: 'Grade Submission App'
   },
   {
-    ticketNumber: 'TKT-20260910-0008',
+    ticketNumber: 'TK-20260910-0008',
     summary: 'Request access to SharePoint',
     description: 'Need read access to the course materials folder.',
     currentStatus: 'OPEN',
@@ -178,15 +178,12 @@ async function seedRelatedSystems() {
 
 async function seedUsers() {
   for (const u of USERS) {
+    // Idempotent: only name/role/active are refreshed on reruns so a
+    // password changed after seeding is never reset by re-seeding.
+    // passwordHash + mustChangePassword are set on create only.
     await prisma.user.upsert({
       where: { email: u.email },
-      update: {
-        name: u.name,
-        role: u.role,
-        isActive: u.isActive,
-        passwordHash: await hashPassword(u.password),
-        mustChangePassword: true
-      },
+      update: { name: u.name, role: u.role, isActive: u.isActive },
       create: {
         name: u.name,
         email: u.email,
@@ -238,7 +235,7 @@ async function seedTickets() {
 
 async function seedSamples() {
   const ticket = await prisma.ticket.findUniqueOrThrow({
-    where: { ticketNumber: 'TKT-20260910-0001' }
+    where: { ticketNumber: 'TK-20260910-0001' }
   });
   const requester = await prisma.user.findUniqueOrThrow({
     where: { email: 'requester1@toktickit.local' }

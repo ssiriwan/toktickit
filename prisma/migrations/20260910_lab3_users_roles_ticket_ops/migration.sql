@@ -3,6 +3,8 @@ CREATE TYPE "Role" AS ENUM ('REQUESTER', 'IT_STAFF', 'ADMINISTRATOR');
 
 -- AlterEnum
 -- This migration adds more than one value to an enum.
+-- Requires PostgreSQL >= 12 (project pins postgres:17-alpine, see
+-- specification.md section 7); verified via a single `prisma migrate deploy`.
 -- With PostgreSQL versions 11 and earlier, this is not possible
 -- in a single migration. This can be worked around by creating
 -- multiple migrations, each migration adding only one value to

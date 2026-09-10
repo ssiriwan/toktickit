@@ -24,6 +24,14 @@ const PASSWORD_RULES = {
   minLength: 8
 };
 
+/**
+ * Fixed bcrypt hash used for dummy comparisons when no user is found,
+ * keeping login timing indistinguishable (anti-enumeration).
+ * Value: bcrypt(cost 12) of 'Requester123!'. Never used as a real credential.
+ */
+export const DUMMY_PASSWORD_HASH =
+  '$2b$12$dcBfxRywmOkkZF/75BrpUu8BJyuZKL4PVBgi13s8B/3rGPj2k0kv2';
+
 export function getJwtSecret(): string {
   const secret = process.env.AUTH_JWT_SECRET;
   if (!secret) {
@@ -43,10 +51,10 @@ export function validatePasswordPolicy(password: unknown): string | null {
     return 'Password must include upper and lower case letters';
   }
   if (!/[0-9]/.test(password)) {
-    return 'Password must include a number and a special character';
+    return 'Password must include a number';
   }
   if (!/[^A-Za-z0-9]/.test(password)) {
-    return 'Password must include a number and a special character';
+    return 'Password must include a special character';
   }
   return null;
 }

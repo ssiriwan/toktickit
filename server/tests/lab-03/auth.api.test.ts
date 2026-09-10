@@ -3,7 +3,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createApp } from '../../src/app.js';
 import { hashPassword, signSession } from '../../src/auth.js';
-import { requirePasswordChanged } from '../../src/auth-middleware.js';
 import { prisma } from '../../src/db.js';
 
 const app = createApp();
@@ -85,22 +84,30 @@ describe('Lab 3 auth APIs (API-01..07)', () => {
     });
   });
 
-  it('API-04: mustChange users are blocked from normal APIs', async () => {
-    const blocked = { status: 0, body: {} as unknown };
-    requirePasswordChanged(
-      { auth: { userId: 1, role: 'REQUESTER', mustChangePassword: true } } as never,
-      {
-        status: (code: number) => ({
-          json: (body: unknown) => {
-            blocked.status = code;
-            blocked.body = body;
-          }
-        })
-      } as never,
-      () => {
-        throw new Error('should not reach next()');
-      }
+  it('API-04: mustChange users are blocked from normal APIs over HTTP', async () => {
+    vi.spyOn(prisma.user, 'findFirst').mockResolvedValue(
+      (await userWithPassword('Requester123!', { mustChangePassword: true })) as never
     );
+    vi.spyOn(prisma.user, 'findUnique').mockResolvedValue({
+      id: 1,
+      role: 'REQUESTER',
+      isActive: true,
+      mustChangePassword: true
+    } as never);
+
+    const login = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'requester1@toktickit.local', password: 'Requester123!' });
+    expect(login.status).toBe(200);
+    expect(login.body.user.mustChangePassword).toBe(true);
+    const cookie = (login.headers['set-cookie'] as unknown as string[])[0].split(';')[0];
+
+    // Allowlisted route still works while mustChange is pending.
+    const me = await request(app).get('/api/auth/me').set('Cookie', cookie);
+    expect(me.status).toBe(200);
+
+    // Normal API is blocked per spec middleware order.
+    const blocked = await request(app).get('/api/requesters').set('Cookie', cookie);
     expect(blocked.status).toBe(403);
     expect(blocked.body).toEqual({
       error: {
@@ -108,16 +115,6 @@ describe('Lab 3 auth APIs (API-01..07)', () => {
         message: 'Password change required before continuing'
       }
     });
-
-    let passed = false;
-    requirePasswordChanged(
-      { auth: { userId: 1, role: 'REQUESTER', mustChangePassword: false } } as never,
-      {} as never,
-      () => {
-        passed = true;
-      }
-    );
-    expect(passed).toBe(true);
   });
 
   it('API-05: change password happy path clears mustChange flag', async () => {

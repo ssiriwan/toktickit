@@ -1,10 +1,22 @@
 import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { signSession } from '../../server/src/auth';
 import { prisma } from '../../server/src/db';
 import { createApp } from '../../server/src/app';
 
 const app = createApp();
+
+// Lab 3: endpoint now behind requireAuth (deprecated, removed in Phase 4).
+function mockSession() {
+  vi.spyOn(prisma.user, 'findUnique').mockResolvedValue({
+    id: 99,
+    role: 'IT_STAFF',
+    isActive: true,
+    mustChangePassword: false
+  } as never);
+  return `toktickit_session=${signSession(99, 'IT_STAFF')}`;
+}
 
 describe('TokTickIT API /api/requesters', () => {
   afterEach(() => {
@@ -20,7 +32,9 @@ describe('TokTickIT API /api/requesters', () => {
       activeRequesters as never
     );
 
-    const response = await request(app).get('/api/requesters');
+    const response = await request(app)
+      .get('/api/requesters')
+      .set('Cookie', mockSession());
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual(activeRequesters);
@@ -34,7 +48,9 @@ describe('TokTickIT API /api/requesters', () => {
   it('returns an empty array when there are no active requesters', async () => {
     vi.spyOn(prisma.user, 'findMany').mockResolvedValue([] as never);
 
-    const response = await request(app).get('/api/requesters');
+    const response = await request(app)
+      .get('/api/requesters')
+      .set('Cookie', mockSession());
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual([]);
@@ -45,7 +61,9 @@ describe('TokTickIT API /api/requesters', () => {
       new Error('connection refused')
     );
 
-    const response = await request(app).get('/api/requesters');
+    const response = await request(app)
+      .get('/api/requesters')
+      .set('Cookie', mockSession());
 
     expect(response.status).toBe(500);
     expect(response.body).toEqual({
