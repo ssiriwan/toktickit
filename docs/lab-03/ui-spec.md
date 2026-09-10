@@ -11,7 +11,7 @@
 
 ## 2. AppShell & navigation
 
-- Header: brand link `TikTockIT` → role home; center nav by role:
+- Header: brand link `TokTickIT` → role home; center nav by role:
   - Requester: `My Tickets`, `Create Ticket`.
   - IT Staff: `My Queue` (`/staff/queue`), `Create Ticket` hidden (requesters only create; IT queue is work list).
   - Administrator: `Admin` (`/admin/users`).
@@ -39,7 +39,7 @@
 
 ### 3.4 Staff Ticket Queue (`/staff/queue`, IT + Admin read-only)
 
-- Toolbar: `Search by ticket number or summary…` + `Filters` toggle (Status, Category, Req Priority, IT Priority, Owner: All/Mine/Unassigned) + result count `Showing 1 to 10 of N tickets`.
+- Toolbar: `Search by ticket number, summary, or description…` + `Filters` toggle (Status, Category, Related System, Req Priority, IT Priority, Owner: All/Mine/Unassigned) + result count `Showing 1 to 10 of N tickets`.
 - Desktop: table columns `Ticket No. | Created Date | Summary | Category | Req. Priority | IT Priority | Status | Owner` + row click/`Open` → detail. No mega-grid: summary truncated 2 lines with title tooltip.
 - Mobile (<768px): cards with `No + status badge`, `summary`, `meta (category • date)`, `priorities + owner` row, `Open →` button.
 - Pagination: `Previous 1 2 3 … N Next`, page-size select. Empty (`No tickets yet`), no-results (`No tickets match — Clear filters`), forbidden (Admin mutation hidden; Requester gets 403 card), failure (retry).
@@ -48,7 +48,7 @@
 ### 3.5 Staff Ticket Detail (`/staff/tickets/:id`, IT editable; Admin read-only)
 
 - Breadcrumb `My Queue > Ticket Detail` + `Back to Queue`.
-- Top grid (read-only except noted): `Ticket No., Category, Related System, Requester, Requested Priority (readonly badge), Current Status (IT: dropdown of allowed next only), Ticket Owner (IT: dropdown active IT/Admin + Unassigned), IT Priority (IT: dropdown)`, `Summary`, `Description`, `Resolution Summary` (IT editable textarea, visible to requester).
+- Top grid (read-only except noted): `Ticket No., Category, Related System, Requester, Requested Priority (readonly badge), Current Status (IT: dropdown of allowed next only), Ticket Owner (IT: dropdown active IT/Admin + Unassigned), IT Priority (IT: dropdown)`, `Summary`, `Description`.
 - `appearsResolved` banner (amber, prominent): `Requester indicates this appears resolved at <time>. Please verify before Resolving/Closing.` Hidden when false.
 - Tabs: `Public Comments (n)` (white/green) | `Internal Notes (n)` (amber-tinted + 🔒 `Private — IT & Admin only`) | `Attachments (n)` (read/download; upload disabled for staff in Lab 3) | (`Service Actions` tab hidden — Lab 4).
 - Composer areas visually distinct (different bg + lock icon + placeholder `Type internal note… (private)` vs `Type your comment here…`); posting to wrong channel impossible by layout (separate tabs).
@@ -56,7 +56,7 @@
 
 ### 3.6 Admin User Management (`/admin/users`, Administrator only)
 
-- Left: `Users` + `Create User` primary; `Search users…` + `Filters` (single role select: All/Requester/IT Staff/Administrator); table `Name | Role | Status | (Email shown below name on mobile)` + `Edit` per row.
+- Left: `Users` + `Create User` primary; `Search users…` + `Filters` (single role select: All/Requester/IT Staff/Administrator); desktop table columns `Name | Email | Role | Status | Edit` (Email as its own column per §8.5; on mobile Email collapses below Name) + `Edit` per row.
 - Right drawer `Create New User / Edit User`: `Full Name *`, `Email Address *`, `Role *` (select one), `Active` toggle (Yes/No), `Initial Password` (create/reset only, rule hint, `User must change at next login` note), `Save User` primary, `Deactivate/Activate User` danger-outline (edit only), `Cancel`.
 - Guards in UI: self row `Deactivate` disabled with tooltip; last-admin deactivation shows confirm + backend error rendering; duplicate email shows field error; non-Admin route → 403 card.
 - No pagination/sort/multi-filter in Lab 3 (intentionally simple); list scrolls; responsive: drawer becomes full-screen sheet on mobile.
