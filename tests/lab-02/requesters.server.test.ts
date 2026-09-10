@@ -16,7 +16,7 @@ describe('TokTickIT API /api/requesters', () => {
       { id: 1, name: 'Alice Carter', email: 'alice.carter@student.example' },
       { id: 2, name: 'Bob Nguyen', email: 'bob.nguyen@student.example' }
     ];
-    const spy = vi.spyOn(prisma.requesterUser, 'findMany').mockResolvedValue(
+    const spy = vi.spyOn(prisma.user, 'findMany').mockResolvedValue(
       activeRequesters as never
     );
 
@@ -25,14 +25,14 @@ describe('TokTickIT API /api/requesters', () => {
     expect(response.status).toBe(200);
     expect(response.body).toEqual(activeRequesters);
     expect(spy).toHaveBeenCalledWith({
-      where: { isActive: true },
+      where: { isActive: true, role: 'REQUESTER' },
       orderBy: { name: 'asc' },
       select: { id: true, name: true, email: true }
     });
   });
 
   it('returns an empty array when there are no active requesters', async () => {
-    vi.spyOn(prisma.requesterUser, 'findMany').mockResolvedValue([] as never);
+    vi.spyOn(prisma.user, 'findMany').mockResolvedValue([] as never);
 
     const response = await request(app).get('/api/requesters');
 
@@ -41,7 +41,7 @@ describe('TokTickIT API /api/requesters', () => {
   });
 
   it('returns 500 with a safe error message on DB failure', async () => {
-    vi.spyOn(prisma.requesterUser, 'findMany').mockRejectedValue(
+    vi.spyOn(prisma.user, 'findMany').mockRejectedValue(
       new Error('connection refused')
     );
 

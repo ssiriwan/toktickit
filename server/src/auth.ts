@@ -1,0 +1,122 @@
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+
+export const SESSION_COOKIE = 'toktickit_session';
+export const SESSION_MAX_AGE_MS = 8 * 60 * 60 * 1000;
+
+export type Role = 'REQUESTER' | 'IT_STAFF' | 'ADMINISTRATOR';
+
+export interface SessionPayload {
+  sub: number;
+  role: Role;
+}
+
+export interface SafeUser {
+  id: number;
+  name: string;
+  email: string;
+  role: Role;
+  isActive: boolean;
+  mustChangePassword: boolean;
+}
+
+const PASSWORD_RULES = {
+  minLength: 8
+};
+
+export function getJwtSecret(): string {
+  const secret = process.env.AUTH_JWT_SECRET;
+  if (!secret) {
+    console.warn(
+      '[auth] AUTH_JWT_SECRET is not set — using dev-only fallback secret. Set AUTH_JWT_SECRET for any shared environment.'
+    );
+    return 'dev-local-only-secret-not-for-production';
+  }
+  return secret;
+}
+
+export function validatePasswordPolicy(password: unknown): string | null {
+  if (typeof password !== 'string' || password.length < PASSWORD_RULES.minLength) {
+    return 'Password must be at least 8 characters';
+  }
+  if (!/[A-Z]/.test(password) || !/[a-z]/.test(password)) {
+    return 'Password must include upper and lower case letters';
+  }
+  if (!/[0-9]/.test(password)) {
+    return 'Password must include a number and a special character';
+  }
+  if (!/[^A-Za-z0-9]/.test(password)) {
+    return 'Password must include a number and a special character';
+  }
+  return null;
+}
+
+export async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, 12);
+}
+
+export async function verifyPassword(
+  password: string,
+  hash: string
+): Promise<boolean> {
+  try {
+    return await bcrypt.compare(password, hash);
+  } catch {
+    return false;
+  }
+}
+
+export function signSession(userId: number, role: Role): string {
+  return jwt.sign({ sub: userId, role } satisfies SessionPayload, getJwtSecret(), {
+    expiresIn: '8h'
+  });
+}
+
+export function verifySession(token: string): SessionPayload | null {
+  try {
+    const decoded = jwt.verify(token, getJwtSecret()) as unknown as SessionPayload;
+    if (
+      typeof decoded.sub !== 'number' ||
+      !['REQUESTER', 'IT_STAFF', 'ADMINISTRATOR'].includes(decoded.role)
+    ) {
+      return null;
+    }
+    return { sub: decoded.sub, role: decoded.role };
+  } catch {
+    return null;
+  }
+}
+
+export function toSafeUser(user: {
+  id: number;
+  name: string;
+  email: string;
+  role: Role;
+  isActive: boolean;
+  mustChangePassword: boolean;
+}): SafeUser {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    isActive: user.isActive,
+    mustChangePassword: user.mustChangePassword
+  };
+}
+
+export function sessionCookieOptions(): {
+  httpOnly: boolean;
+  sameSite: 'lax';
+  maxAge: number;
+  path: string;
+  secure: boolean;
+} {
+  return {
+    httpOnly: true,
+    sameSite: 'lax',
+    maxAge: SESSION_MAX_AGE_MS,
+    path: '/',
+    secure: process.env.NODE_ENV === 'production'
+  };
+}

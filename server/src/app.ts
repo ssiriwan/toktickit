@@ -1,9 +1,21 @@
+import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
 import fs from 'fs';
 import multer from 'multer';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+
+import {
+  SESSION_COOKIE,
+  hashPassword,
+  sessionCookieOptions,
+  signSession,
+  toSafeUser,
+  validatePasswordPolicy,
+  verifyPassword
+} from './auth.js';
+import { requireAuth } from './auth-middleware.js';
 
 import { prisma } from './db.js';
 import { nextTicketNumber, toDateStamp } from './ticket-number.js';
@@ -42,9 +54,172 @@ export function createApp() {
 
   app.use(cors());
   app.use(express.json());
+  app.use(cookieParser());
 
   app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok', service: 'TokTickIT API' });
+  });
+
+  app.post('/api/auth/login', async (req, res) => {
+    try {
+      const email =
+        typeof req.body?.email === 'string' ? req.body.email.trim() : '';
+      const password =
+        typeof req.body?.password === 'string' ? req.body.password : '';
+      if (!email || !password) {
+        return res.status(400).json({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Email and password are required',
+            details: [
+              ...(!email
+                ? [{ field: 'email', message: 'Email is required' }]
+                : []),
+              ...(!password
+                ? [{ field: 'password', message: 'Password is required' }]
+                : [])
+            ]
+          }
+        });
+      }
+      const user = await prisma.user.findFirst({
+        where: { email: { equals: email, mode: 'insensitive' } }
+      });
+      const ok = user
+        ? await verifyPassword(password, user.passwordHash)
+        : false;
+      if (!user || !ok) {
+        return res.status(401).json({
+          error: {
+            code: 'INVALID_CREDENTIALS',
+            message: 'Invalid email or password'
+          }
+        });
+      }
+      if (!user.isActive) {
+        return res.status(403).json({
+          error: {
+            code: 'ACCOUNT_INACTIVE',
+            message: 'Account is deactivated. Please contact support.'
+          }
+        });
+      }
+      res.cookie(SESSION_COOKIE, signSession(user.id, user.role), sessionCookieOptions());
+      res.json({ user: toSafeUser(user) });
+    } catch {
+      res.status(500).json({
+        error: { code: 'INTERNAL_ERROR', message: 'Login failed' }
+      });
+    }
+  });
+
+  app.post('/api/auth/logout', (_req, res) => {
+    res.clearCookie(SESSION_COOKIE, { path: '/' });
+    res.status(204).end();
+  });
+
+  app.get('/api/auth/me', requireAuth, async (req, res) => {
+    try {
+      const auth = (req as unknown as { auth: { userId: number } }).auth;
+      const user = await prisma.user.findUnique({
+        where: { id: auth.userId }
+      });
+      if (!user) {
+        return res.status(401).json({
+          error: { code: 'UNAUTHENTICATED', message: 'Authentication required' }
+        });
+      }
+      res.json({ user: toSafeUser(user) });
+    } catch {
+      res.status(500).json({
+        error: { code: 'INTERNAL_ERROR', message: 'Failed to load user' }
+      });
+    }
+  });
+
+  app.post('/api/auth/change-password', requireAuth, async (req, res) => {
+    try {
+      const auth = (req as unknown as { auth: { userId: number } }).auth;
+      const currentPassword =
+        typeof req.body?.currentPassword === 'string'
+          ? req.body.currentPassword
+          : '';
+      const newPassword =
+        typeof req.body?.newPassword === 'string' ? req.body.newPassword : '';
+      const confirmPassword =
+        typeof req.body?.confirmPassword === 'string'
+          ? req.body.confirmPassword
+          : '';
+      const details: { field: string; message: string }[] = [];
+      if (!currentPassword) {
+        details.push({
+          field: 'currentPassword',
+          message: 'Current password is required'
+        });
+      }
+      const policyError = validatePasswordPolicy(newPassword);
+      if (policyError) {
+        details.push({ field: 'newPassword', message: policyError });
+      }
+      if (newPassword !== confirmPassword) {
+        details.push({
+          field: 'confirmPassword',
+          message: 'Passwords do not match'
+        });
+      }
+      if (details.length > 0) {
+        return res.status(400).json({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Password change is invalid',
+            details
+          }
+        });
+      }
+      const user = await prisma.user.findUnique({
+        where: { id: auth.userId }
+      });
+      if (!user) {
+        return res.status(401).json({
+          error: { code: 'UNAUTHENTICATED', message: 'Authentication required' }
+        });
+      }
+      const ok = await verifyPassword(currentPassword, user.passwordHash);
+      if (!ok) {
+        return res.status(401).json({
+          error: {
+            code: 'INVALID_CREDENTIALS',
+            message: 'Current password is incorrect'
+          }
+        });
+      }
+      if (await verifyPassword(newPassword, user.passwordHash)) {
+        return res.status(400).json({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Password change is invalid',
+            details: [
+              {
+                field: 'newPassword',
+                message: 'New password must differ from the current password'
+              }
+            ]
+          }
+        });
+      }
+      const updated = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          passwordHash: await hashPassword(newPassword),
+          mustChangePassword: false
+        }
+      });
+      res.json({ user: toSafeUser(updated) });
+    } catch {
+      res.status(500).json({
+        error: { code: 'INTERNAL_ERROR', message: 'Password change failed' }
+      });
+    }
   });
 
   app.get('/api/categories', async (_req, res) => {
@@ -59,10 +234,11 @@ export function createApp() {
     }
   });
 
+  // DEPRECATED in Lab 3 (kept compiling for Phase 3; removed in Phase 4 Requester regression).
   app.get('/api/requesters', async (_req, res) => {
     try {
-      const requesters = await prisma.requesterUser.findMany({
-        where: { isActive: true },
+      const requesters = await prisma.user.findMany({
+        where: { isActive: true, role: 'REQUESTER' },
         orderBy: { name: 'asc' },
         select: { id: true, name: true, email: true }
       });
@@ -153,7 +329,7 @@ export function createApp() {
       }
 
       const [requester, category, relatedSystem] = await Promise.all([
-        prisma.requesterUser.findFirst({
+        prisma.user.findFirst({
           where: { id: Number(body.requesterId), isActive: true }
         }),
         prisma.category.findFirst({ where: { id: Number(body.categoryId) } }),
