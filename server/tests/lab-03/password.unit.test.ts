@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  getJwtSecret,
   hashPassword,
   validatePasswordPolicy,
   verifyPassword
@@ -34,5 +35,18 @@ describe('Lab 3 password helpers (UNIT-01)', () => {
 
   it('returns false for corrupt hashes instead of throwing', async () => {
     expect(await verifyPassword('anything', 'not-a-hash')).toBe(false);
+  });
+
+  it('refuses the fallback secret in production (fail closed)', () => {
+    const prevEnv = process.env.NODE_ENV;
+    const prevSecret = process.env.AUTH_JWT_SECRET;
+    process.env.NODE_ENV = 'production';
+    delete process.env.AUTH_JWT_SECRET;
+    try {
+      expect(() => getJwtSecret()).toThrow(/AUTH_JWT_SECRET/);
+    } finally {
+      process.env.NODE_ENV = prevEnv;
+      if (prevSecret !== undefined) process.env.AUTH_JWT_SECRET = prevSecret;
+    }
   });
 });

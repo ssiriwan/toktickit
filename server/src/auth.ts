@@ -35,6 +35,11 @@ export const DUMMY_PASSWORD_HASH =
 export function getJwtSecret(): string {
   const secret = process.env.AUTH_JWT_SECRET;
   if (!secret) {
+    // Fail closed in production: a committed fallback secret would let
+    // anyone forge sessions, so refuse to boot without a real secret.
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('[auth] AUTH_JWT_SECRET must be set in production.');
+    }
     console.warn(
       '[auth] AUTH_JWT_SECRET is not set — using dev-only fallback secret. Set AUTH_JWT_SECRET for any shared environment.'
     );
