@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import type { Requester } from './RequesterSelection';
+import type { Requester } from '../lab-03/AuthContext';
 
 type Ticket = {
   id: number;
@@ -63,7 +63,7 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
   async function loadTickets() {
     setStatus('loading');
     try {
-      const params = new URLSearchParams({ requesterId: String(requester.id) });
+      const params = new URLSearchParams();
       if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
       if (categoryFilter) params.set('categoryId', categoryFilter);
       if (systemFilter) params.set('relatedSystemId', systemFilter);
@@ -74,7 +74,7 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
       params.set('page', String(page));
       params.set('pageSize', String(pageSize));
 
-      const res = await fetch(`/api/tickets?${params.toString()}`);
+      const res = await fetch(`/api/tickets?${params.toString()}`, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed');
       const data = (await res.json()) as {
         tickets: Ticket[];

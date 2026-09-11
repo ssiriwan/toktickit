@@ -107,7 +107,7 @@ describe('Lab 3 auth APIs (API-01..07)', () => {
     expect(me.status).toBe(200);
 
     // Normal API is blocked per spec middleware order.
-    const blocked = await request(app).get('/api/requesters').set('Cookie', cookie);
+    const blocked = await request(app).get('/api/tickets').set('Cookie', cookie);
     expect(blocked.status).toBe(403);
     expect(blocked.body).toEqual({
       error: {
