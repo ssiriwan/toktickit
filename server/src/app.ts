@@ -757,6 +757,181 @@ export function createApp() {
     }
   });
 
+  const staffGuards = [
+    requireAuth,
+    requirePasswordChanged,
+    requireRole('IT_STAFF', 'ADMINISTRATOR')
+  ];
+
+  const STATUSES = [
+    'NEW',
+    'OPEN',
+    'IN_PROGRESS',
+    'WAITING_FOR_REQUESTER',
+    'RESOLVED',
+    'CLOSED',
+    'REOPENED',
+    'CANCELLED'
+  ];
+  const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
+  const QUEUE_SORTS: Record<string, string> = {
+    ticketDate: 'ticketDate',
+    updatedAt: 'updatedAt',
+    requestedPriority: 'requestedPriority',
+    itPriority: 'itPriority'
+  };
+
+  function invalidQuery(res: express.Response) {
+    return res.status(400).json({
+      error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' }
+    });
+  }
+
+  function parsePositiveInt(raw: string | undefined): number | undefined | null {
+    if (raw === undefined) return undefined;
+    const n = Number(raw);
+    if (!Number.isInteger(n) || n < 1) return null;
+    return n;
+  }
+
+  // Staff queue: IT Staff full access, Administrator read-only (same GETs).
+  app.get('/api/staff/tickets', ...staffGuards, async (req, res) => {
+    try {
+      const auth = sessionUser(req);
+      const q = req.query as Record<string, string | undefined>;
+      const search = q.search?.trim() ?? '';
+
+      const status = q.status?.trim();
+      if (status !== undefined && status !== '' && !STATUSES.includes(status)) {
+        return invalidQuery(res);
+      }
+      const reqPriority = q.reqPriority?.trim();
+      if (reqPriority !== undefined && reqPriority !== '' && !PRIORITIES.includes(reqPriority)) {
+        return invalidQuery(res);
+      }
+      const itPriority = q.itPriority?.trim();
+      if (itPriority !== undefined && itPriority !== '' && !PRIORITIES.includes(itPriority)) {
+        return invalidQuery(res);
+      }
+
+      const categoryId = parsePositiveInt(q.categoryId);
+      if (categoryId === null) return invalidQuery(res);
+      const relatedSystemId = parsePositiveInt(q.relatedSystemId);
+      if (relatedSystemId === null) return invalidQuery(res);
+
+      const ownerRaw = q.owner?.trim();
+      let ownerId: number | null | undefined;
+      if (ownerRaw !== undefined && ownerRaw !== '') {
+        if (ownerRaw === 'me') ownerId = auth.userId;
+        else if (ownerRaw === 'unassigned') ownerId = null;
+        else {
+          const n = Number(ownerRaw);
+          if (!Number.isInteger(n) || n < 1) return invalidQuery(res);
+          ownerId = n;
+        }
+      }
+
+      const sortKey = QUEUE_SORTS[q.sort?.trim() ?? ''] ?? (q.sort === undefined ? 'updatedAt' : null);
+      if (sortKey === null) return invalidQuery(res);
+      const order = q.order?.trim() === 'asc' ? 'asc' : 'desc';
+      const pageRaw = parsePositiveInt(q.page);
+      if (pageRaw === null) return invalidQuery(res);
+      const page = pageRaw ?? 1;
+      const pageSizeRaw = parsePositiveInt(q.pageSize);
+      if (pageSizeRaw === null || (pageSizeRaw !== undefined && pageSizeRaw > 50)) {
+        return invalidQuery(res);
+      }
+      const pageSize = pageSizeRaw ?? 10;
+
+      const where: Record<string, unknown> = {};
+      if (status) where.currentStatus = status;
+      if (reqPriority) where.requestedPriority = reqPriority;
+      if (itPriority) where.itPriority = itPriority;
+      if (categoryId !== undefined) where.categoryId = categoryId;
+      if (relatedSystemId !== undefined) where.relatedSystemId = relatedSystemId;
+      if (ownerId !== undefined) where.ownerId = ownerId;
+      if (search) {
+        where.OR = [
+          { ticketNumber: { contains: search, mode: 'insensitive' } },
+          { summary: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } }
+        ];
+      }
+
+      const totalItems = await prisma.ticket.count({ where: where as never });
+      const totalPages = Math.ceil(totalItems / (pageSize as number)) || 1;
+      const tickets = await prisma.ticket.findMany({
+        where: where as never,
+        orderBy: { [sortKey as string]: order },
+        skip: ((page as number) - 1) * (pageSize as number),
+        take: pageSize as number,
+        select: {
+          id: true,
+          ticketNumber: true,
+          summary: true,
+          currentStatus: true,
+          requestedPriority: true,
+          itPriority: true,
+          ticketDate: true,
+          updatedAt: true,
+          category: { select: { id: true, name: true } },
+          relatedSystem: { select: { id: true, name: true } },
+          owner: { select: { id: true, name: true } }
+        }
+      });
+      res.json({ tickets, pagination: { page, pageSize, totalItems, totalPages } });
+    } catch {
+      res.status(500).json({
+        error: { code: 'INTERNAL_ERROR', message: 'Failed to load ticket queue' }
+      });
+    }
+  });
+
+  app.get('/api/staff/tickets/:id', ...staffGuards, async (req, res) => {
+    try {
+      const ticketId = Number(req.params.id);
+      if (!Number.isInteger(ticketId) || ticketId <= 0) {
+        return invalidQuery(res);
+      }
+      const ticket = await prisma.ticket.findUnique({
+        where: { id: ticketId },
+        include: {
+          requester: { select: { id: true, name: true, email: true } },
+          owner: { select: { id: true, name: true } },
+          category: { select: { id: true, name: true } },
+          relatedSystem: { select: { id: true, name: true } },
+          publicComments: {
+            orderBy: { createdAt: 'asc' },
+            select: { id: true, body: true, createdAt: true, author: { select: authorSelect } }
+          },
+          internalNotes: {
+            orderBy: { createdAt: 'asc' },
+            select: { id: true, body: true, createdAt: true, author: { select: authorSelect } }
+          },
+          attachments: {
+            orderBy: { createdAt: 'asc' },
+            select: {
+              id: true,
+              filename: true,
+              mimeType: true,
+              fileSize: true,
+              isRemoved: true,
+              removalReason: true,
+              removedAt: true,
+              createdAt: true
+            }
+          }
+        }
+      });
+      if (!ticket) {
+        return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+      }
+      res.json(ticket);
+    } catch {
+      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to load ticket' } });
+    }
+  });
+
   app.post('/api/tickets/:id/attachments', ...requesterGuards, (req, res) => {
     const single = upload.single('file');
     single(req as never, res as never, async (err: unknown) => {
