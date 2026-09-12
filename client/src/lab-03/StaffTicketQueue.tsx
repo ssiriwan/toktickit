@@ -52,6 +52,7 @@ export function StaffTicketQueue({
   const [order, setOrder] = useState('desc');
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
+  const [retryTick, setRetryTick] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [systems, setSystems] = useState<{ id: number; name: string }[]>([]);
@@ -131,7 +132,7 @@ export function StaffTicketQueue({
     }
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, statusFilter, categoryFilter, systemFilter, reqPriority, itPriority, ownerFilter, sort, order, page, pageSize]);
+  }, [debouncedSearch, statusFilter, categoryFilter, systemFilter, reqPriority, itPriority, ownerFilter, sort, order, page, pageSize, retryTick]);
 
   function clearFilters() {
     setSearch('');
@@ -157,7 +158,7 @@ export function StaffTicketQueue({
         <p role="alert" className="text-danger">
           Unable to load the queue. Please try again.
         </p>
-        <button type="button" className="btn btn-outline-secondary" onClick={() => setPage((p) => p)}>
+        <button type="button" className="btn btn-outline-secondary" onClick={() => setRetryTick((t) => t + 1)}>
           Retry
         </button>
       </div>
