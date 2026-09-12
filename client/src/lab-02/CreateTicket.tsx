@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import type { Requester } from './RequesterSelection';
+import type { Requester } from '../lab-03/AuthContext';
 
 type ReferenceItem = { id: number; name: string };
 type Status = 'idle' | 'loading' | 'success' | 'error';
@@ -115,9 +115,9 @@ export function CreateTicket({ requester, onViewMyTickets }: CreateTicketProps) 
     try {
       const response = await fetch('/api/tickets', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          requesterId: requester.id,
           categoryId: Number(categoryId),
           relatedSystemId: Number(systemId),
           requestedPriority: priority,
@@ -133,8 +133,9 @@ export function CreateTicket({ requester, onViewMyTickets }: CreateTicketProps) 
       for (const f of files) {
         const fd = new FormData();
         fd.append('file', f);
-        const upRes = await fetch(`/api/tickets/${data.id}/attachments?requesterId=${requester.id}`, {
+        const upRes = await fetch(`/api/tickets/${data.id}/attachments`, {
           method: 'POST',
+          credentials: 'include',
           body: fd
         });
         if (!upRes.ok) failed++;

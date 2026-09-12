@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { createApp } from '../../src/app.js';
 import { hashPassword, signSession } from '../../src/auth.js';
@@ -16,12 +16,14 @@ const ACTIVE_USER = {
   mustChangePassword: false
 } as const;
 
-async function userWithPassword(password: string, overrides = {}) {
-  return {
-    ...ACTIVE_USER,
-    ...overrides,
-    passwordHash: await hashPassword(password)
-  };
+// Hashed once per file: bcrypt cost 12 is intentionally slow (~5s budget per test).
+let CACHED_HASH = '';
+beforeAll(async () => {
+  CACHED_HASH = await hashPassword('Requester123!');
+}, 120000);
+
+function knownUser(overrides = {}) {
+  return { ...ACTIVE_USER, ...overrides, passwordHash: CACHED_HASH };
 }
 
 describe('Lab 3 auth APIs (API-01..07)', () => {
@@ -31,7 +33,7 @@ describe('Lab 3 auth APIs (API-01..07)', () => {
 
   it('API-01: valid login returns safe user and sets session cookie', async () => {
     vi.spyOn(prisma.user, 'findFirst').mockResolvedValue(
-      (await userWithPassword('Requester123!')) as never
+      knownUser() as never
     );
 
     const response = await request(app)
@@ -48,7 +50,7 @@ describe('Lab 3 auth APIs (API-01..07)', () => {
 
   it('API-02: wrong password or unknown email returns generic 401', async () => {
     vi.spyOn(prisma.user, 'findFirst').mockResolvedValue(
-      (await userWithPassword('Requester123!')) as never
+      knownUser() as never
     );
     const wrong = await request(app)
       .post('/api/auth/login')
@@ -68,7 +70,7 @@ describe('Lab 3 auth APIs (API-01..07)', () => {
 
   it('API-03: correct credentials but inactive returns 403 with support message', async () => {
     vi.spyOn(prisma.user, 'findFirst').mockResolvedValue(
-      (await userWithPassword('Requester123!', { isActive: false })) as never
+      knownUser({ isActive: false }) as never
     );
 
     const response = await request(app)
@@ -86,7 +88,7 @@ describe('Lab 3 auth APIs (API-01..07)', () => {
 
   it('API-04: mustChange users are blocked from normal APIs over HTTP', async () => {
     vi.spyOn(prisma.user, 'findFirst').mockResolvedValue(
-      (await userWithPassword('Requester123!', { mustChangePassword: true })) as never
+      knownUser({ mustChangePassword: true }) as never
     );
     vi.spyOn(prisma.user, 'findUnique').mockResolvedValue({
       id: 1,
@@ -107,7 +109,7 @@ describe('Lab 3 auth APIs (API-01..07)', () => {
     expect(me.status).toBe(200);
 
     // Normal API is blocked per spec middleware order.
-    const blocked = await request(app).get('/api/requesters').set('Cookie', cookie);
+    const blocked = await request(app).get('/api/tickets').set('Cookie', cookie);
     expect(blocked.status).toBe(403);
     expect(blocked.body).toEqual({
       error: {
@@ -120,7 +122,7 @@ describe('Lab 3 auth APIs (API-01..07)', () => {
   it('API-05: change password happy path clears mustChange flag', async () => {
     const token = signSession(1, 'REQUESTER');
     vi.spyOn(prisma.user, 'findUnique').mockResolvedValue(
-      (await userWithPassword('Requester123!', { mustChangePassword: true })) as never
+      knownUser({ mustChangePassword: true }) as never
     );
     vi.spyOn(prisma.user, 'update').mockImplementation(async (args: never) => {
       const data = (args as { data: { passwordHash: string } }).data;
@@ -144,7 +146,7 @@ describe('Lab 3 auth APIs (API-01..07)', () => {
   it('API-06: change password boundaries are rejected', async () => {
     const token = signSession(1, 'REQUESTER');
     vi.spyOn(prisma.user, 'findUnique').mockResolvedValue(
-      (await userWithPassword('Requester123!', { mustChangePassword: true })) as never
+      knownUser({ mustChangePassword: true }) as never
     );
 
     const cases = [
@@ -175,7 +177,7 @@ describe('Lab 3 auth APIs (API-01..07)', () => {
   it('API-07: me and logout lifecycle', async () => {
     const token = signSession(1, 'REQUESTER');
     vi.spyOn(prisma.user, 'findUnique').mockResolvedValue(
-      (await userWithPassword('Requester123!')) as never
+      knownUser() as never
     );
 
     const me = await request(app)

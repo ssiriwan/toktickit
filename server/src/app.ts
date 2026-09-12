@@ -18,8 +18,10 @@ import {
 } from './auth.js';
 import {
   requireAuth,
-  requirePasswordChanged
+  requirePasswordChanged,
+  requireRole
 } from './auth-middleware.js';
+import type { AuthenticatedRequest } from './auth-middleware.js';
 
 import { prisma } from './db.js';
 import { nextTicketNumber, toDateStamp } from './ticket-number.js';
@@ -240,27 +242,13 @@ export function createApp() {
     }
   });
 
-  // DEPRECATED in Lab 3 (kept compiling for Phase 3; removed in Phase 4 Requester regression).
-  // requireAuth + requirePasswordChanged prove the spec middleware order over HTTP (API-04).
-  app.get(
-    '/api/requesters',
-    requireAuth,
-    requirePasswordChanged,
-    async (_req, res) => {
-      try {
-        const requesters = await prisma.user.findMany({
-          where: { isActive: true, role: 'REQUESTER' },
-          orderBy: { name: 'asc' },
-          select: { id: true, name: true, email: true }
-        });
-        res.json(requesters);
-      } catch {
-        res.status(500).json({
-          error: { code: 'INTERNAL_ERROR', message: 'Failed to load requesters' }
-        });
-      }
-    }
-  );
+  // Session identity for all Requester operations (AC-03).
+  // Client-supplied requester ids are ignored, never trusted.
+  function sessionUser(req: express.Request) {
+    return (req as AuthenticatedRequest).auth!;
+  }
+
+  const requesterGuards = [requireAuth, requirePasswordChanged, requireRole('REQUESTER')];
 
   app.get('/api/related-systems', async (_req, res) => {
     try {
@@ -280,7 +268,7 @@ export function createApp() {
     }
   });
 
-  app.post('/api/tickets', async (req, res) => {
+  app.post('/api/tickets', ...requesterGuards, async (req, res) => {
     try {
       const body = req.body ?? {};
       const details: { field: string; message: string }[] = [];
@@ -315,12 +303,7 @@ export function createApp() {
         });
       }
 
-      // TODO(Phase 4): known authz gap — owner still comes from body.requesterId.
-      // Phase 4 Requester regression switches this to session identity and ignores client-supplied ids.
-      const requesterIdNum = Number(body.requesterId);
-      if (!Number.isInteger(requesterIdNum) || requesterIdNum <= 0) {
-        details.push({ field: 'requesterId', message: 'Requester is required' });
-      }
+      const requesterId = sessionUser(req).userId;
 
       const categoryIdNum = Number(body.categoryId);
       if (!Number.isInteger(categoryIdNum) || categoryIdNum <= 0) {
@@ -344,7 +327,7 @@ export function createApp() {
 
       const [requester, category, relatedSystem] = await Promise.all([
         prisma.user.findFirst({
-          where: { id: Number(body.requesterId), isActive: true }
+          where: { id: requesterId, isActive: true }
         }),
         prisma.category.findFirst({ where: { id: Number(body.categoryId) } }),
         prisma.relatedSystem.findFirst({
@@ -397,6 +380,7 @@ export function createApp() {
               description,
               currentStatus: 'NEW',
               requestedPriority: body.requestedPriority,
+              itPriority: body.requestedPriority,
               ticketDate: now,
               requesterId: requester.id,
               categoryId: category.id,
@@ -433,16 +417,11 @@ export function createApp() {
     }
   });
 
-  app.get('/api/tickets', async (req, res) => {
+  app.get('/api/tickets', ...requesterGuards, async (req, res) => {
     try {
       const q = req.query as Record<string, string | undefined>;
-      const rawRequesterId = q.requesterId ?? (req.header('X-Requester-Id') as string | undefined);
-      const requesterId = Number(rawRequesterId);
-      if (!rawRequesterId || !Number.isInteger(requesterId) || requesterId <= 0) {
-        return res.status(400).json({
-          error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' }
-        });
-      }
+      // Forged requesterId query params are ignored (AC-03).
+      const requesterId = sessionUser(req).userId;
 
       const search = q.search?.trim() ?? '';
       const rawCategoryId = q.categoryId;
@@ -541,17 +520,9 @@ export function createApp() {
     }
   });
 
-  app.get('/api/tickets/:id', async (req, res) => {
+  app.get('/api/tickets/:id', ...requesterGuards, async (req, res) => {
     try {
-      const rawRequesterId =
-        (req.query.requesterId as string | undefined) ??
-        (req.header('X-Requester-Id') as string | undefined);
-      const requesterId = Number(rawRequesterId);
-      if (!rawRequesterId || !Number.isInteger(requesterId) || requesterId <= 0) {
-        return res.status(400).json({
-          error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' }
-        });
-      }
+      const requesterId = sessionUser(req).userId;
       const ticketId = Number(req.params.id);
       if (!Number.isInteger(ticketId) || ticketId <= 0) {
         return res.status(400).json({
@@ -562,6 +533,7 @@ export function createApp() {
         where: { id: ticketId },
         include: {
           requester: { select: { id: true, name: true, email: true } },
+          owner: { select: { id: true, name: true } },
           category: { select: { id: true, name: true } },
           relatedSystem: { select: { id: true, name: true } },
           attachments: {
@@ -591,23 +563,205 @@ export function createApp() {
     }
   });
 
-  app.post('/api/tickets/:id/attachments', (req, res) => {
-    const single = upload.single('file');
-    single(req as never, res as never, async (err: unknown) => {
+  function validateCommentBody(body: unknown):
+    | { ok: true; text: string }
+    | { ok: false; details: { field: string; message: string }[] } {
+    const text = typeof body === 'string' ? body.trim() : '';
+    if (!text) {
+      return {
+        ok: false,
+        details: [{ field: 'body', message: 'Comment must not be empty' }]
+      };
+    }
+    if (text.length > 2000) {
+      return {
+        ok: false,
+        details: [{ field: 'body', message: 'Comment must be at most 2000 characters' }]
+      };
+    }
+    return { ok: true, text };
+  }
+
+  const authorSelect = { id: true, name: true, role: true };
+
+  async function loadTicketForRole(
+    ticketId: number,
+    auth: { userId: number; role: string }
+  ) {
+    const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) return { error: 'NOT_FOUND' as const };
+    if (auth.role === 'REQUESTER' && ticket.requesterId !== auth.userId) {
+      return { error: 'ACCESS_DENIED' as const };
+    }
+    if (!['REQUESTER', 'IT_STAFF', 'ADMINISTRATOR'].includes(auth.role)) {
+      return { error: 'ACCESS_DENIED' as const };
+    }
+    return { ticket };
+  }
+
+  function denied(res: express.Response) {
+    return res.status(403).json({
+      error: { code: 'ACCESS_DENIED', message: 'Access denied' }
+    });
+  }
+
+  // Public Comments: Requester (owner) + IT Staff post/list; Admin read-only.
+  app.get('/api/tickets/:id/comments', requireAuth, requirePasswordChanged, async (req, res) => {
+    try {
+      const auth = sessionUser(req);
+      const ticketId = Number(req.params.id);
+      if (!Number.isInteger(ticketId) || ticketId <= 0) {
+        return res.status(400).json({
+          error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' }
+        });
+      }
+      const loaded = await loadTicketForRole(ticketId, auth);
+      if (loaded.error === 'NOT_FOUND') {
+        return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+      }
+      if (loaded.error) return denied(res);
+      const comments = await prisma.publicComment.findMany({
+        where: { ticketId },
+        orderBy: { createdAt: 'asc' },
+        select: { id: true, body: true, createdAt: true, author: { select: authorSelect } }
+      });
+      res.json(comments);
+    } catch {
+      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to load comments' } });
+    }
+  });
+
+  app.post('/api/tickets/:id/comments', requireAuth, requirePasswordChanged, async (req, res) => {
+    try {
+      const auth = sessionUser(req);
+      if (auth.role === 'ADMINISTRATOR') {
+        return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Access denied' } });
+      }
+      const ticketId = Number(req.params.id);
+      if (!Number.isInteger(ticketId) || ticketId <= 0) {
+        return res.status(400).json({
+          error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' }
+        });
+      }
+      const loaded = await loadTicketForRole(ticketId, auth);
+      if (loaded.error === 'NOT_FOUND') {
+        return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+      }
+      if (loaded.error) return denied(res);
+      const check = validateCommentBody(req.body?.body);
+      if (!check.ok) {
+        return res.status(400).json({
+          error: { code: 'VALIDATION_ERROR', message: 'Comment is invalid', details: check.details }
+        });
+      }
+      const comment = await prisma.publicComment.create({
+        data: { ticketId, authorId: auth.userId, body: check.text },
+        select: { id: true, body: true, createdAt: true, author: { select: authorSelect } }
+      });
+      res.status(201).json(comment);
+    } catch {
+      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to post comment' } });
+    }
+  });
+
+  // Internal Notes: IT Staff + Administrator read; IT Staff only writes.
+  // Requester gets 403 with no note content (AC-04). Roles enforced at the
+  // middleware layer (fail closed); handlers assume an allowed role.
+  app.get(
+    '/api/tickets/:id/notes',
+    requireAuth,
+    requirePasswordChanged,
+    requireRole('IT_STAFF', 'ADMINISTRATOR'),
+    async (req, res) => {
       try {
-        const rawRequesterId =
-          (req.query.requesterId as string | undefined) ??
-          (req.header('X-Requester-Id') as string | undefined);
-        const requesterId = Number(rawRequesterId);
-        if (!rawRequesterId || !Number.isInteger(requesterId) || requesterId <= 0) {
-          if ((req as unknown as { file?: unknown }).file) {
-            const f = (req as unknown as { file: { path: string } }).file;
-            if (f?.path && fs.existsSync(f.path)) fs.unlinkSync(f.path);
-          }
+        const ticketId = Number(req.params.id);
+        if (!Number.isInteger(ticketId) || ticketId <= 0) {
           return res.status(400).json({
             error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' }
           });
         }
+        const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+        if (!ticket) {
+          return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+        }
+        const notes = await prisma.internalNote.findMany({
+          where: { ticketId },
+          orderBy: { createdAt: 'asc' },
+          select: { id: true, body: true, createdAt: true, author: { select: authorSelect } }
+        });
+        res.json(notes);
+      } catch {
+        res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to load notes' } });
+      }
+    }
+  );
+
+  app.post(
+    '/api/tickets/:id/notes',
+    requireAuth,
+    requirePasswordChanged,
+    requireRole('IT_STAFF'),
+    async (req, res) => {
+      try {
+        const auth = sessionUser(req);
+        const ticketId = Number(req.params.id);
+        if (!Number.isInteger(ticketId) || ticketId <= 0) {
+          return res.status(400).json({
+            error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' }
+          });
+        }
+        const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+        if (!ticket) {
+          return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+        }
+        const check = validateCommentBody(req.body?.body);
+        if (!check.ok) {
+          return res.status(400).json({
+            error: { code: 'VALIDATION_ERROR', message: 'Note is invalid', details: check.details }
+          });
+        }
+        const note = await prisma.internalNote.create({
+          data: { ticketId, authorId: auth.userId, body: check.text },
+          select: { id: true, body: true, createdAt: true, author: { select: authorSelect } }
+        });
+        res.status(201).json(note);
+      } catch {
+        res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to post note' } });
+      }
+    }
+  );
+
+  // Requester flag only — never changes currentStatus (BR-05).
+  app.patch('/api/tickets/:id/appears-resolved', ...requesterGuards, async (req, res) => {
+    try {
+      const auth = sessionUser(req);
+      const ticketId = Number(req.params.id);
+      if (!Number.isInteger(ticketId) || ticketId <= 0) {
+        return res.status(400).json({
+          error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' }
+        });
+      }
+      const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+      if (!ticket) {
+        return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+      }
+      if (ticket.requesterId !== auth.userId) return denied(res);
+      const updated = await prisma.ticket.update({
+        where: { id: ticketId },
+        data: { appearsResolved: true, appearsResolvedAt: new Date() },
+        select: { id: true, appearsResolved: true, appearsResolvedAt: true, currentStatus: true }
+      });
+      res.json(updated);
+    } catch {
+      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to update ticket' } });
+    }
+  });
+
+  app.post('/api/tickets/:id/attachments', ...requesterGuards, (req, res) => {
+    const single = upload.single('file');
+    single(req as never, res as never, async (err: unknown) => {
+      try {
+        const requesterId = sessionUser(req).userId;
         if (err) {
           const msg = err instanceof Error ? err.message : String(err);
           if (msg === 'INVALID_FILE_TYPE') {
@@ -686,17 +840,9 @@ export function createApp() {
     });
   });
 
-  app.get('/api/attachments/:id/download', async (req, res) => {
+  app.get('/api/attachments/:id/download', ...requesterGuards, async (req, res) => {
     try {
-      const rawRequesterId =
-        (req.query.requesterId as string | undefined) ??
-        (req.header('X-Requester-Id') as string | undefined);
-      const requesterId = Number(rawRequesterId);
-      if (!rawRequesterId || !Number.isInteger(requesterId) || requesterId <= 0) {
-        return res.status(400).json({
-          error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' }
-        });
-      }
+      const requesterId = sessionUser(req).userId;
       const attachmentId = Number(req.params.id);
       if (!Number.isInteger(attachmentId) || attachmentId <= 0) {
         return res.status(400).json({ error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' } });
@@ -727,17 +873,9 @@ export function createApp() {
     }
   });
 
-  app.patch('/api/attachments/:id/remove', async (req, res) => {
+  app.patch('/api/attachments/:id/remove', ...requesterGuards, async (req, res) => {
     try {
-      const rawRequesterId =
-        (req.query.requesterId as string | undefined) ??
-        (req.header('X-Requester-Id') as string | undefined);
-      const requesterId = Number(rawRequesterId);
-      if (!rawRequesterId || !Number.isInteger(requesterId) || requesterId <= 0) {
-        return res.status(400).json({
-          error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' }
-        });
-      }
+      const requesterId = sessionUser(req).userId;
       const attachmentId = Number(req.params.id);
       if (!Number.isInteger(attachmentId) || attachmentId <= 0) {
         return res.status(400).json({ error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' } });
