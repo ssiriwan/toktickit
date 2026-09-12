@@ -3,6 +3,7 @@ import { BrowserRouter, Link, Navigate, NavLink, Route, Routes, useNavigate, use
 import { AuthProvider, useAuth } from '../lab-03/AuthContext';
 import { ChangePassword } from '../lab-03/ChangePassword';
 import { Login } from '../lab-03/Login';
+import { StaffTicketQueue } from '../lab-03/StaffTicketQueue';
 import { CreateTicket } from './CreateTicket';
 import { MyTickets } from './MyTickets';
 import { TicketDetail } from './TicketDetail';
@@ -68,8 +69,25 @@ function Header() {
                 </NavLink>
               </>
             )}
-            {user.role === 'IT_STAFF' && <span className="nav-link p-0" title="Staff queue arrives in the next phase" aria-disabled="true">My Queue (coming soon)</span>}
-            {user.role === 'ADMINISTRATOR' && <span className="nav-link p-0" title="User management arrives in the next phase" aria-disabled="true">Admin (coming soon)</span>}
+            {user.role === 'IT_STAFF' && (
+              <NavLink
+                to="/staff/queue"
+                className={({ isActive }) => `nav-link p-0 ${isActive ? 'active' : ''}`}
+              >
+                My Queue
+              </NavLink>
+            )}
+            {user.role === 'ADMINISTRATOR' && (
+              <>
+                <NavLink
+                  to="/staff/queue"
+                  className={({ isActive }) => `nav-link p-0 ${isActive ? 'active' : ''}`}
+                >
+                  Queue
+                </NavLink>
+                <span className="nav-link p-0" title="User management arrives in the next phase" aria-disabled="true">Admin (coming soon)</span>
+              </>
+            )}
           </nav>
         </div>
         <div className="d-flex align-items-center gap-2">
@@ -143,14 +161,28 @@ function Shell() {
   }
 
   if (user.role !== 'REQUESTER') {
+    const readOnly = user.role === 'ADMINISTRATOR';
     return (
       <>
         <Header />
-        <main className="container py-5">
-          <p role="status">
-            {user.role === 'IT_STAFF' ? 'Staff queue' : 'User management'} arrives in the next phase.
-          </p>
-        </main>
+        <Routes>
+          <Route
+            path="/staff/queue"
+            element={<StaffTicketQueue readOnly={readOnly} onOpenTicket={(id) => navigate(`/staff/tickets/${id}`)} />}
+          />
+          <Route
+            path="/staff/tickets/:id"
+            element={
+              <main className="container py-5">
+                <p role="status">Ticket detail arrives in the next phase.</p>
+                <button type="button" className="btn btn-outline-secondary" onClick={() => navigate('/staff/queue')}>
+                  &larr; Back to Queue
+                </button>
+              </main>
+            }
+          />
+          <Route path="*" element={<Navigate to="/staff/queue" replace />} />
+        </Routes>
       </>
     );
   }

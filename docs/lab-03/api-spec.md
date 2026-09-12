@@ -54,8 +54,8 @@ Identity comes from session. Any `requesterId` query/body/header is ignored (AC-
 
 ### GET /api/staff/tickets (IT + Admin read-only)
 
-- Query: `search` (matches `ticketNumber` + `summary` + `description`, case-insensitive — same coverage as Lab 2 plus ticketNumber for staff lookup), `status` (8 values), `categoryId`, `relatedSystemId`, `reqPriority`, `itPriority`, `owner` (`me|unassigned|<userId>`), `sort` (`ticketDate|updatedAt|requestedPriority|itPriority`, default `updatedAt` — `ticketDate` kept from Lab 2 naming for creation time), `order` (`asc|desc`, default `desc`), `page` (≥1, default 1), `pageSize` (1..50, default 10).
-- Res `200`: `{ tickets: [{ id, ticketNumber, summary, category, requestedPriority, itPriority, currentStatus, owner{id,name}|null, createdAt, updatedAt }], pagination }`.
+- Query: `search` (matches `ticketNumber` + `summary` + `description`, case-insensitive — same coverage as Lab 2 plus ticketNumber for staff lookup), `status` (8 values), `categoryId`, `relatedSystemId`, `reqPriority`, `itPriority`, `owner` (`me|unassigned|<userId>`), `sort` (`ticketDate|updatedAt|requestedPriority|itPriority`, default `updatedAt` — `ticketDate` kept from Lab 2 naming for creation time, `createdDate` accepted as an alias), `order` (`asc|desc`, default `desc`; anything else → `400 INVALID_QUERY`), `page` (≥1, default 1), `pageSize` (1..50, default 10).
+- Res `200`: `{ tickets: [{ id, ticketNumber, summary, category, requestedPriority, itPriority, currentStatus, owner{id,name}|null, ticketDate, updatedAt }], pagination }`.
 - Invalid query → `400 INVALID_QUERY` (strict integer checks, NaN → 400).
 - Requester → `403 FORBIDDEN`.
 
