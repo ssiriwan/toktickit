@@ -1,8 +1,17 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { StaffTicketQueue } from '../../src/lab-03/StaffTicketQueue';
+
+function renderQueue(readOnly = false, onOpenTicket: (id: number) => void = () => {}) {
+  return render(
+    <MemoryRouter>
+      <StaffTicketQueue readOnly={readOnly} onOpenTicket={onOpenTicket} />
+    </MemoryRouter>
+  );
+}
 
 const rows = [
   {
@@ -60,7 +69,7 @@ describe('Lab 3 StaffTicketQueue (UI-03)', () => {
   it('renders rows with badges and an open action', async () => {
     const onOpen = vi.fn();
     mockQueue(rows);
-    render(<StaffTicketQueue readOnly={false} onOpenTicket={onOpen} />);
+    renderQueue(false, onOpen);
 
     expect(await screen.findAllByText('TK-20260910-0001')).not.toHaveLength(0);
     expect(screen.getAllByText('Unassigned').length).toBeGreaterThanOrEqual(1);
@@ -71,17 +80,55 @@ describe('Lab 3 StaffTicketQueue (UI-03)', () => {
 
   it('shows read-only tag for administrators', async () => {
     mockQueue(rows);
-    render(<StaffTicketQueue readOnly onOpenTicket={() => {}} />);
+    renderQueue(true);
     expect(await screen.findByText('Read-only')).toBeInTheDocument();
   });
 
-  it('shows empty and no-results states', async () => {
+  it('shows empty state with no filters', async () => {
     mockQueue([]);
-    render(<StaffTicketQueue readOnly={false} onOpenTicket={() => {}} />);
+    renderQueue();
     expect(await screen.findByText(/no tickets yet/i)).toBeInTheDocument();
   });
 
-  it('shows forbidden card on 401/403', async () => {
+  it('shows no-results state with active filters', async () => {
+    mockQueue([]);
+    renderQueue();
+    await screen.findByText(/no tickets yet/i);
+    await userEvent.click(screen.getByRole('button', { name: 'Filters' }));
+    await userEvent.selectOptions(screen.getByLabelText('Status'), 'OPEN');
+    expect(await screen.findByText(/no tickets match/i)).toBeInTheDocument();
+  });
+
+  it('retries reload after failure', async () => {
+    let staffCalls = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => {
+        if (String(url).includes('/api/staff/tickets')) {
+          staffCalls++;
+          if (staffCalls === 1) {
+            return Promise.resolve({ ok: false, status: 500, json: async () => ({}) });
+          }
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({
+              tickets: rows,
+              pagination: { page: 1, pageSize: 10, totalItems: 2, totalPages: 1 }
+            })
+          });
+        }
+        return Promise.resolve({ ok: true, status: 200, json: async () => [] });
+      })
+    );
+    renderQueue();
+    await screen.findByText(/unable to load the queue/i);
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    await screen.findAllByText('TK-20260910-0001');
+    expect(staffCalls).toBe(2);
+  });
+
+  it('redirects to login on 401, forbidden card on 403', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn((url: string) => {
@@ -91,13 +138,13 @@ describe('Lab 3 StaffTicketQueue (UI-03)', () => {
         return Promise.resolve({ ok: true, status: 200, json: async () => [] });
       })
     );
-    render(<StaffTicketQueue readOnly={false} onOpenTicket={() => {}} />);
+    renderQueue();
     expect(await screen.findByText(/do not have access/i)).toBeInTheDocument();
   });
 
   it('exposes search, filters, sort, and pagination controls', async () => {
     mockQueue(rows);
-    render(<StaffTicketQueue readOnly={false} onOpenTicket={() => {}} />);
+    renderQueue();
     await screen.findAllByText('TK-20260910-0001');
 
     expect(screen.getByLabelText(/search queue/i)).toBeInTheDocument();

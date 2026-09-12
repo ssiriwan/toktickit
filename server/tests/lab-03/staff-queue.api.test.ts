@@ -9,12 +9,12 @@ const app = createApp();
 
 type Role = 'REQUESTER' | 'IT_STAFF' | 'ADMINISTRATOR';
 
-function cookieFor(id: number, role: Role) {
+function cookieFor(id: number, role: Role, mustChangePassword = false) {
   vi.spyOn(prisma.user, 'findUnique').mockResolvedValue({
     id,
     role,
     isActive: true,
-    mustChangePassword: false
+    mustChangePassword
   } as never);
   return `toktickit_session=${signSession(id, role)}`;
 }
@@ -122,6 +122,7 @@ describe('Lab 3 staff queue (QUEUE-01..06)', () => {
       { reqPriority: 'CRITICAL' },
       { owner: 'someone' },
       { sort: 'hacker' },
+      { order: 'hacker' },
       { page: '0' },
       { pageSize: '51' }
     ];
@@ -132,8 +133,7 @@ describe('Lab 3 staff queue (QUEUE-01..06)', () => {
     }
   });
 
-  it('QUEUE-06: requester forbidden, admin read-only allowed, auth enforced', async () => {
-    const staffRes = await request(app)
+  it('QUEUE-06: requester forbidden, admin read-only allowed, auth enforced', async () => {    const staffRes = await request(app)
       .get('/api/staff/tickets')
       .set('Cookie', cookieFor(4, 'REQUESTER'));
     expect(staffRes.status).toBe(403);
@@ -159,5 +159,13 @@ describe('Lab 3 staff queue (QUEUE-01..06)', () => {
       .get('/api/staff/tickets/999999')
       .set('Cookie', cookieFor(3, 'IT_STAFF'));
     expect(missing.status).toBe(404);
+  });
+
+  it('QUEUE-02b: mustChange users are blocked from the queue', async () => {
+    const res = await request(app)
+      .get('/api/staff/tickets')
+      .set('Cookie', cookieFor(3, 'IT_STAFF', true));
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('PASSWORD_CHANGE_REQUIRED');
   });
 });

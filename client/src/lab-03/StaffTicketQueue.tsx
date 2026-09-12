@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 type QueueTicket = {
   id: number;
@@ -53,6 +54,7 @@ export function StaffTicketQueue({
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
   const [retryTick, setRetryTick] = useState(0);
+  const navigate = useNavigate();
   const [showFilters, setShowFilters] = useState(false);
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [systems, setSystems] = useState<{ id: number; name: string }[]>([]);
@@ -66,8 +68,8 @@ export function StaffTicketQueue({
     async function loadRefs() {
       try {
         const [catRes, sysRes] = await Promise.all([
-          fetch('/api/categories'),
-          fetch('/api/related-systems')
+          fetch('/api/categories', { credentials: 'include' }),
+          fetch('/api/related-systems', { credentials: 'include' })
         ]);
         if (catRes.ok) {
           const cats = await catRes.json();
@@ -111,7 +113,11 @@ export function StaffTicketQueue({
         params.set('page', String(page));
         params.set('pageSize', String(pageSize));
         const res = await fetch(`/api/staff/tickets?${params.toString()}`, { credentials: 'include' });
-        if (res.status === 401 || res.status === 403) {
+        if (res.status === 401) {
+          navigate('/login', { replace: true });
+          return;
+        }
+        if (res.status === 403) {
           setStatus('forbidden');
           return;
         }
@@ -381,7 +387,7 @@ export function StaffTicketQueue({
                 setPage(1);
               }}
             >
-              {[10, 20, 50].map((n) => (
+              {[5, 10, 25].map((n) => (
                 <option key={n} value={n}>{n} / page</option>
               ))}
             </select>

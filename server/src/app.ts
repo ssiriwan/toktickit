@@ -776,6 +776,7 @@ export function createApp() {
   const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
   const QUEUE_SORTS: Record<string, string> = {
     ticketDate: 'ticketDate',
+    createdDate: 'ticketDate',
     updatedAt: 'updatedAt',
     requestedPriority: 'requestedPriority',
     itPriority: 'itPriority'
@@ -833,7 +834,11 @@ export function createApp() {
 
       const sortKey = QUEUE_SORTS[q.sort?.trim() ?? ''] ?? (q.sort === undefined ? 'updatedAt' : null);
       if (sortKey === null) return invalidQuery(res);
-      const order = q.order?.trim() === 'asc' ? 'asc' : 'desc';
+      const orderRaw = q.order?.trim();
+      if (orderRaw !== undefined && orderRaw !== '' && orderRaw !== 'asc' && orderRaw !== 'desc') {
+        return invalidQuery(res);
+      }
+      const order = orderRaw === 'asc' ? 'asc' : 'desc';
       const pageRaw = parsePositiveInt(q.page);
       if (pageRaw === null) return invalidQuery(res);
       const page = pageRaw ?? 1;
