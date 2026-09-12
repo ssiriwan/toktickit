@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { createApp } from '../../server/src/app';
 import { prisma } from '../../server/src/db';
-import { loginAs, type TestSession } from './session.helper';
+import { cleanupTestUsers, loginAs, type TestSession } from './session.helper';
 
 const app = createApp();
 
@@ -24,6 +24,7 @@ describe('TokTickIT API POST /api/tickets', () => {
 
   afterAll(async () => {
     await prisma.ticket.deleteMany({});
+    await cleanupTestUsers();
   });
 
   function post(payload: unknown, cookie = session.cookie) {

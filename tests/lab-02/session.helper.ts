@@ -43,3 +43,17 @@ export async function loginAs(key: string): Promise<TestSession> {
   const user = await prisma.user.findUniqueOrThrow({ where: { email } });
   return { cookie: setCookie[0].split(';')[0], userId: user.id, email };
 }
+
+// Removes throwaway phase4.* accounts. Call after the file's own ticket
+// cleanup (tickets/attachments/comments/notes FK-restrict user deletion).
+export async function cleanupTestUsers() {
+  const users = await prisma.user.findMany({
+    where: { email: { startsWith: 'phase4.' } },
+    select: { id: true }
+  });
+  const ids = users.map((u) => u.id);
+  if (ids.length === 0) return;
+  await prisma.publicComment.deleteMany({ where: { authorId: { in: ids } } });
+  await prisma.internalNote.deleteMany({ where: { authorId: { in: ids } } });
+  await prisma.user.deleteMany({ where: { id: { in: ids } } });
+}

@@ -665,65 +665,71 @@ export function createApp() {
   });
 
   // Internal Notes: IT Staff + Administrator read; IT Staff only writes.
-  // Requester gets 403 with no note content (AC-04).
-  app.get('/api/tickets/:id/notes', requireAuth, requirePasswordChanged, async (req, res) => {
-    try {
-      const auth = sessionUser(req);
-      if (auth.role === 'REQUESTER') {
-        return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Access denied' } });
-      }
-      const ticketId = Number(req.params.id);
-      if (!Number.isInteger(ticketId) || ticketId <= 0) {
-        return res.status(400).json({
-          error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' }
+  // Requester gets 403 with no note content (AC-04). Roles enforced at the
+  // middleware layer (fail closed); handlers assume an allowed role.
+  app.get(
+    '/api/tickets/:id/notes',
+    requireAuth,
+    requirePasswordChanged,
+    requireRole('IT_STAFF', 'ADMINISTRATOR'),
+    async (req, res) => {
+      try {
+        const ticketId = Number(req.params.id);
+        if (!Number.isInteger(ticketId) || ticketId <= 0) {
+          return res.status(400).json({
+            error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' }
+          });
+        }
+        const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+        if (!ticket) {
+          return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+        }
+        const notes = await prisma.internalNote.findMany({
+          where: { ticketId },
+          orderBy: { createdAt: 'asc' },
+          select: { id: true, body: true, createdAt: true, author: { select: authorSelect } }
         });
+        res.json(notes);
+      } catch {
+        res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to load notes' } });
       }
-      const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
-      if (!ticket) {
-        return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
-      }
-      const notes = await prisma.internalNote.findMany({
-        where: { ticketId },
-        orderBy: { createdAt: 'asc' },
-        select: { id: true, body: true, createdAt: true, author: { select: authorSelect } }
-      });
-      res.json(notes);
-    } catch {
-      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to load notes' } });
     }
-  });
+  );
 
-  app.post('/api/tickets/:id/notes', requireAuth, requirePasswordChanged, async (req, res) => {
-    try {
-      const auth = sessionUser(req);
-      if (auth.role !== 'IT_STAFF') {
-        return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Access denied' } });
-      }
-      const ticketId = Number(req.params.id);
-      if (!Number.isInteger(ticketId) || ticketId <= 0) {
-        return res.status(400).json({
-          error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' }
+  app.post(
+    '/api/tickets/:id/notes',
+    requireAuth,
+    requirePasswordChanged,
+    requireRole('IT_STAFF'),
+    async (req, res) => {
+      try {
+        const auth = sessionUser(req);
+        const ticketId = Number(req.params.id);
+        if (!Number.isInteger(ticketId) || ticketId <= 0) {
+          return res.status(400).json({
+            error: { code: 'INVALID_QUERY', message: 'Invalid query parameters' }
+          });
+        }
+        const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+        if (!ticket) {
+          return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+        }
+        const check = validateCommentBody(req.body?.body);
+        if (!check.ok) {
+          return res.status(400).json({
+            error: { code: 'VALIDATION_ERROR', message: 'Note is invalid', details: check.details }
+          });
+        }
+        const note = await prisma.internalNote.create({
+          data: { ticketId, authorId: auth.userId, body: check.text },
+          select: { id: true, body: true, createdAt: true, author: { select: authorSelect } }
         });
+        res.status(201).json(note);
+      } catch {
+        res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to post note' } });
       }
-      const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
-      if (!ticket) {
-        return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
-      }
-      const check = validateCommentBody(req.body?.body);
-      if (!check.ok) {
-        return res.status(400).json({
-          error: { code: 'VALIDATION_ERROR', message: 'Note is invalid', details: check.details }
-        });
-      }
-      const note = await prisma.internalNote.create({
-        data: { ticketId, authorId: auth.userId, body: check.text },
-        select: { id: true, body: true, createdAt: true, author: { select: authorSelect } }
-      });
-      res.status(201).json(note);
-    } catch {
-      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to post note' } });
     }
-  });
+  );
 
   // Requester flag only — never changes currentStatus (BR-05).
   app.patch('/api/tickets/:id/appears-resolved', ...requesterGuards, async (req, res) => {

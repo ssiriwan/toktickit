@@ -68,8 +68,8 @@ function Header() {
                 </NavLink>
               </>
             )}
-            {user.role === 'IT_STAFF' && <span className="nav-link p-0">My Queue (coming soon)</span>}
-            {user.role === 'ADMINISTRATOR' && <span className="nav-link p-0">Admin (coming soon)</span>}
+            {user.role === 'IT_STAFF' && <span className="nav-link p-0" title="Staff queue arrives in the next phase" aria-disabled="true">My Queue (coming soon)</span>}
+            {user.role === 'ADMINISTRATOR' && <span className="nav-link p-0" title="User management arrives in the next phase" aria-disabled="true">Admin (coming soon)</span>}
           </nav>
         </div>
         <div className="d-flex align-items-center gap-2">

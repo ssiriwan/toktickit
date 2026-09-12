@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { createApp } from '../../server/src/app';
 import { prisma } from '../../server/src/db';
-import { loginAs, type TestSession } from './session.helper';
+import { cleanupTestUsers, loginAs, type TestSession } from './session.helper';
 
 const app = createApp();
 
@@ -51,6 +51,7 @@ describe('TokTickIT API GET /api/tickets/:id', () => {
   afterAll(async () => {
     await prisma.attachment.deleteMany({});
     await prisma.ticket.deleteMany({});
+    await cleanupTestUsers();
   });
 
   it('returns owned ticket with attachments', async () => {

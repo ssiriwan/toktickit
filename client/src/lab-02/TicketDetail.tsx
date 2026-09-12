@@ -121,7 +121,7 @@ export function TicketDetail({ ticketId, requester, onBack }: TicketDetailProps)
     }
     setDownloadError(null);
     try {
-      const res = await fetch(`/api/attachments/${att.id}/download`);
+      const res = await fetch(`/api/attachments/${att.id}/download`, { credentials: 'include' });
       if (!res.ok) {
         const body = await res.json().catch(() => ({} as { error?: { code?: string; message?: string } }));
         if (body.error?.code === 'REMOVED') setDownloadError('Attachment has been removed');

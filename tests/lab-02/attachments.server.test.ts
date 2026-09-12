@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from '../../server/src/app';
 import { prisma } from '../../server/src/db';
 import { uploadsDir } from '../../server/src/uploads';
-import { loginAs, type TestSession } from './session.helper';
+import { cleanupTestUsers, loginAs, type TestSession } from './session.helper';
 
 const app = createApp();
 
@@ -63,6 +63,7 @@ describe('TokTickIT API Attachments', () => {
     }
     await prisma.attachment.deleteMany({ where: { ticketId } });
     await prisma.ticket.deleteMany({ where: { id: ticketId } });
+    await cleanupTestUsers();
     for (const p of tmpFiles) {
       if (fs.existsSync(p)) fs.unlinkSync(p);
     }

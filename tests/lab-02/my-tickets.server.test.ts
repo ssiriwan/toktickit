@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { createApp } from '../../server/src/app';
 import { prisma } from '../../server/src/db';
-import { loginAs, type TestSession } from './session.helper';
+import { cleanupTestUsers, loginAs, type TestSession } from './session.helper';
 
 const app = createApp();
 
@@ -36,6 +36,7 @@ describe('TokTickIT API GET /api/tickets — My Tickets', () => {
 
   afterAll(async () => {
     await prisma.ticket.deleteMany({});
+    await cleanupTestUsers();
   });
 
   it('returns only the session owner tickets', async () => {
