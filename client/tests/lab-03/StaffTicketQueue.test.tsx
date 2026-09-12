@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { StaffTicketQueue } from '../../src/lab-03/StaffTicketQueue';
@@ -129,6 +129,27 @@ describe('Lab 3 StaffTicketQueue (UI-03)', () => {
   });
 
   it('redirects to login on 401, forbidden card on 403', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => {
+        if (String(url).includes('/api/staff/tickets')) {
+          return Promise.resolve({ ok: false, status: 401, json: async () => ({}) });
+        }
+        return Promise.resolve({ ok: true, status: 200, json: async () => [] });
+      })
+    );
+    render(
+      <MemoryRouter initialEntries={['/staff/queue']}>
+        <Routes>
+          <Route path="/staff/queue" element={<StaffTicketQueue readOnly={false} onOpenTicket={() => {}} />} />
+          <Route path="/login" element={<p>Login page</p>} />
+        </Routes>
+      </MemoryRouter>
+    );
+    expect(await screen.findByText('Login page')).toBeInTheDocument();
+  });
+
+  it('shows forbidden card on 403', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn((url: string) => {
