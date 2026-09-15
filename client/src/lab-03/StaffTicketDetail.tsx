@@ -29,6 +29,14 @@ function formatStatus(s: string) {
   return s.replace(/_/g, ' ');
 }
 
+function DropdownChevron() {
+  return (
+    <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6B7280' }}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
+    </span>
+  );
+}
+
 export function StaffTicketDetail() {
   const { id } = useParams<{ id: string }>();
   const ticketId = Number(id);
@@ -319,31 +327,39 @@ export function StaffTicketDetail() {
           </div>
           <div className="col-md-4">
             <label className="form-label">Current Status</label>
-            <select
-              className="form-select"
-              value={statusDraft}
-              onChange={(e) => setStatusDraft(e.target.value)}
-              aria-label="Current Status"
-            >
-              {STATUSES.map((s) => (
-                <option key={s} value={s}>{formatStatus(s)}</option>
-              ))}
-            </select>
+            <div style={{ position: 'relative' }}>
+              <select
+                className="form-select"
+                style={{ paddingRight: '2rem' }}
+                value={statusDraft}
+                onChange={(e) => setStatusDraft(e.target.value)}
+                aria-label="Current Status"
+              >
+                {STATUSES.map((s) => (
+                  <option key={s} value={s}>{formatStatus(s)}</option>
+                ))}
+              </select>
+              <DropdownChevron />
+            </div>
           </div>
           <div className="col-md-4">
             <label className="form-label">Ticket Owner</label>
             <div className="d-flex gap-2">
-              <select
-                className="form-select"
-                value={ownerDraft}
-                onChange={(e) => setOwnerDraft(e.target.value)}
-                aria-label="Ticket Owner"
-              >
-                <option value="">Unassigned</option>
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>{u.name} (ID {u.id})</option>
-                ))}
-              </select>
+              <div style={{ position: 'relative', flex: 1 }}>
+                <select
+                  className="form-select"
+                  style={{ paddingRight: '2rem' }}
+                  value={ownerDraft}
+                  onChange={(e) => setOwnerDraft(e.target.value)}
+                  aria-label="Ticket Owner"
+                >
+                  <option value="">Unassigned</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={u.id}>{u.name} (ID {u.id})</option>
+                  ))}
+                </select>
+                <DropdownChevron />
+              </div>
               {ticket.owner === null && (
                 <button type="button" className="btn btn-outline-primary btn-sm" disabled={!!saving} onClick={handleClaim}>
                   {saving === 'owner' ? 'Saving...' : 'Claim'}
@@ -353,16 +369,20 @@ export function StaffTicketDetail() {
           </div>
           <div className="col-md-4">
             <label className="form-label">IT Priority</label>
-            <select
-              className="form-select"
-              value={priorityDraft}
-              onChange={(e) => setPriorityDraft(e.target.value)}
-              aria-label="IT Priority"
-            >
-              {PRIORITIES.map((p) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
+            <div style={{ position: 'relative' }}>
+              <select
+                className="form-select"
+                style={{ paddingRight: '2rem' }}
+                value={priorityDraft}
+                onChange={(e) => setPriorityDraft(e.target.value)}
+                aria-label="IT Priority"
+              >
+                {PRIORITIES.map((p) => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+              <DropdownChevron />
+            </div>
           </div>
           <div className="col-md-4">
             <label className="form-label">Created Date</label>
