@@ -310,6 +310,7 @@ export function StaffTicketQueue({
                   <th>IT Priority</th>
                   <th>Status</th>
                   <th>Owner</th>
+                  <th>Updated</th>
                   <th aria-label="Actions" />
                 </tr>
               </thead>
@@ -326,8 +327,9 @@ export function StaffTicketQueue({
                     <td><span className={`badge badge-priority-${t.itPriority}`}>{t.itPriority}</span></td>
                     <td><span className={`badge badge-status-${t.currentStatus}`}>{formatStatus(t.currentStatus)}</span></td>
                     <td>{t.owner ? t.owner.name : <span className="text-muted">Unassigned</span>}</td>
+                    <td>{new Date(t.updatedAt).toLocaleString()}</td>
                     <td>
-                      <button type="button" className="btn btn-outline-primary btn-sm" onClick={() => onOpenTicket(t.id)}>
+                      <button type="button" className="btn btn-primary btn-sm" onClick={() => onOpenTicket(t.id)}>
                         Open
                       </button>
                     </td>
@@ -347,12 +349,13 @@ export function StaffTicketQueue({
                   </div>
                   <p className="mb-1">{t.summary}</p>
                   <small className="text-muted d-block">{t.category.name} • {new Date(t.ticketDate).toLocaleDateString()}</small>
+                  <small className="text-muted d-block">Updated {new Date(t.updatedAt).toLocaleString()}</small>
                   <div className="d-flex gap-1 my-2">
                     <span className={`badge badge-priority-${t.requestedPriority}`}>{t.requestedPriority}</span>
                     <span className={`badge badge-priority-${t.itPriority}`}>{t.itPriority}</span>
                     <span className="badge bg-light text-dark">{t.owner ? t.owner.name : 'Unassigned'}</span>
                   </div>
-                  <button type="button" className="btn btn-outline-primary btn-sm" onClick={() => onOpenTicket(t.id)}>
+                  <button type="button" className="btn btn-primary btn-sm w-100" onClick={() => onOpenTicket(t.id)}>
                     Open →
                   </button>
                 </div>
