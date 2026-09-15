@@ -318,7 +318,7 @@ export function StaffTicketQueue({
                 {tickets.map((t) => (
                   <tr key={t.id}>
                     <td>{t.ticketNumber}</td>
-                    <td>{new Date(t.ticketDate).toLocaleString()}</td>
+                    <td>{new Date(t.ticketDate).toLocaleDateString()}</td>
                     <td style={{ maxWidth: '16rem' }} title={t.summary}>
                       <span className="d-inline-block text-truncate" style={{ maxWidth: '16rem' }}>{t.summary}</span>
                     </td>
@@ -327,7 +327,7 @@ export function StaffTicketQueue({
                     <td><span className={`badge badge-priority-${t.itPriority}`}>{t.itPriority}</span></td>
                     <td><span className={`badge badge-status-${t.currentStatus}`}>{formatStatus(t.currentStatus)}</span></td>
                     <td>{t.owner ? t.owner.name : <span className="text-muted">Unassigned</span>}</td>
-                    <td>{new Date(t.updatedAt).toLocaleString()}</td>
+                    <td>{new Date(t.updatedAt).toLocaleDateString()}</td>
                     <td>
                       <button type="button" className="btn btn-primary btn-sm" onClick={() => onOpenTicket(t.id)}>
                         Open
@@ -349,7 +349,7 @@ export function StaffTicketQueue({
                   </div>
                   <p className="mb-1">{t.summary}</p>
                   <small className="text-muted d-block">{t.category.name} • {new Date(t.ticketDate).toLocaleDateString()}</small>
-                  <small className="text-muted d-block">Updated {new Date(t.updatedAt).toLocaleString()}</small>
+                  <small className="text-muted d-block">Updated {new Date(t.updatedAt).toLocaleDateString()}</small>
                   <div className="d-flex gap-1 my-2">
                     <span className={`badge badge-priority-${t.requestedPriority}`}>{t.requestedPriority}</span>
                     <span className={`badge badge-priority-${t.itPriority}`}>{t.itPriority}</span>

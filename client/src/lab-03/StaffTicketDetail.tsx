@@ -12,6 +12,7 @@ type DetailTicket = {
   appearsResolved: boolean;
   appearsResolvedAt: string | null;
   ticketDate: string;
+  updatedAt: string;
   requester: { id: number; name: string; email: string };
   owner: { id: number; name: string } | null;
   category: { id: number; name: string };
@@ -362,6 +363,14 @@ export function StaffTicketDetail() {
                 <option key={p} value={p}>{p}</option>
               ))}
             </select>
+          </div>
+          <div className="col-md-4">
+            <label className="form-label">Created Date</label>
+            <div className="zen-readonly">{new Date(ticket.ticketDate).toLocaleDateString()}</div>
+          </div>
+          <div className="col-md-4">
+            <label className="form-label">Last Updated</label>
+            <div className="zen-readonly">{new Date(ticket.updatedAt).toLocaleDateString()}</div>
           </div>
           <div className="col-12">
             <label className="form-label">Summary</label>
