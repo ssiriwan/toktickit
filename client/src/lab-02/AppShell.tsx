@@ -162,18 +162,17 @@ function Shell() {
   }
 
   if (user.role !== 'REQUESTER') {
-    const readOnly = user.role === 'ADMINISTRATOR';
     return (
       <>
         <Header />
         <Routes>
           <Route
             path="/staff/queue"
-            element={<StaffTicketQueue readOnly={readOnly} onOpenTicket={(id) => navigate(`/staff/tickets/${id}`)} />}
+            element={<StaffTicketQueue readOnly={user.role === 'ADMINISTRATOR'} onOpenTicket={(id) => navigate(`/staff/tickets/${id}`)} />}
           />
           <Route
             path="/staff/tickets/:id"
-            element={<StaffTicketDetail readOnly={readOnly} />}
+            element={<StaffTicketDetail />}
           />
           <Route path="*" element={<Navigate to="/staff/queue" replace />} />
         </Routes>

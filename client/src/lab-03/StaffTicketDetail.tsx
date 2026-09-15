@@ -28,7 +28,7 @@ function formatStatus(s: string) {
   return s.replace(/_/g, ' ');
 }
 
-export function StaffTicketDetail({ readOnly }: { readOnly: boolean }) {
+export function StaffTicketDetail() {
   const { id } = useParams<{ id: string }>();
   const ticketId = Number(id);
   const navigate = useNavigate();
@@ -46,12 +46,20 @@ export function StaffTicketDetail({ readOnly }: { readOnly: boolean }) {
   const [noteBody, setNoteBody] = useState('');
   const [postError, setPostError] = useState<string | null>(null);
   const [users, setUsers] = useState<{ id: number; name: string }[]>([]);
+  const [showUnassignConfirm, setShowUnassignConfirm] = useState(false);
+  const [pendingUnassign, setPendingUnassign] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   async function load() {
     setStatus('loading');
     try {
       const res = await fetch(`/api/staff/tickets/${ticketId}`, { credentials: 'include' });
-      if (res.status === 401 || res.status === 403) {
+      if (res.status === 401) {
+        navigate('/login', { replace: true });
+        return;
+      }
+      if (res.status === 403) {
         setStatus('forbidden');
         return;
       }
@@ -69,33 +77,123 @@ export function StaffTicketDetail({ readOnly }: { readOnly: boolean }) {
 
   useEffect(() => {
     load();
-    fetch('/api/admin/users', { credentials: 'include' })
+    fetch('/api/staff/users', { credentials: 'include' })
       .then((r) => (r.ok ? r.json() : null))
-      .then((data: { users?: { id: number; name: string }[] } | null) => {
-        if (data?.users) setUsers(data.users);
+      .then((data: { users?: { id: number; name: string }[] } | { id: number; name: string }[] | null) => {
+        if (!data) return;
+        const list = Array.isArray(data) ? data : data.users;
+        if (list) setUsers(list);
       })
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ticketId]);
 
-  async function patch(field: string, body: unknown, key: string) {
-    setSaving(key);
+  async function handleClaim() {
+    setSaving('owner');
     setSaveError(null);
     try {
-      const res = await fetch(`/api/tickets/${ticketId}/${field}`, {
-        method: 'PATCH',
+      const res = await fetch(`/api/staff/tickets/${ticketId}/claim`, {
+        method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify({})
       });
-      const payload = await res.json().catch(() => ({} as { error?: { message?: string; details?: { message?: string }[] } }));
+      const payload = await res.json().catch(() => ({} as { error?: { message?: string } }));
       if (!res.ok) {
-        setSaveError(payload.error?.message ?? payload.error?.details?.[0]?.message ?? 'Failed to update');
+        setSaveError(payload.error?.message ?? 'Failed to claim');
         return;
       }
       await load();
     } catch {
-      setSaveError('Failed to update');
+      setSaveError('Failed to claim');
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  async function handleAssign() {
+    if (ownerDraft === '' && ticket && ['OPEN', 'IN_PROGRESS', 'WAITING_FOR_REQUESTER', 'REOPENED'].includes(ticket.currentStatus)) {
+      setShowUnassignConfirm(true);
+      return;
+    }
+    await doAssign();
+  }
+
+  async function doAssign() {
+    setSaving('owner');
+    setSaveError(null);
+    setShowUnassignConfirm(false);
+    try {
+      const res = await fetch(`/api/staff/tickets/${ticketId}/assign`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ownerId: ownerDraft ? Number(ownerDraft) : null })
+      });
+      const payload = await res.json().catch(() => ({} as { error?: { message?: string; details?: { message?: string }[] } }));
+      if (!res.ok) {
+        setSaveError(payload.error?.message ?? payload.error?.details?.[0]?.message ?? 'Failed to assign');
+        return;
+      }
+      await load();
+    } catch {
+      setSaveError('Failed to assign');
+    } finally {
+      setSaving(null);
+      setPendingUnassign(false);
+    }
+  }
+
+  async function handlePrioritySave() {
+    setSaving('priority');
+    setSaveError(null);
+    try {
+      const res = await fetch(`/api/staff/tickets/${ticketId}/priority`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itPriority: priorityDraft })
+      });
+      const payload = await res.json().catch(() => ({} as { error?: { message?: string } }));
+      if (!res.ok) {
+        setSaveError(payload.error?.message ?? 'Failed to update priority');
+        return;
+      }
+      await load();
+    } catch {
+      setSaveError('Failed to update priority');
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  async function handleStatusSave() {
+    if (statusDraft === 'CANCELLED') {
+      setShowCancelConfirm(true);
+      return;
+    }
+    await doStatusSave();
+  }
+
+  async function doStatusSave() {
+    setSaving('status');
+    setSaveError(null);
+    setShowCancelConfirm(false);
+    try {
+      const res = await fetch(`/api/staff/tickets/${ticketId}/status`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: statusDraft })
+      });
+      const payload = await res.json().catch(() => ({} as { error?: { message?: string; details?: { message?: string }[] } }));
+      if (!res.ok) {
+        setSaveError(payload.error?.message ?? payload.error?.details?.[0]?.message ?? 'Failed to update status');
+        return;
+      }
+      await load();
+    } catch {
+      setSaveError('Failed to update status');
     } finally {
       setSaving(null);
     }
@@ -108,7 +206,7 @@ export function StaffTicketDetail({ readOnly }: { readOnly: boolean }) {
       return;
     }
     setPostError(null);
-    const res = await fetch(`/api/tickets/${ticketId}/comments`, {
+    const res = await fetch(`/api/staff/tickets/${ticketId}/comments`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -130,7 +228,7 @@ export function StaffTicketDetail({ readOnly }: { readOnly: boolean }) {
       return;
     }
     setPostError(null);
-    const res = await fetch(`/api/tickets/${ticketId}/notes`, {
+    const res = await fetch(`/api/staff/tickets/${ticketId}/notes`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -143,6 +241,31 @@ export function StaffTicketDetail({ readOnly }: { readOnly: boolean }) {
     }
     setNoteBody('');
     await load();
+  }
+
+  async function handleDownload(att: { id: number; filename: string }) {
+    setDownloadError(null);
+    try {
+      const res = await fetch(`/api/staff/attachments/${att.id}/download`, { credentials: 'include' });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({} as { error?: { code?: string; message?: string } }));
+        if (body.error?.code === 'REMOVED') setDownloadError('Attachment has been removed');
+        else if (res.status === 401) navigate('/login', { replace: true });
+        else setDownloadError(body.error?.message ?? 'Failed to download');
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = att.filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setDownloadError('Failed to download');
+    }
   }
 
   if (!Number.isInteger(ticketId) || ticketId <= 0) {
@@ -195,26 +318,20 @@ export function StaffTicketDetail({ readOnly }: { readOnly: boolean }) {
           </div>
           <div className="col-md-4">
             <label className="form-label">Current Status</label>
-            {readOnly ? (
-              <span className={`badge badge-status-${ticket.currentStatus}`}>{formatStatus(ticket.currentStatus)}</span>
-            ) : (
-              <select
-                className="form-select"
-                value={statusDraft}
-                onChange={(e) => setStatusDraft(e.target.value)}
-                aria-label="Current Status"
-              >
-                {STATUSES.map((s) => (
-                  <option key={s} value={s}>{formatStatus(s)}</option>
-                ))}
-              </select>
-            )}
+            <select
+              className="form-select"
+              value={statusDraft}
+              onChange={(e) => setStatusDraft(e.target.value)}
+              aria-label="Current Status"
+            >
+              {STATUSES.map((s) => (
+                <option key={s} value={s}>{formatStatus(s)}</option>
+              ))}
+            </select>
           </div>
           <div className="col-md-4">
             <label className="form-label">Ticket Owner</label>
-            {readOnly ? (
-              <div className="zen-readonly">{ticket.owner ? ticket.owner.name : 'Unassigned'}</div>
-            ) : (
+            <div className="d-flex gap-2">
               <select
                 className="form-select"
                 value={ownerDraft}
@@ -226,24 +343,25 @@ export function StaffTicketDetail({ readOnly }: { readOnly: boolean }) {
                   <option key={u.id} value={u.id}>{u.name} (ID {u.id})</option>
                 ))}
               </select>
-            )}
+              {ticket.owner === null && (
+                <button type="button" className="btn btn-outline-primary btn-sm" disabled={!!saving} onClick={handleClaim}>
+                  {saving === 'owner' ? 'Saving...' : 'Claim'}
+                </button>
+              )}
+            </div>
           </div>
           <div className="col-md-4">
             <label className="form-label">IT Priority</label>
-            {readOnly ? (
-              <span className={`badge badge-priority-${ticket.itPriority}`}>{ticket.itPriority}</span>
-            ) : (
-              <select
-                className="form-select"
-                value={priorityDraft}
-                onChange={(e) => setPriorityDraft(e.target.value)}
-                aria-label="IT Priority"
-              >
-                {PRIORITIES.map((p) => (
-                  <option key={p} value={p}>{p}</option>
-                ))}
-              </select>
-            )}
+            <select
+              className="form-select"
+              value={priorityDraft}
+              onChange={(e) => setPriorityDraft(e.target.value)}
+              aria-label="IT Priority"
+            >
+              {PRIORITIES.map((p) => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
           </div>
           <div className="col-12">
             <label className="form-label">Summary</label>
@@ -254,29 +372,51 @@ export function StaffTicketDetail({ readOnly }: { readOnly: boolean }) {
             <div className="zen-readonly">{ticket.description}</div>
           </div>
           {saveError && <p className="text-danger col-12" role="alert">{saveError}</p>}
-          {!readOnly && (
-            <div className="col-12 d-flex gap-2">
-              <button type="button" className="btn btn-primary btn-sm" disabled={!!saving} onClick={() => patch('owner', { ownerId: ownerDraft ? Number(ownerDraft) : null }, 'owner')}>
-                {saving === 'owner' ? 'Saving...' : 'Save Owner'}
-              </button>
-              <button type="button" className="btn btn-primary btn-sm" disabled={!!saving} onClick={() => patch('priority', { itPriority: priorityDraft }, 'priority')}>
-                {saving === 'priority' ? 'Saving...' : 'Save Priority'}
-              </button>
-              <button type="button" className="btn btn-primary btn-sm" disabled={!!saving} onClick={() => patch('status', { status: statusDraft }, 'status')}>
-                {saving === 'status' ? 'Saving...' : 'Save Status'}
-              </button>
-            </div>
-          )}
-          {readOnly && <small className="text-muted col-12">Read-only</small>}
+          {downloadError && <p className="text-danger col-12" role="alert">{downloadError}</p>}
+          <div className="col-12 d-flex gap-2">
+            <button type="button" className="btn btn-primary btn-sm" disabled={!!saving} onClick={handleAssign}>
+              {saving === 'owner' ? 'Saving...' : 'Save Owner'}
+            </button>
+            <button type="button" className="btn btn-primary btn-sm" disabled={!!saving} onClick={handlePrioritySave}>
+              {saving === 'priority' ? 'Saving...' : 'Save Priority'}
+            </button>
+            <button type="button" className="btn btn-primary btn-sm" disabled={!!saving} onClick={handleStatusSave}>
+              {saving === 'status' ? 'Saving...' : 'Save Status'}
+            </button>
+          </div>
         </div>
       </section>
+
+      {showUnassignConfirm && (
+        <div className="card mb-3 border-warning" role="dialog" aria-label="Confirm unassign">
+          <div className="card-body">
+            <p>Unassign will clear the owner and return active work to NEW. Keep RESOLVED/CLOSED/CANCELLED as is. Continue?</p>
+            <div className="d-flex gap-2">
+              <button type="button" className="btn btn-warning btn-sm" onClick={doAssign}>Confirm Unassign</button>
+              <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setShowUnassignConfirm(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCancelConfirm && (
+        <div className="card mb-3 border-danger" role="dialog" aria-label="Confirm cancel">
+          <div className="card-body">
+            <p>Cancel this ticket? This cannot be undone without Reopen.</p>
+            <div className="d-flex gap-2">
+              <button type="button" className="btn btn-danger btn-sm" onClick={doStatusSave}>Confirm Cancel</button>
+              <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setShowCancelConfirm(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="d-flex gap-2 mb-2" role="tablist">
         <button type="button" role="tab" aria-selected={activeTab === 'public'} className={`btn btn-sm ${activeTab === 'public' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setActiveTab('public')}>
           Public Comments ({ticket.publicComments.length})
         </button>
         <button type="button" role="tab" aria-selected={activeTab === 'internal'} className={`btn btn-sm ${activeTab === 'internal' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setActiveTab('internal')}>
-          Internal Notes ({ticket.internalNotes.length}) 🔒 Private — IT & Admin only
+          Internal Notes ({ticket.internalNotes.length}) Private - IT &amp; Admin only
         </button>
         <button type="button" role="tab" aria-selected={activeTab === 'attachments'} className={`btn btn-sm ${activeTab === 'attachments' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setActiveTab('attachments')}>
           Attachments ({ticket.attachments.length})
@@ -296,14 +436,12 @@ export function StaffTicketDetail({ readOnly }: { readOnly: boolean }) {
                 <div>{c.body}</div>
               </div>
             ))}
-            {!readOnly && (
-              <div className="mt-3">
-                <label htmlFor="detail-comment" className="form-label">Add Public Comment</label>
-                <textarea id="detail-comment" className="form-control" rows={3} value={commentBody} maxLength={2000} onChange={(e) => setCommentBody(e.target.value)} placeholder="Type your comment here..." />
-                {postError && activeTab === 'public' && <small className="text-danger mt-1 d-block" role="alert">{postError}</small>}
-                <button type="button" className="btn btn-primary btn-sm mt-2" onClick={postComment}>Post Comment</button>
-              </div>
-            )}
+            <div className="mt-3">
+              <label htmlFor="detail-comment" className="form-label">Add Public Comment</label>
+              <textarea id="detail-comment" className="form-control" rows={3} value={commentBody} maxLength={2000} onChange={(e) => setCommentBody(e.target.value)} placeholder="Type your comment here..." />
+              {postError && activeTab === 'public' && <small className="text-danger mt-1 d-block" role="alert">{postError}</small>}
+              <button type="button" className="btn btn-primary btn-sm mt-2" onClick={postComment}>Post Comment</button>
+            </div>
           </div>
         </section>
       )}
@@ -321,15 +459,12 @@ export function StaffTicketDetail({ readOnly }: { readOnly: boolean }) {
                 <div>{n.body}</div>
               </div>
             ))}
-            {!readOnly && (
-              <div className="mt-3">
-                <label htmlFor="detail-note" className="form-label">Add Internal Note 🔒 (private)</label>
-                <textarea id="detail-note" className="form-control" rows={3} value={noteBody} maxLength={2000} onChange={(e) => setNoteBody(e.target.value)} placeholder="Type internal note... (private)" />
-                {postError && activeTab === 'internal' && <small className="text-danger mt-1 d-block" role="alert">{postError}</small>}
-                <button type="button" className="btn btn-warning btn-sm mt-2" onClick={postNote}>Post Note</button>
-              </div>
-            )}
-            {readOnly && <small className="text-muted">Read-only</small>}
+            <div className="mt-3">
+              <label htmlFor="detail-note" className="form-label">Add Internal Note (private)</label>
+              <textarea id="detail-note" className="form-control" rows={3} value={noteBody} maxLength={2000} onChange={(e) => setNoteBody(e.target.value)} placeholder="Type internal note... (private)" />
+              {postError && activeTab === 'internal' && <small className="text-danger mt-1 d-block" role="alert">{postError}</small>}
+              <button type="button" className="btn btn-warning btn-sm mt-2" onClick={postNote}>Post Note</button>
+            </div>
           </div>
         </section>
       )}
@@ -345,7 +480,11 @@ export function StaffTicketDetail({ readOnly }: { readOnly: boolean }) {
                   <small className="text-muted ms-2">({(a.fileSize / 1024).toFixed(1)} KB)</small>
                   {a.isRemoved && <span className="badge bg-secondary ms-2">Removed</span>}
                 </div>
-                <small className={a.isRemoved ? 'text-muted' : ''}>{a.isRemoved ? 'Download blocked' : 'View in Lab 2'}</small>
+                {!a.isRemoved ? (
+                  <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => handleDownload(a)}>Download</button>
+                ) : (
+                  <small className="text-muted">Download blocked</small>
+                )}
               </div>
             ))}
           </div>

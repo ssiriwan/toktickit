@@ -71,20 +71,24 @@ Email invite/reset, MFA/SSO/social, self-registration, Actions Taken, SLA/escala
 - BR-21: Lab 3 has no account lockout or unlock flow (explicitly excluded account-unlocking). Repeated failed logins always return the same safe `401 INVALID_CREDENTIALS` with no per-account counter exposed; brute-force mitigation is out of scope beyond generic errors and non-enumerating responses.
 - BR-22: CSRF protection relies on `SameSite=Lax` httpOnly cookie + same-origin mutations only (Vite proxy, no cross-site POST); no token is readable by JS, logout clears the cookie server-side; dedicated CSRF tokens are deferred as all Lab 3 mutations are same-origin.
 
-### 5.1 Status transition matrix (permitted actor: IT Staff)
+### 5.1 Status transition matrix (permitted actor: IT Staff and Administrator, BR-17)
 
 ```
 New → Open, Cancelled
-Open → In Progress, Cancelled
+Open → In Progress, Waiting for Requester, Cancelled
 In Progress → Waiting for Requester, Resolved, Cancelled
-Waiting for Requester → In Progress, Resolved
+Waiting for Requester → In Progress, Cancelled
 Resolved → Closed, Reopened
 Closed → Reopened
-Reopened → In Progress, Resolved
+Reopened → In Progress, Cancelled
 Cancelled → (terminal)
 ```
 
-Admin ticket mutation is disabled in Lab 3 (Admin is read-only on tickets, see §5.2). Actions-Taken-gated resolution is deferred to Lab 4.
+Ownership↔status coupling (AD-13 / BR-14): assigning a non-null owner from New sets Open; unassigning from active-work (Open/In Progress/Waiting for Requester/Reopened) returns to New; Resolved/Closed/Cancelled keep their status. Off-matrix transitions return `400 VALIDATION_ERROR` (“Transition from X to Y is not permitted”).
+
+Decisions (AD):
+- AD-09: claim is POST /staff/.../claim (unassigned→owner, NEW→OPEN, self re-claim no-op, foreign-owned 409).
+- AD-13: staff ops (claim/assign/priority/status/comments/notes/download + staff users directory) are allowed for IT Staff and Administrator alike; the earlier PR #36 queue-only read-only was an interim step. Frontend must not render Admin as read-only on detail.
 
 ### 5.2 Authorization matrix
 
@@ -92,11 +96,11 @@ Admin ticket mutation is disabled in Lab 3 (Admin is read-only on tickets, see �
 |---|---|---|---|
 | Own tickets/attachments/comments | ✅ | ❌ (use staff APIs) | ❌ |
 | `GET /staff/tickets`, `GET /staff/tickets/:id`, `GET comments/notes` | ❌ 403 | ✅ | ✅ read-only |
-| `PATCH owner/priority/status`, `POST comments/notes` on tickets | ❌ 403 | ✅ | ❌ 403 |
+| `PATCH owner/priority/status`, `POST comments/notes` on tickets | ❌ 403 | ✅ | ✅ |
 | `PATCH appears-resolved` (own) | ✅ | ❌ | ❌ |
 | `/admin/users*` | ❌ 403 | ❌ 403 | ✅ |
 
-Rationale: keeps Admin/IT separation (handout §4.3), prevents scope creep, still satisfies "Internal visible to IT + Admin".
+Rationale: IT and Admin share staff ticket ops in Phase 6 (AD-13); the earlier read-only split was superseded.
 
 ## 6. UI Specification Summary
 
@@ -122,7 +126,7 @@ Screens: Login, Change Password, AppShell (name + role badge, role nav, Logout),
 
 ## 8. API Contract
 
-Mechanism: `POST /api/auth/login` sets httpOnly JWT cookie; `GET /api/auth/me`; `POST /api/auth/change-password`; `POST /api/auth/logout` clears. Lab 2 ticket/attachment APIs kept but identity from session; `X-Requester-Id`/`requesterId` ignored. Staff queue `GET /api/staff/tickets` supports `search (ticketNumber+summary+description), status, categoryId, relatedSystemId, reqPriority, itPriority, owner(me/unassigned/id), sort(ticketDate|updatedAt|requestedPriority|itPriority), order, page, pageSize(≤50)` + `{tickets, pagination}`. Mutations: `PATCH /tickets/:id/owner|priority|status`, `PATCH /tickets/:id/appears-resolved`, `GET/POST /tickets/:id/comments|notes`. Admin: `GET /admin/users?search=&role=`, `POST /admin/users`, `PATCH /admin/users/:id`, `POST /admin/users/:id/reset-password`. Errors keep Lab 2 shape `{error:{code,message,details}}` + `INVALID_CREDENTIALS, ACCOUNT_INACTIVE, PASSWORD_CHANGE_REQUIRED, SELF_DEACTIVATION, LAST_ADMIN` with 401/403/400/404/409 mapping and no existence leak. Full paths/shapes/codes: `api-spec.md`.
+Mechanism: `POST /api/auth/login` sets httpOnly JWT cookie; `GET /api/auth/me`; `POST /api/auth/change-password`; `POST /api/auth/logout` clears. Lab 2 ticket/attachment APIs kept but identity from session; `X-Requester-Id`/`requesterId` ignored. Staff queue `GET /api/staff/tickets` supports `search (ticketNumber+summary+description), status, categoryId, relatedSystemId, reqPriority, itPriority, owner(me/unassigned/id), sort(ticketDate|updatedAt|requestedPriority|itPriority), order, page, pageSize(≤50)` + `{tickets, pagination}`. Mutations: `POST /staff/tickets/:id/claim`, `POST /staff/tickets/:id/assign` (ownership↔status coupling), `PATCH /staff/tickets/:id/priority|status` (plus legacy `/tickets` aliases), `PATCH /tickets/:id/appears-resolved`, `GET/POST /staff/tickets/:id/comments|notes` (staff) and `/tickets/:id/comments|notes` (requester). Admin: `GET /admin/users?search=&role=`, `POST /admin/users`, `PATCH /admin/users/:id`, `POST /admin/users/:id/reset-password`. Staff directory `GET /staff/users` + `GET /staff/attachments/:id/download`. Errors keep Lab 2 shape `{error:{code,message,details}}` + `INVALID_CREDENTIALS, ACCOUNT_INACTIVE, PASSWORD_CHANGE_REQUIRED, SELF_DEACTIVATION, LAST_ADMIN` with 401/403/400/404/409 mapping and no existence leak. Full paths/shapes/codes: `api-spec.md`.
 
 ## 9. Acceptance Criteria
 
