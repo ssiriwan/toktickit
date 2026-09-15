@@ -76,6 +76,31 @@ describe('Lab 3 staff ticket detail (DETAIL-01..07)', () => {
     expect(res.status).toBe(200);
   });
 
+  it('STOP-06: staff users directory allows IT and Admin, blocks Requester', async () => {
+    const users = [
+      { id: 3, name: 'IT Alice', email: 'it1@toktickit.local', role: 'IT_STAFF' },
+      { id: 5, name: 'Admin One', email: 'admin1@toktickit.local', role: 'ADMINISTRATOR' }
+    ];
+    const findSpy = vi.spyOn(prisma.user, 'findMany').mockResolvedValue(users as never);
+
+    const itRes = await request(app).get('/api/staff/users').set('Cookie', cookieFor(3, 'IT_STAFF'));
+    expect(itRes.status).toBe(200);
+    expect(itRes.body).toEqual(users);
+    expect(findSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { isActive: true, role: { in: ['IT_STAFF', 'ADMINISTRATOR'] } },
+        orderBy: { name: 'asc' }
+      })
+    );
+
+    const adminRes = await request(app).get('/api/staff/users').set('Cookie', cookieFor(5, 'ADMINISTRATOR'));
+    expect(adminRes.status).toBe(200);
+    expect(adminRes.body).toEqual(users);
+
+    const reqRes = await request(app).get('/api/staff/users').set('Cookie', cookieFor(7, 'REQUESTER'));
+    expect(reqRes.status).toBe(403);
+  });
+
   it('DETAIL-03: IT and Admin set itPriority; requestedPriority unchanged; requester blocked', async () => {
     const makeCookie = () => cookieFor(3, 'IT_STAFF');
     vi.spyOn(prisma.ticket, 'findUnique').mockResolvedValue({ id: 1 } as never);

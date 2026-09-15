@@ -1231,7 +1231,7 @@ export function createApp() {
   });
 
   // STOP-06: staff user directory (active IT/Admin ordered by name, requester 403)
-  app.get('/api/staff/users', ...itStaffGuards, async (_req, res) => {
+  app.get('/api/staff/users', ...staffGuards, async (_req, res) => {
     try {
       const users = await prisma.user.findMany({
         where: { isActive: true, role: { in: ['IT_STAFF', 'ADMINISTRATOR'] } },
