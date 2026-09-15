@@ -29,6 +29,27 @@ function formatStatus(s: string) {
   return s.replace(/_/g, ' ');
 }
 
+function DropdownChevron() {
+  return (
+    <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6B7280' }}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
+    </span>
+  );
+}
+
+function SortIcon({ active, order }: { active: boolean; order: 'asc' | 'desc' }) {
+  if (!active) {
+    return (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle' }}><path d="m3 8 4-4 4 4" /><path d="m3 16 4 4 4-4" /></svg>
+    );
+  }
+  return order === 'asc' ? (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle' }}><path d="m5 15 7-7 7 7" /></svg>
+  ) : (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle' }}><path d="m19 9-7 7-7-7" /></svg>
+  );
+}
+
 export function StaffTicketQueue({
   readOnly,
   onOpenTicket
@@ -50,12 +71,11 @@ export function StaffTicketQueue({
   const [itPriority, setItPriority] = useState('');
   const [ownerFilter, setOwnerFilter] = useState('');
   const [sort, setSort] = useState('updatedAt');
-  const [order, setOrder] = useState('desc');
+  const [order, setOrder] = useState<'asc' | 'desc'>('desc');
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
   const [retryTick, setRetryTick] = useState(0);
   const navigate = useNavigate();
-  const [showFilters, setShowFilters] = useState(false);
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [systems, setSystems] = useState<{ id: number; name: string }[]>([]);
 
@@ -151,6 +171,34 @@ export function StaffTicketQueue({
     setPage(1);
   }
 
+  function handleSortClick(key: string) {
+    if (sort !== key) {
+      setSort(key);
+      setOrder('desc');
+    } else if (order === 'desc') {
+      setOrder('asc');
+    } else {
+      setOrder('desc');
+    }
+  }
+
+  function sortHeaderProps(key: string) {
+    return {
+      role: 'button' as const,
+      tabIndex: 0,
+      onClick: () => handleSortClick(key),
+      onKeyDown: (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleSortClick(key);
+        }
+      },
+      style: { fontWeight: 500, color: '#006B3C', background: '#EAF6EF', borderBottom: '1px solid #E0E4E1', cursor: 'pointer', userSelect: 'none' as const }
+    };
+  }
+
+  const headerCell: React.CSSProperties = { fontWeight: 500, color: '#006B3C', background: '#EAF6EF', borderBottom: '1px solid #E0E4E1' };
+
   if (status === 'loading') return <p role="status">Loading queue...</p>;
   if (status === 'forbidden')
     return (
@@ -180,107 +228,102 @@ export function StaffTicketQueue({
         {readOnly && <span className="badge bg-secondary">Read-only</span>}
       </h1>
 
-      <div className="d-flex gap-2 mb-2">
-        <input
-          className="form-control"
-          placeholder="Search by ticket number, summary, or description..."
-          aria-label="Search queue"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-        />
-        <button
-          type="button"
-          className="btn btn-outline-secondary"
-          onClick={() => setShowFilters((v) => !v)}
-          aria-expanded={showFilters}
-        >
-          Filters
-        </button>
-      </div>
-
-      {showFilters && (
-        <section className="card mb-3" aria-label="Queue filters">
-          <div className="card-body row g-2">
-            <div className="col-md-4">
-              <label className="form-label" htmlFor="q-status">Status</label>
-              <select id="q-status" className="form-select" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}>
-                <option value="">All statuses</option>
-                {STATUSES.map((s) => (
-                  <option key={s} value={s}>{formatStatus(s)}</option>
-                ))}
-              </select>
+      <div className="card mb-3">
+        <div className="card-body">
+          <div className="row g-2 mb-3">
+            <div className="col-md-3">
+              <label className="form-label small text-muted mb-1">Search</label>
+              <div style={{ position: 'relative' }}>
+                <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+                </span>
+                <input
+                  placeholder="Search by ticket number, summary, or description..."
+                  aria-label="Search queue"
+                  className="form-control"
+                  style={{ paddingLeft: '2rem' }}
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setPage(1);
+                  }}
+                />
+              </div>
+            </div>
+            <div className="col-md-3">
+              <label className="form-label small text-muted mb-1" htmlFor="q-status">Status</label>
+              <div style={{ position: 'relative' }}>
+                <select id="q-status" className="form-select" style={{ paddingRight: '2rem' }} value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}>
+                  <option value="">All statuses</option>
+                  {STATUSES.map((s) => (
+                    <option key={s} value={s}>{formatStatus(s)}</option>
+                  ))}
+                </select>
+                <DropdownChevron />
+              </div>
+            </div>
+            <div className="col-md-3">
+              <label className="form-label small text-muted mb-1" htmlFor="q-category">Category</label>
+              <div style={{ position: 'relative' }}>
+                <select id="q-category" className="form-select" style={{ paddingRight: '2rem' }} value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}>
+                  <option value="">All categories</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+                <DropdownChevron />
+              </div>
+            </div>
+            <div className="col-md-3">
+              <label className="form-label small text-muted mb-1" htmlFor="q-system">Related system</label>
+              <div style={{ position: 'relative' }}>
+                <select id="q-system" className="form-select" style={{ paddingRight: '2rem' }} value={systemFilter} onChange={(e) => { setSystemFilter(e.target.value); setPage(1); }}>
+                  <option value="">All systems</option>
+                  {systems.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+                <DropdownChevron />
+              </div>
             </div>
             <div className="col-md-4">
-              <label className="form-label" htmlFor="q-category">Category</label>
-              <select id="q-category" className="form-select" value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}>
-                <option value="">All categories</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
+              <label className="form-label small text-muted mb-1" htmlFor="q-reqpri">Requested priority</label>
+              <div style={{ position: 'relative' }}>
+                <select id="q-reqpri" className="form-select" style={{ paddingRight: '2rem' }} value={reqPriority} onChange={(e) => { setReqPriority(e.target.value); setPage(1); }}>
+                  <option value="">All</option>
+                  {PRIORITIES.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+                <DropdownChevron />
+              </div>
             </div>
             <div className="col-md-4">
-              <label className="form-label" htmlFor="q-system">Related system</label>
-              <select id="q-system" className="form-select" value={systemFilter} onChange={(e) => { setSystemFilter(e.target.value); setPage(1); }}>
-                <option value="">All systems</option>
-                {systems.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
+              <label className="form-label small text-muted mb-1" htmlFor="q-itpri">IT priority</label>
+              <div style={{ position: 'relative' }}>
+                <select id="q-itpri" className="form-select" style={{ paddingRight: '2rem' }} value={itPriority} onChange={(e) => { setItPriority(e.target.value); setPage(1); }}>
+                  <option value="">All</option>
+                  {PRIORITIES.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+                <DropdownChevron />
+              </div>
             </div>
             <div className="col-md-4">
-              <label className="form-label" htmlFor="q-reqpri">Requested priority</label>
-              <select id="q-reqpri" className="form-select" value={reqPriority} onChange={(e) => { setReqPriority(e.target.value); setPage(1); }}>
-                <option value="">All</option>
-                {PRIORITIES.map((p) => (
-                  <option key={p} value={p}>{p}</option>
-                ))}
-              </select>
-            </div>
-            <div className="col-md-4">
-              <label className="form-label" htmlFor="q-itpri">IT priority</label>
-              <select id="q-itpri" className="form-select" value={itPriority} onChange={(e) => { setItPriority(e.target.value); setPage(1); }}>
-                <option value="">All</option>
-                {PRIORITIES.map((p) => (
-                  <option key={p} value={p}>{p}</option>
-                ))}
-              </select>
-            </div>
-            <div className="col-md-4">
-              <label className="form-label" htmlFor="q-owner">Owner</label>
-              <select id="q-owner" className="form-select" value={ownerFilter} onChange={(e) => { setOwnerFilter(e.target.value); setPage(1); }}>
-                {OWNERS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
-            </div>
-            <div className="col-md-4">
-              <label className="form-label" htmlFor="q-sort">Sort by</label>
-              <select id="q-sort" className="form-select" value={sort} onChange={(e) => setSort(e.target.value)}>
-                <option value="updatedAt">Last updated</option>
-                <option value="ticketDate">Created date</option>
-                <option value="requestedPriority">Requested priority</option>
-                <option value="itPriority">IT priority</option>
-              </select>
-            </div>
-            <div className="col-md-4">
-              <label className="form-label" htmlFor="q-order">Order</label>
-              <select id="q-order" className="form-select" value={order} onChange={(e) => setOrder(e.target.value)}>
-                <option value="desc">Descending</option>
-                <option value="asc">Ascending</option>
-              </select>
-            </div>
-            <div className="col-md-4 d-flex align-items-end">
-              <button type="button" className="btn btn-outline-secondary" onClick={clearFilters}>
-                Clear filters
-              </button>
+              <label className="form-label small text-muted mb-1" htmlFor="q-owner">Owner</label>
+              <div style={{ position: 'relative' }}>
+                <select id="q-owner" className="form-select" style={{ paddingRight: '2rem' }} value={ownerFilter} onChange={(e) => { setOwnerFilter(e.target.value); setPage(1); }}>
+                  {OWNERS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+                <DropdownChevron />
+              </div>
             </div>
           </div>
-        </section>
-      )}
+        </div>
+      </div>
 
       <p className="text-muted" role="status">
         Showing {from} to {to} of {pagination.totalItems} tickets
@@ -301,17 +344,25 @@ export function StaffTicketQueue({
           <div className="table-responsive d-none d-md-block">
             <table className="table table-hover">
               <thead>
-                <tr>
-                  <th>Ticket No.</th>
-                  <th>Created Date</th>
-                  <th>Summary</th>
-                  <th>Category</th>
-                  <th>Req. Priority</th>
-                  <th>IT Priority</th>
-                  <th>Status</th>
-                  <th>Owner</th>
-                  <th>Updated</th>
-                  <th aria-label="Actions" />
+                <tr style={{ background: '#EAF6EF' }}>
+                  <th style={headerCell}>Ticket No.</th>
+                  <th {...sortHeaderProps('ticketDate')}>
+                    Created Date{' '}<SortIcon active={sort === 'ticketDate'} order={order} />
+                  </th>
+                  <th style={headerCell}>Summary</th>
+                  <th style={headerCell}>Category</th>
+                  <th {...sortHeaderProps('requestedPriority')}>
+                    Req. Priority{' '}<SortIcon active={sort === 'requestedPriority'} order={order} />
+                  </th>
+                  <th {...sortHeaderProps('itPriority')}>
+                    IT Priority{' '}<SortIcon active={sort === 'itPriority'} order={order} />
+                  </th>
+                  <th style={headerCell}>Status</th>
+                  <th style={headerCell}>Owner</th>
+                  <th {...sortHeaderProps('updatedAt')}>
+                    Updated{' '}<SortIcon active={sort === 'updatedAt'} order={order} />
+                  </th>
+                  <th style={headerCell} aria-label="Actions" />
                 </tr>
               </thead>
               <tbody>
