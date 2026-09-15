@@ -37,6 +37,9 @@ function mockDetail(overrides: Partial<typeof ticket> = {}) {
       if (String(url).includes('/api/staff/tickets/')) {
         return Promise.resolve({ ok: true, status: 200, json: async () => data });
       }
+      if (String(url).includes('/api/staff/users')) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => [{ id: 3, name: 'IT Alice' }, { id: 4, name: 'IT Bob' }] });
+      }
       if (String(url).includes('/api/admin/users')) {
         return Promise.resolve({ ok: true, status: 200, json: async () => ({ users: [{ id: 3, name: 'IT Alice' }, { id: 4, name: 'IT Bob' }] }) });
       }
@@ -77,7 +80,7 @@ describe('Lab 3 StaffTicketDetail (UI-04 + style)', () => {
     expect(await screen.findByText(/appears resolved/i)).toBeInTheDocument();
   });
 
-  it('saves owner/priority/status with validation feedback', async () => {
+  it('auto-saves owner on select with validation feedback', async () => {
     mockDetail();
     renderDetail();
     await screen.findByText('TK-20260910-0001');
@@ -90,12 +93,32 @@ describe('Lab 3 StaffTicketDetail (UI-04 + style)', () => {
         return Promise.resolve({ ok: true, status: 200, json: async () => ticket });
       }
       if (String(url).includes('/api/staff/users')) {
-        return Promise.resolve({ ok: true, status: 200, json: async () => [{ id: 3, name: 'IT Alice' }] });
+        return Promise.resolve({ ok: true, status: 200, json: async () => [{ id: 3, name: 'IT Alice' }, { id: 4, name: 'IT Bob' }] });
       }
       return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
     });
-    await userEvent.click(screen.getByRole('button', { name: 'Save Owner' }));
+    await userEvent.selectOptions(screen.getByLabelText('Ticket Owner'), '4');
     expect(await screen.findByText(/owner must be/i)).toBeInTheDocument();
+  });
+
+  it('auto-saves priority and status on select', async () => {
+    mockDetail();
+    renderDetail();
+    await screen.findByText('TK-20260910-0001');
+    const fetchSpy = vi.mocked(globalThis.fetch) as unknown as ReturnType<typeof vi.fn>;
+    fetchSpy.mockImplementation((url: string) => {
+      if (String(url).includes('/api/staff/tickets/')) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ticket });
+      }
+      if (String(url).includes('/api/staff/users')) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => [] });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
+    });
+    await userEvent.selectOptions(screen.getByLabelText('IT Priority'), 'HIGH');
+    await userEvent.selectOptions(screen.getByLabelText('Current Status'), 'OPEN');
+    expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('/priority'), expect.anything());
+    expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('/status'), expect.anything());
   });
 
   it('requires confirmation for CANCELLED and unassign', async () => {
@@ -103,13 +126,11 @@ describe('Lab 3 StaffTicketDetail (UI-04 + style)', () => {
     renderDetail();
     await screen.findByText('TK-20260910-0001');
     await userEvent.selectOptions(screen.getByLabelText('Current Status'), 'CANCELLED');
-    await userEvent.click(screen.getByRole('button', { name: 'Save Status' }));
     expect(await screen.findByText(/confirm cancel/i)).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(screen.queryByText(/confirm cancel/i)).not.toBeInTheDocument();
 
     await userEvent.selectOptions(screen.getByLabelText('Ticket Owner'), '');
-    await userEvent.click(screen.getByRole('button', { name: 'Save Owner' }));
     expect(await screen.findByText(/confirm unassign/i)).toBeInTheDocument();
   });
 

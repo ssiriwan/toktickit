@@ -56,8 +56,9 @@ export function StaffTicketDetail() {
   const [postError, setPostError] = useState<string | null>(null);
   const [users, setUsers] = useState<{ id: number; name: string }[]>([]);
   const [showUnassignConfirm, setShowUnassignConfirm] = useState(false);
-  const [pendingUnassign, setPendingUnassign] = useState(false);
+  const [pendingOwner, setPendingOwner] = useState<string | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState<string | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
   async function load() {
@@ -120,15 +121,18 @@ export function StaffTicketDetail() {
     }
   }
 
-  async function handleAssign() {
-    if (ownerDraft === '' && ticket && ['OPEN', 'IN_PROGRESS', 'WAITING_FOR_REQUESTER', 'REOPENED'].includes(ticket.currentStatus)) {
+  async function handleOwnerChange(value: string) {
+    setOwnerDraft(value);
+    if (value === '' && ticket && ['OPEN', 'IN_PROGRESS', 'WAITING_FOR_REQUESTER', 'REOPENED'].includes(ticket.currentStatus)) {
+      setPendingOwner(value);
       setShowUnassignConfirm(true);
       return;
     }
-    await doAssign();
+    await doAssign(value);
   }
 
-  async function doAssign() {
+  async function doAssign(ownerValue?: string) {
+    const value = ownerValue ?? pendingOwner ?? ownerDraft;
     setSaving('owner');
     setSaveError(null);
     setShowUnassignConfirm(false);
@@ -137,7 +141,7 @@ export function StaffTicketDetail() {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ownerId: ownerDraft ? Number(ownerDraft) : null })
+        body: JSON.stringify({ ownerId: value ? Number(value) : null })
       });
       const payload = await res.json().catch(() => ({} as { error?: { message?: string; details?: { message?: string }[] } }));
       if (!res.ok) {
@@ -149,11 +153,12 @@ export function StaffTicketDetail() {
       setSaveError('Failed to assign');
     } finally {
       setSaving(null);
-      setPendingUnassign(false);
+      setPendingOwner(null);
     }
   }
 
-  async function handlePrioritySave() {
+  async function handlePriorityChange(value: string) {
+    setPriorityDraft(value);
     setSaving('priority');
     setSaveError(null);
     try {
@@ -161,7 +166,7 @@ export function StaffTicketDetail() {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ itPriority: priorityDraft })
+        body: JSON.stringify({ itPriority: value })
       });
       const payload = await res.json().catch(() => ({} as { error?: { message?: string } }));
       if (!res.ok) {
@@ -176,15 +181,18 @@ export function StaffTicketDetail() {
     }
   }
 
-  async function handleStatusSave() {
-    if (statusDraft === 'CANCELLED') {
+  async function handleStatusChange(value: string) {
+    setStatusDraft(value);
+    if (value === 'CANCELLED') {
+      setPendingStatus(value);
       setShowCancelConfirm(true);
       return;
     }
-    await doStatusSave();
+    await doStatusSave(value);
   }
 
-  async function doStatusSave() {
+  async function doStatusSave(statusValue?: string) {
+    const value = statusValue ?? pendingStatus ?? statusDraft;
     setSaving('status');
     setSaveError(null);
     setShowCancelConfirm(false);
@@ -193,7 +201,7 @@ export function StaffTicketDetail() {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: statusDraft })
+        body: JSON.stringify({ status: value })
       });
       const payload = await res.json().catch(() => ({} as { error?: { message?: string; details?: { message?: string }[] } }));
       if (!res.ok) {
@@ -205,6 +213,7 @@ export function StaffTicketDetail() {
       setSaveError('Failed to update status');
     } finally {
       setSaving(null);
+      setPendingStatus(null);
     }
   }
 
@@ -332,7 +341,8 @@ export function StaffTicketDetail() {
                 className="form-select"
                 style={{ paddingRight: '2rem' }}
                 value={statusDraft}
-                onChange={(e) => setStatusDraft(e.target.value)}
+                disabled={!!saving}
+                onChange={(e) => handleStatusChange(e.target.value)}
                 aria-label="Current Status"
               >
                 {STATUSES.map((s) => (
@@ -350,7 +360,8 @@ export function StaffTicketDetail() {
                   className="form-select"
                   style={{ paddingRight: '2rem' }}
                   value={ownerDraft}
-                  onChange={(e) => setOwnerDraft(e.target.value)}
+                  disabled={!!saving}
+                  onChange={(e) => handleOwnerChange(e.target.value)}
                   aria-label="Ticket Owner"
                 >
                   <option value="">Unassigned</option>
@@ -374,7 +385,8 @@ export function StaffTicketDetail() {
                 className="form-select"
                 style={{ paddingRight: '2rem' }}
                 value={priorityDraft}
-                onChange={(e) => setPriorityDraft(e.target.value)}
+                disabled={!!saving}
+                onChange={(e) => handlePriorityChange(e.target.value)}
                 aria-label="IT Priority"
               >
                 {PRIORITIES.map((p) => (
@@ -402,17 +414,7 @@ export function StaffTicketDetail() {
           </div>
           {saveError && <p className="text-danger col-12" role="alert">{saveError}</p>}
           {downloadError && <p className="text-danger col-12" role="alert">{downloadError}</p>}
-          <div className="col-12 d-flex gap-2">
-            <button type="button" className="btn btn-primary btn-sm" disabled={!!saving} onClick={handleAssign}>
-              {saving === 'owner' ? 'Saving...' : 'Save Owner'}
-            </button>
-            <button type="button" className="btn btn-primary btn-sm" disabled={!!saving} onClick={handlePrioritySave}>
-              {saving === 'priority' ? 'Saving...' : 'Save Priority'}
-            </button>
-            <button type="button" className="btn btn-primary btn-sm" disabled={!!saving} onClick={handleStatusSave}>
-              {saving === 'status' ? 'Saving...' : 'Save Status'}
-            </button>
-          </div>
+          {saving && <p className="text-muted col-12" role="status">Saving...</p>}
         </div>
       </section>
 

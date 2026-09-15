@@ -153,6 +153,9 @@ html, body {
 .badge-status-NEW { background: var(--zen-pale) !important; color: var(--zen-primary) !important; border: 1px solid var(--zen-card-border); }
 .badge-status-PENDING { background: #FFEDD5 !important; color: #C2410C !important; border: 1px solid #FED7AA; }
 .badge-status-RESOLVED { background: #DCFCE7 !important; color: #166534 !important; border: 1px solid #BBF7D0; }
+.badge-status-WAITING_FOR_REQUESTER { background: #FFEDD5 !important; color: #C2410C !important; border: 1px solid #FED7AA; }
+.badge-status-CANCELLED { background: #E5E7EB !important; color: #4B5563 !important; border: 1px solid #D1D5DB; }
+.badge-status-REOPENED { background: #E0E7FF !important; color: #4338CA !important; border: 1px solid #C7D2FE; }
 
 /* Required asterisk */
 .required-star { color: var(--zen-error-border); }
