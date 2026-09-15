@@ -63,7 +63,7 @@ export function StaffTicketQueue({
   const [noResults, setNoResults] = useState(false);
 
   const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [systemFilter, setSystemFilter] = useState('');
@@ -79,10 +79,10 @@ export function StaffTicketQueue({
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [systems, setSystems] = useState<{ id: number; name: string }[]>([]);
 
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
-    return () => clearTimeout(t);
-  }, [search]);
+  function handleSearch() {
+    setAppliedSearch(search.trim());
+    setPage(1);
+  }
 
   useEffect(() => {
     async function loadRefs() {
@@ -107,7 +107,7 @@ export function StaffTicketQueue({
   }, []);
 
   const hasActiveFilter = !!(
-    debouncedSearch ||
+    appliedSearch ||
     statusFilter ||
     categoryFilter ||
     systemFilter ||
@@ -121,7 +121,7 @@ export function StaffTicketQueue({
       setStatus('loading');
       try {
         const params = new URLSearchParams();
-        if (debouncedSearch) params.set('search', debouncedSearch);
+        if (appliedSearch) params.set('search', appliedSearch);
         if (statusFilter) params.set('status', statusFilter);
         if (categoryFilter) params.set('categoryId', categoryFilter);
         if (systemFilter) params.set('relatedSystemId', systemFilter);
@@ -158,10 +158,11 @@ export function StaffTicketQueue({
     }
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, statusFilter, categoryFilter, systemFilter, reqPriority, itPriority, ownerFilter, sort, order, page, pageSize, retryTick]);
+  }, [appliedSearch, statusFilter, categoryFilter, systemFilter, reqPriority, itPriority, ownerFilter, sort, order, page, pageSize, retryTick]);
 
   function clearFilters() {
     setSearch('');
+    setAppliedSearch('');
     setStatusFilter('');
     setCategoryFilter('');
     setSystemFilter('');
@@ -234,20 +235,23 @@ export function StaffTicketQueue({
             <div className="col-md-3">
               <label className="form-label small text-muted mb-1">Search</label>
               <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
-                </span>
                 <input
                   placeholder="Search by ticket number, summary, or description..."
                   aria-label="Search queue"
                   className="form-control"
-                  style={{ paddingLeft: '2rem' }}
+                  style={{ paddingRight: '2.5rem' }}
                   value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value);
-                    setPage(1);
-                  }}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 />
+                <button
+                  type="button"
+                  aria-label="Search"
+                  onClick={handleSearch}
+                  style={{ position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', color: '#6B7280', padding: '0.375rem', cursor: 'pointer' }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+                </button>
               </div>
             </div>
             <div className="col-md-3">
