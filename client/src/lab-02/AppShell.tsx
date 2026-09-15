@@ -3,6 +3,7 @@ import { BrowserRouter, Link, Navigate, NavLink, Route, Routes, useNavigate, use
 import { AuthProvider, useAuth } from '../lab-03/AuthContext';
 import { ChangePassword } from '../lab-03/ChangePassword';
 import { Login } from '../lab-03/Login';
+import { StaffTicketDetail } from '../lab-03/StaffTicketDetail';
 import { StaffTicketQueue } from '../lab-03/StaffTicketQueue';
 import { CreateTicket } from './CreateTicket';
 import { MyTickets } from './MyTickets';
@@ -172,14 +173,7 @@ function Shell() {
           />
           <Route
             path="/staff/tickets/:id"
-            element={
-              <main className="container py-5">
-                <p role="status">Ticket detail arrives in the next phase.</p>
-                <button type="button" className="btn btn-outline-secondary" onClick={() => navigate('/staff/queue')}>
-                  &larr; Back to Queue
-                </button>
-              </main>
-            }
+            element={<StaffTicketDetail readOnly={readOnly} />}
           />
           <Route path="*" element={<Navigate to="/staff/queue" replace />} />
         </Routes>
