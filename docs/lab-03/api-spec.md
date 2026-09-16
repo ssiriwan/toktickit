@@ -52,35 +52,54 @@ Identity comes from session. Any `requesterId` query/body/header is ignored (AC-
 
 ## 3. Staff queue & detail
 
-### GET /api/staff/tickets (IT + Admin read-only)
+### GET /api/staff/tickets (IT + Admin)
 
 - Query: `search` (matches `ticketNumber` + `summary` + `description`, case-insensitive — same coverage as Lab 2 plus ticketNumber for staff lookup), `status` (8 values), `categoryId`, `relatedSystemId`, `reqPriority`, `itPriority`, `owner` (`me|unassigned|<userId>`), `sort` (`ticketDate|updatedAt|requestedPriority|itPriority`, default `updatedAt` — `ticketDate` kept from Lab 2 naming for creation time, `createdDate` accepted as an alias), `order` (`asc|desc`, default `desc`; anything else → `400 INVALID_QUERY`), `page` (≥1, default 1), `pageSize` (1..50, default 10).
 - Res `200`: `{ tickets: [{ id, ticketNumber, summary, category, requestedPriority, itPriority, currentStatus, owner{id,name}|null, ticketDate, updatedAt }], pagination }`.
 - Invalid query → `400 INVALID_QUERY` (strict integer checks, NaN → 400).
 - Requester → `403 FORBIDDEN`.
 
-### GET /api/staff/tickets/:id (IT + Admin read-only)
+### GET /api/staff/tickets/:id (IT + Admin)
 
 - Res `200`: full ticket + `requester{id,name,email}`, `owner{id,name}|null`, `itPriority/requestedPriority`, `appearsResolved/appearsResolvedAt`, `publicComments[]`, `internalNotes[]` (notes omitted for Requester path; present here), `attachments[]`.
 - Requester → `403 FORBIDDEN` (use Requester detail instead).
 
-### PATCH /api/tickets/:id/owner (IT only)
+### POST /api/staff/tickets/:id/claim (IT or Admin, AD-09)
 
-- Req: `{ ownerId: number | null }`. `null` = unassign.
-- Target must be active `IT_STAFF` or `ADMINISTRATOR`; else `400 VALIDATION_ERROR` / `404 NOT_FOUND`.
-- Admin caller → `403 FORBIDDEN` (read-only policy). Requester → `403`.
-- Res `200`: `{ id, ownerId, owner, updatedAt }`.
+- Claims an unassigned ticket for the caller. No body. `unassigned → owner=caller` and `NEW → OPEN`; self re-claim is a no-op; already assigned to another user → `409 ALREADY_ASSIGNED`.
+- Res `200`: `{ id, ownerId, currentStatus, updatedAt }`.
 
-### PATCH /api/tickets/:id/priority (IT only)
+### POST /api/staff/tickets/:id/assign (IT or Admin, AC-15, BR-14 coupling)
+
+- Req: `{ ownerId: number | null }`. Assigns to active IT Staff/Administrator or clears to unassigned. `non-null from NEW → OPEN`; `null from active-work (OPEN/IN_PROGRESS/WAITING/REOPENED) → NEW`; terminal states keep their status.
+- Res `200`: `{ id, ownerId, currentStatus, updatedAt }`.
+
+### PATCH /api/staff/tickets/:id/priority (IT or Admin)
 
 - Req: `{ itPriority: LOW|MEDIUM|HIGH|URGENT }`. Res `200` ticket priority fields. `requestedPriority` never changes.
-- Role violations → `403`.
+- Legacy `PATCH /api/tickets/:id/priority` kept as alias.
 
-### PATCH /api/tickets/:id/status (IT only)
+### PATCH /api/staff/tickets/:id/status (IT or Admin, BR-17 matrix)
 
 - Req: `{ status: NEW|OPEN|IN_PROGRESS|WAITING_FOR_REQUESTER|RESOLVED|CLOSED|REOPENED|CANCELLED }`.
-- Validated against transition matrix in `specification.md §5.1`; disallowed → `409 INVALID_TRANSITION` (with `details.allowed[]`).
+- Validated against transition matrix in `specification.md §5.1`; off-matrix → `400 VALIDATION_ERROR` with `Transition from X to Y is not permitted`.
+- Legacy `PATCH /api/tickets/:id/status` kept as alias.
 - Res `200`: `{ id, currentStatus, updatedAt }`.
+
+### GET /api/staff/users (STOP-06, IT or Admin)
+
+- Active IT Staff/Administrator users ordered by name. Requester → `403`.
+- Res `200`: `[{ id, name, email, role }]`.
+
+### Staff-scoped comments/notes (staff contract) + attachment download
+
+- `GET /api/staff/tickets/:id/comments` + `POST /api/staff/tickets/:id/comments` — IT + Admin (staff must use these; requester routes are `/api/tickets/:id/comments`).
+- `GET /api/staff/tickets/:id/notes` + `POST /api/staff/tickets/:id/notes` — IT only; Admin read via GET.
+- `GET /api/staff/attachments/:id/download` — IT or Admin can download any ticket's attachment (AC-31).
+
+### PATCH /api/tickets/:id/owner (legacy alias, IT or Admin)
+
+- Kept for backward compat; prefer `/staff/.../claim` and `/staff/.../assign`.
 
 ### PATCH /api/tickets/:id/appears-resolved (Requester owner only)
 
@@ -89,10 +108,10 @@ Identity comes from session. Any `requesterId` query/body/header is ignored (AC-
 
 ## 4. Comments & notes
 
-- `GET /api/tickets/:id/comments` — Requester(owner) + IT + Admin. Res `200`: `[{ id, body, author{id,name,role}, createdAt }]` asc.
-- `POST /api/tickets/:id/comments` — Requester(owner) + IT. Req `{ body: string(1..2000 trim) }`. Empty → `400 VALIDATION_ERROR`. Res `201` entry. Admin → `403` (read-only).
+- `GET /api/tickets/:id/comments` — Requester(owner) + IT + Admin. Res `200`: `[{ id, body, author{id,name,role}, createdAt }]` asc. Staff UIs must use the `/staff` equivalents.
+- `POST /api/tickets/:id/comments` — Requester(owner) + IT. Req `{ body: string(1..2000 trim) }`. Empty → `400 VALIDATION_ERROR`. Res `201` entry. Admin → `403` on this route (Admin posts via `POST /staff/.../comments`).
 - `GET /api/tickets/:id/notes` — IT + Admin only. Requester → `403 FORBIDDEN` with no note data (AC-04).
-- `POST /api/tickets/:id/notes` — IT only (Admin read-only). Same validation as comments. Res `201`.
+- `POST /api/tickets/:id/notes` — IT only. Admin → `403` on this route (Admin reads via staff GET; only IT writes). Same validation as comments. Res `201`.
 - Append-only: no PUT/DELETE in Lab 3. Bodies escaped on render; author/time set by backend.
 
 ## 5. Admin user management (Administrator only; others 403)
@@ -122,5 +141,5 @@ Identity comes from session. Any `requesterId` query/body/header is ignored (AC-
 
 ## 6. Status codes & safe errors
 
-- `200/201/204` success; `400 VALIDATION_ERROR | INVALID_QUERY | INVALID_FILE_TYPE | FILE_TOO_LARGE | MAX_ATTACHMENTS`; `401 UNAUTHENTICATED | INVALID_CREDENTIALS`; `403 FORBIDDEN | ACCESS_DENIED | ACCOUNT_INACTIVE | PASSWORD_CHANGE_REQUIRED | SELF_DEACTIVATION`; `404 NOT_FOUND`; `409 DUPLICATE_EMAIL | LAST_ADMIN | INVALID_TRANSITION`; `410 REMOVED`; `500 INTERNAL_ERROR`.
+- `200/201/204` success; `400 VALIDATION_ERROR | INVALID_QUERY | INVALID_FILE_TYPE | FILE_TOO_LARGE | MAX_ATTACHMENTS`; `401 UNAUTHENTICATED | INVALID_CREDENTIALS`; `403 FORBIDDEN | ACCESS_DENIED | ACCOUNT_INACTIVE | PASSWORD_CHANGE_REQUIRED | SELF_DEACTIVATION`; `404 NOT_FOUND`; `409 DUPLICATE_EMAIL | LAST_ADMIN | ALREADY_ASSIGNED`; `410 REMOVED`; `500 INTERNAL_ERROR`.
 - Messages are safe and generic; `details` only for field-level validation or allowed transitions. No stack traces. No user enumeration via message/status divergence except the documented inactive-vs-invalid split (which requires correct password).

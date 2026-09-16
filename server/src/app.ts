@@ -763,6 +763,12 @@ export function createApp() {
     requireRole('IT_STAFF', 'ADMINISTRATOR')
   ];
 
+  const itStaffGuards = [
+    requireAuth,
+    requirePasswordChanged,
+    requireRole('IT_STAFF')
+  ];
+
   const STATUSES = [
     'NEW',
     'OPEN',
@@ -934,6 +940,328 @@ export function createApp() {
       res.json(ticket);
     } catch {
       res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to load ticket' } });
+    }
+  });
+
+  const ALLOWED_TRANSITIONS: Record<string, string[]> = {
+    NEW: ['OPEN', 'CANCELLED'],
+    OPEN: ['IN_PROGRESS', 'WAITING_FOR_REQUESTER', 'CANCELLED'],
+    IN_PROGRESS: ['WAITING_FOR_REQUESTER', 'RESOLVED', 'CANCELLED'],
+    WAITING_FOR_REQUESTER: ['IN_PROGRESS', 'CANCELLED'],
+    RESOLVED: ['CLOSED', 'REOPENED'],
+    CLOSED: ['REOPENED'],
+    REOPENED: ['IN_PROGRESS', 'CANCELLED'],
+    CANCELLED: []
+  };
+
+  function validationError(res: express.Response, details: { field: string; message: string }[]) {
+    return res.status(400).json({
+      error: { code: 'VALIDATION_ERROR', message: 'Validation failed', details }
+    });
+  }
+
+  app.patch('/api/tickets/:id/owner', ...staffGuards, async (req, res) => {
+    try {
+      const ticketId = Number(req.params.id);
+      if (!Number.isInteger(ticketId) || ticketId <= 0) return invalidQuery(res);
+      const raw = req.body?.ownerId;
+      let ownerId: number | null | undefined;
+      if (raw === null || raw === undefined || raw === '') {
+        ownerId = null;
+      } else {
+        const n = Number(raw);
+        if (!Number.isInteger(n) || n <= 0) {
+          return validationError(res, [{ field: 'ownerId', message: 'Invalid owner' }]);
+        }
+        ownerId = n;
+      }
+      const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+      if (!ticket) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+      if (ownerId !== null && ownerId !== undefined) {
+        const target = await prisma.user.findUnique({ where: { id: ownerId } });
+        if (!target || !target.isActive || !['IT_STAFF', 'ADMINISTRATOR'].includes(target.role)) {
+          return validationError(res, [{ field: 'ownerId', message: 'Owner must be an active IT Staff or Administrator' }]);
+        }
+      }
+      // AD-13 / BR-14 coupling: assigning from NEW opens the ticket; unassigning
+      // active work returns it to NEW, while terminal/done states keep their status.
+      const ACTIVE_WORK = new Set(['OPEN', 'IN_PROGRESS', 'WAITING_FOR_REQUESTER', 'REOPENED']);
+      let nextStatus: string | undefined;
+      if (ownerId !== null && ticket.currentStatus === 'NEW') nextStatus = 'OPEN';
+      if (ownerId === null && ACTIVE_WORK.has(ticket.currentStatus)) nextStatus = 'NEW';
+      const data: Record<string, unknown> = { ownerId };
+      if (nextStatus) data.currentStatus = nextStatus;
+      const updated = await prisma.ticket.update({
+        where: { id: ticketId },
+        data: data as never,
+        select: { id: true, ownerId: true, currentStatus: true, updatedAt: true, owner: { select: { id: true, name: true } } }
+      });
+      res.json(updated);
+    } catch {
+      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to update owner' } });
+    }
+  });
+
+  // Contract aliases per spec §8: POST /staff/claim + POST /staff/assign + PATCH priority/status
+  async function handleClaim(req: express.Request, res: express.Response) {
+    const ticketId = Number(req.params.id);
+    if (!Number.isInteger(ticketId) || ticketId <= 0) return invalidQuery(res);
+    const auth = sessionUser(req);
+    const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+    if (ticket.ownerId !== null && ticket.ownerId !== auth.userId) {
+      return res.status(409).json({
+        error: { code: 'ALREADY_ASSIGNED', message: 'Ticket is already assigned to another user' }
+      });
+    }
+    if (ticket.ownerId === auth.userId) {
+      // Self re-claim is a no-op (AD-09).
+      const same = await prisma.ticket.findUnique({
+        where: { id: ticketId },
+        select: { id: true, ownerId: true, currentStatus: true, updatedAt: true, owner: { select: { id: true, name: true } } }
+      });
+      return res.json(same);
+    }
+    const nextStatus = ticket.currentStatus === 'NEW' ? 'OPEN' : ticket.currentStatus;
+    const updated = await prisma.ticket.update({
+      where: { id: ticketId },
+      data: { ownerId: auth.userId, currentStatus: nextStatus as never },
+      select: { id: true, ownerId: true, currentStatus: true, updatedAt: true, owner: { select: { id: true, name: true } } }
+    });
+    return res.json(updated);
+  }
+
+  async function handleAssign(req: express.Request, res: express.Response) {
+    const ticketId = Number(req.params.id);
+    if (!Number.isInteger(ticketId) || ticketId <= 0) return invalidQuery(res);
+    const raw = req.body?.ownerId;
+    let ownerId: number | null | undefined;
+    if (raw === null || raw === undefined || raw === '') ownerId = null;
+    else {
+      const n = Number(raw);
+      if (!Number.isInteger(n) || n <= 0) {
+        return validationError(res, [{ field: 'ownerId', message: 'Invalid owner' }]);
+      }
+      ownerId = n;
+    }
+    const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+    if (ownerId !== null && ownerId !== undefined) {
+      const target = await prisma.user.findUnique({ where: { id: ownerId } });
+      if (!target || !target.isActive || !['IT_STAFF', 'ADMINISTRATOR'].includes(target.role)) {
+        return validationError(res, [{ field: 'ownerId', message: 'Owner must be an active IT Staff or Administrator' }]);
+      }
+    }
+    const ACTIVE_WORK = new Set(['OPEN', 'IN_PROGRESS', 'WAITING_FOR_REQUESTER', 'REOPENED']);
+    let nextStatus: string | undefined;
+    if (ownerId !== null && ticket.currentStatus === 'NEW') nextStatus = 'OPEN';
+    if (ownerId === null && ACTIVE_WORK.has(ticket.currentStatus)) nextStatus = 'NEW';
+    const data: Record<string, unknown> = { ownerId };
+    if (nextStatus) data.currentStatus = nextStatus;
+    const updated = await prisma.ticket.update({
+      where: { id: ticketId },
+      data: data as never,
+      select: { id: true, ownerId: true, currentStatus: true, updatedAt: true, owner: { select: { id: true, name: true } } }
+    });
+    return res.json(updated);
+  }
+
+  // Keep legacy PATCH owner for backward compat; frontends should use claim/assign.
+  app.post('/api/staff/tickets/:id/claim', ...staffGuards, async (req, res) => {
+    try {
+      await handleClaim(req, res);
+    } catch {
+      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to claim ticket' } });
+    }
+  });
+  app.post('/api/staff/tickets/:id/assign', ...staffGuards, async (req, res) => {
+    try {
+      await handleAssign(req, res);
+    } catch {
+      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to assign ticket' } });
+    }
+  });
+  // Alias staff mutation paths (spec primary) + legacy /tickets paths
+  app.patch('/api/staff/tickets/:id/priority', ...staffGuards, async (req, res) => {
+    // delegate to same logic as legacy handler to keep one code path
+    (req as unknown as { url: string }).url = `/api/tickets/${req.params.id}/priority`;
+    const ticketId = Number(req.params.id);
+    if (!Number.isInteger(ticketId) || ticketId <= 0) return invalidQuery(res);
+    const itPriority = typeof req.body?.itPriority === 'string' ? req.body.itPriority.trim() : '';
+    if (!PRIORITIES.includes(itPriority)) return validationError(res, [{ field: 'itPriority', message: 'Invalid priority' }]);
+    const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+    const updated = await prisma.ticket.update({
+      where: { id: ticketId },
+      data: { itPriority: itPriority as never },
+      select: { id: true, itPriority: true, requestedPriority: true, updatedAt: true }
+    });
+    return res.json(updated);
+  });
+  app.patch('/api/staff/tickets/:id/status', ...staffGuards, async (req, res) => {
+    const ticketId = Number(req.params.id);
+    if (!Number.isInteger(ticketId) || ticketId <= 0) return invalidQuery(res);
+    const status = typeof req.body?.status === 'string' ? req.body.status.trim() : '';
+    if (!STATUSES.includes(status)) return validationError(res, [{ field: 'status', message: 'Invalid status' }]);
+    const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+    const allowed = ALLOWED_TRANSITIONS[ticket.currentStatus] ?? [];
+    if (!allowed.includes(status)) {
+      return res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: `Transition from ${ticket.currentStatus} to ${status} is not permitted`,
+          details: [{ field: 'status', message: `Allowed: ${allowed.join(', ') || 'none'}` }]
+        }
+      });
+    }
+    const updated = await prisma.ticket.update({
+      where: { id: ticketId },
+      data: { currentStatus: status as never },
+      select: { id: true, currentStatus: true, updatedAt: true }
+    });
+    return res.json(updated);
+  });
+
+  app.patch('/api/tickets/:id/priority', ...staffGuards, async (req, res) => {
+    try {
+      const ticketId = Number(req.params.id);
+      if (!Number.isInteger(ticketId) || ticketId <= 0) return invalidQuery(res);
+      const itPriority = typeof req.body?.itPriority === 'string' ? req.body.itPriority.trim() : '';
+      if (!PRIORITIES.includes(itPriority)) {
+        return validationError(res, [{ field: 'itPriority', message: 'Invalid priority' }]);
+      }
+      const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+      if (!ticket) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+      const updated = await prisma.ticket.update({
+        where: { id: ticketId },
+        data: { itPriority: itPriority as never },
+        select: { id: true, itPriority: true, requestedPriority: true, updatedAt: true }
+      });
+      res.json(updated);
+    } catch {
+      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to update priority' } });
+    }
+  });
+
+  app.patch('/api/tickets/:id/status', ...staffGuards, async (req, res) => {
+    try {
+      const ticketId = Number(req.params.id);
+      if (!Number.isInteger(ticketId) || ticketId <= 0) return invalidQuery(res);
+      const status = typeof req.body?.status === 'string' ? req.body.status.trim() : '';
+      if (!STATUSES.includes(status)) {
+        return validationError(res, [{ field: 'status', message: 'Invalid status' }]);
+      }
+      const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+      if (!ticket) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+      const allowed = ALLOWED_TRANSITIONS[ticket.currentStatus] ?? [];
+      if (!allowed.includes(status)) {
+        return res.status(400).json({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: `Transition from ${ticket.currentStatus} to ${status} is not permitted`,
+            details: [{ field: 'status', message: `Allowed: ${allowed.join(', ') || 'none'}` }]
+          }
+        });
+      }
+      const updated = await prisma.ticket.update({
+        where: { id: ticketId },
+        data: { currentStatus: status as never },
+        select: { id: true, currentStatus: true, updatedAt: true }
+      });
+      res.json(updated);
+    } catch {
+      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to update status' } });
+    }
+  });
+
+  // Staff-scoped comment/note routes — aliases that IT/Admin must use
+  // (requester routes under /api/tickets remain for Requester; these are the staff contract)
+  app.get('/api/staff/tickets/:id/comments', ...staffGuards, async (req, res) => {
+    const ticketId = Number(req.params.id);
+    if (!Number.isInteger(ticketId) || ticketId <= 0) return invalidQuery(res);
+    const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+    const comments = await prisma.publicComment.findMany({
+      where: { ticketId },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true, body: true, createdAt: true, author: { select: authorSelect } }
+    });
+    return res.json(comments);
+  });
+  app.post('/api/staff/tickets/:id/comments', ...staffGuards, async (req, res) => {
+    const auth = sessionUser(req);
+    const ticketId = Number(req.params.id);
+    if (!Number.isInteger(ticketId) || ticketId <= 0) return invalidQuery(res);
+    const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+    const check = validateCommentBody(req.body?.body);
+    if (!check.ok) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Comment is invalid', details: check.details } });
+    const comment = await prisma.publicComment.create({
+      data: { ticketId, authorId: auth.userId, body: check.text },
+      select: { id: true, body: true, createdAt: true, author: { select: authorSelect } }
+    });
+    return res.status(201).json(comment);
+  });
+  app.get('/api/staff/tickets/:id/notes', ...staffGuards, async (req, res) => {
+    const ticketId = Number(req.params.id);
+    if (!Number.isInteger(ticketId) || ticketId <= 0) return invalidQuery(res);
+    const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+    const notes = await prisma.internalNote.findMany({
+      where: { ticketId },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true, body: true, createdAt: true, author: { select: authorSelect } }
+    });
+    return res.json(notes);
+  });
+  app.post('/api/staff/tickets/:id/notes', ...itStaffGuards, async (req, res) => {
+    const auth = sessionUser(req);
+    const ticketId = Number(req.params.id);
+    if (!Number.isInteger(ticketId) || ticketId <= 0) return invalidQuery(res);
+    const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+    const check = validateCommentBody(req.body?.body);
+    if (!check.ok) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Note is invalid', details: check.details } });
+    const note = await prisma.internalNote.create({
+      data: { ticketId, authorId: auth.userId, body: check.text },
+      select: { id: true, body: true, createdAt: true, author: { select: authorSelect } }
+    });
+    return res.status(201).json(note);
+  });
+
+  // STOP-06: staff user directory (active IT/Admin ordered by name, requester 403)
+  app.get('/api/staff/users', ...staffGuards, async (_req, res) => {
+    try {
+      const users = await prisma.user.findMany({
+        where: { isActive: true, role: { in: ['IT_STAFF', 'ADMINISTRATOR'] } },
+        orderBy: { name: 'asc' },
+        select: { id: true, name: true, email: true, role: true }
+      });
+      res.json(users);
+    } catch {
+      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to load users' } });
+    }
+  });
+
+  // AC-31 / STOP-05: staff attachment download (IT/Admin can download any ticket's attachments)
+  app.get('/api/staff/attachments/:id/download', ...staffGuards, async (req, res) => {
+    try {
+      const attachmentId = Number(req.params.id);
+      if (!Number.isInteger(attachmentId) || attachmentId <= 0) return invalidQuery(res);
+      const attachment = await prisma.attachment.findUnique({
+        where: { id: attachmentId },
+        include: { ticket: { select: { id: true } } }
+      });
+      if (!attachment) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Attachment not found' } });
+      if (attachment.isRemoved) return res.status(410).json({ error: { code: 'REMOVED', message: 'Attachment has been removed' } });
+      const filePath = path.join(uploadsDir, attachment.storedFilename);
+      if (!fs.existsSync(filePath)) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Attachment not found' } });
+      res.setHeader('Content-Type', attachment.mimeType);
+      res.setHeader('Content-Disposition', `attachment; filename="${attachment.filename}"`);
+      fs.createReadStream(filePath).pipe(res);
+    } catch {
+      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to download attachment' } });
     }
   });
 

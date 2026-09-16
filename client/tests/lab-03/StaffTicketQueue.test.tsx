@@ -94,7 +94,6 @@ describe('Lab 3 StaffTicketQueue (UI-03)', () => {
     mockQueue([]);
     renderQueue();
     await screen.findByText(/no tickets yet/i);
-    await userEvent.click(screen.getByRole('button', { name: 'Filters' }));
     await userEvent.selectOptions(screen.getByLabelText('Status'), 'OPEN');
     expect(await screen.findByText(/no tickets match/i)).toBeInTheDocument();
   });
@@ -163,17 +162,21 @@ describe('Lab 3 StaffTicketQueue (UI-03)', () => {
     expect(await screen.findByText(/do not have access/i)).toBeInTheDocument();
   });
 
-  it('exposes search, filters, sort, and pagination controls', async () => {
+  it('exposes search, filters, header sort, and pagination controls', async () => {
     mockQueue(rows);
     renderQueue();
     await screen.findAllByText('TK-20260910-0001');
 
     expect(screen.getByLabelText(/search queue/i)).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Filters' }));
     expect(screen.getByLabelText('Status')).toBeInTheDocument();
     expect(screen.getByLabelText('Owner')).toBeInTheDocument();
-    expect(screen.getByLabelText('Sort by')).toBeInTheDocument();
     expect(screen.getByLabelText('Page size')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Sort by')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /created date/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /updated/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled();
+
+    await userEvent.click(screen.getByRole('button', { name: /created date/i }));
+    expect(screen.getByRole('button', { name: /created date/i })).toBeInTheDocument();
   });
 });

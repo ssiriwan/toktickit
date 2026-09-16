@@ -33,19 +33,21 @@
 | QUEUE-03 | API | AC-12 | Filters status/category/relatedSystem/reqPri/itPri/owner(me/unassigned/id) | correct subsets | `server/tests/lab-03/staff-queue.api.test.ts` | Planned |
 | QUEUE-04 | API | AC-12 | Sort ticketDate/updatedAt/priorities + order | ordered correctly | `server/tests/lab-03/staff-queue.api.test.ts` | Planned |
 | QUEUE-05 | API | AC-12 | Invalid query (NaN ids, bad sort, pageSize>50) | 400 INVALID_QUERY | `server/tests/lab-03/staff-queue.api.test.ts` | Planned |
-| QUEUE-06 | API/security | AC-12 | Requester calls staff queue; Admin read-only GET ok | 403 / 200 | `server/tests/lab-03/staff-queue.api.test.ts` | Planned |
-| DETAIL-01 | API | AC-09 | IT claim/unassign/reassign owner; inactive target rejected | 200 persisted / 400 | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
-| DETAIL-02 | API | AC-09 | Admin PATCH owner (read-only policy) | 403 | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
-| DETAIL-03 | API | AC-10 | IT sets itPriority; requestedPriority unchanged | 200, requested same | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
-| DETAIL-04 | API | AC-11 | Allowed transition per matrix | 200 new status | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
-| DETAIL-05 | API | AC-11 | Disallowed transition | 409 INVALID_TRANSITION + allowed[] | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
+| QUEUE-06 | API/security | AC-12 | IT + Admin full queue access; Requester forbidden | 200 / 200 / 403 | `server/tests/lab-03/staff-queue.api.test.ts` | Planned |
+| QUEUE-02b | API | AC-02 | mustChange users blocked from queue | 403 PASSWORD_CHANGE_REQUIRED | `server/tests/lab-03/staff-queue.api.test.ts` | Planned |
+| DETAIL-01 | API | AC-09 | claim/assign with NEW↔OPEN coupling; self re-claim no-op; foreign-owned 409; unassign active→NEW, done keeps status; inactive target 400 | 200 / 409 / 400 | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
+| DETAIL-02 | API | AC-09 | Admin performs staff ops (AD-13) | 200 | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
+| STOP-06 | API | AC-09 | staff users directory: IT + Admin 200, Requester 403 | 200 / 200 / 403 | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
+| DETAIL-03 | API | AC-10 | IT + Admin set itPriority; requestedPriority unchanged; Requester blocked | 200 / 200 / 403 | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
+| DETAIL-04 | API | AC-11 | Allowed transitions incl. corrected rows (OPEN→WAITING, WAITING→CANCELLED, REOPENED→CANCELLED) | 200 new status | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
+| DETAIL-05 | API | AC-11 | Off-matrix transition | 400 VALIDATION_ERROR (not permitted) | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
 | DETAIL-06 | API | AC-08 | Requester appears-resolved (own / other owner's / idempotent) | 200 flag, status same / 403 / repeat ok | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
 | DETAIL-07 | API/migration | AC-17 | Migrated Lab 2 ticket: ownership + itPriority=requestedPriority + attachments intact | fields correct | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
 | CMT-01 | API | AC-07 | Requester posts/lists public on owned ticket | 201/200 visible | `server/tests/lab-03/comments-notes.api.test.ts` | Planned |
 | CMT-02 | API | AC-07 | Empty/whitespace/over-2000 body | 400 | `server/tests/lab-03/comments-notes.api.test.ts` | Planned |
-| CMT-03 | API | AC-04,07 | IT posts public; Admin POST public → 403 read-only | 201 / 403 | `server/tests/lab-03/comments-notes.api.test.ts` | Planned |
+| CMT-03 | API | AC-04,07 | IT posts public (either route); Admin POST on requester route → 403, Admin POSTs via staff route | 201 / 403 / 201 | `server/tests/lab-03/comments-notes.api.test.ts` | Planned |
 | NOTE-01 | API | AC-04 | IT posts/lists internal; author/time from backend | 201/200 | `server/tests/lab-03/comments-notes.api.test.ts` | Planned |
-| NOTE-02 | API | AC-04 | Requester GET/POST notes; Admin POST notes | 403 no content / 403 | `server/tests/lab-03/comments-notes.api.test.ts` | Planned |
+| NOTE-02 | API | AC-04 | Requester GET/POST notes → 403 no content; Admin POST on requester route → 403 (Admin reads via staff GET; only IT writes) | 403 | `server/tests/lab-03/comments-notes.api.test.ts` | Planned |
 | ADMIN-01 | API | AC-12 | Admin list + search name/email + role filter + order | 200 correct subset | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
 | ADMIN-02 | API | AC-13 | Create user happy path → mustChange=true; login requires change | 201 + login locked | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
 | ADMIN-03 | API | AC-13 | Duplicate email (case-insensitive) + invalid role | 409 / 400 | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
@@ -55,8 +57,8 @@
 | ADMIN-07 | API | AC-15 | Reset initial password → target mustChange=true | 200 + next login locked | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
 | UI-01 | UI | AC-01,05 | Login: valid/invalid/inactive/busy/safe errors | renders + messages | `client/tests/lab-03/Login.test.tsx` | Planned |
 | UI-02 | UI | AC-02 | ChangePassword: rules checklist, mismatch, success redirect | validates + continues | `client/tests/lab-03/ChangePassword.test.tsx` | Planned |
-| UI-03 | UI | AC-12 | Queue: search/filter/sort/pagination/empty/no-results/forbidden + responsive cards | controls work | `client/tests/lab-03/StaffTicketQueue.test.tsx` | Planned |
-| UI-04 | UI | AC-08..11 | Detail: owner/priority/status dropdowns, banner, public vs internal distinct, validation | actions + styles | `client/tests/lab-03/StaffTicketDetail.test.tsx` | Planned |
+| UI-03 | UI | AC-12 | Queue: always-visible filters, magnifier search, header sort, Updated column, green Open, empty/no-results/401-redirect/403-card/Retry | controls work | `client/tests/lab-03/StaffTicketQueue.test.tsx` | Planned |
+| UI-04 | UI | AC-08..11 | Detail: auto-save owner/priority/status, Claim, CANCELLED/unassign confirms, banner, public vs internal distinct, Created/Updated dates, download, 401 redirect | actions work | `client/tests/lab-03/StaffTicketDetail.test.tsx` | Planned |
 | UI-05 | UI | AC-13..15 | Admin: table Email column, search/filter, drawer, dup/self/last-admin errors | renders + guards | `client/tests/lab-03/UserManagement.test.tsx` | Planned |
 | UI-06 | UI/style | AC-18 | Zen Green tokens, badges, readonly vs editable, validation placement, focus | style assertions | `client/tests/lab-03/theme.style.test.tsx` | Planned |
 | UI-07 | UI | AC-06,16 | Role nav hidden + forbidden cards (Requester→queue/admin, IT→admin, logged-out→protected) | unauthorized links absent, 403 cards render | `client/tests/lab-03/Login.test.tsx` | Planned |
