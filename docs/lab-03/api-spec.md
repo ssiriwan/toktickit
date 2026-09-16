@@ -52,14 +52,14 @@ Identity comes from session. Any `requesterId` query/body/header is ignored (AC-
 
 ## 3. Staff queue & detail
 
-### GET /api/staff/tickets (IT + Admin read-only)
+### GET /api/staff/tickets (IT + Admin)
 
 - Query: `search` (matches `ticketNumber` + `summary` + `description`, case-insensitive — same coverage as Lab 2 plus ticketNumber for staff lookup), `status` (8 values), `categoryId`, `relatedSystemId`, `reqPriority`, `itPriority`, `owner` (`me|unassigned|<userId>`), `sort` (`ticketDate|updatedAt|requestedPriority|itPriority`, default `updatedAt` — `ticketDate` kept from Lab 2 naming for creation time, `createdDate` accepted as an alias), `order` (`asc|desc`, default `desc`; anything else → `400 INVALID_QUERY`), `page` (≥1, default 1), `pageSize` (1..50, default 10).
 - Res `200`: `{ tickets: [{ id, ticketNumber, summary, category, requestedPriority, itPriority, currentStatus, owner{id,name}|null, ticketDate, updatedAt }], pagination }`.
 - Invalid query → `400 INVALID_QUERY` (strict integer checks, NaN → 400).
 - Requester → `403 FORBIDDEN`.
 
-### GET /api/staff/tickets/:id (IT + Admin read-only)
+### GET /api/staff/tickets/:id (IT + Admin)
 
 - Res `200`: full ticket + `requester{id,name,email}`, `owner{id,name}|null`, `itPriority/requestedPriority`, `appearsResolved/appearsResolvedAt`, `publicComments[]`, `internalNotes[]` (notes omitted for Requester path; present here), `attachments[]`.
 - Requester → `403 FORBIDDEN` (use Requester detail instead).
@@ -108,10 +108,10 @@ Identity comes from session. Any `requesterId` query/body/header is ignored (AC-
 
 ## 4. Comments & notes
 
-- `GET /api/tickets/:id/comments` — Requester(owner) + IT + Admin. Res `200`: `[{ id, body, author{id,name,role}, createdAt }]` asc.
-- `POST /api/tickets/:id/comments` — Requester(owner) + IT. Req `{ body: string(1..2000 trim) }`. Empty → `400 VALIDATION_ERROR`. Res `201` entry. Admin → `403` (read-only).
+- `GET /api/tickets/:id/comments` — Requester(owner) + IT + Admin. Res `200`: `[{ id, body, author{id,name,role}, createdAt }]` asc. Staff UIs must use the `/staff` equivalents.
+- `POST /api/tickets/:id/comments` — Requester(owner) + IT. Req `{ body: string(1..2000 trim) }`. Empty → `400 VALIDATION_ERROR`. Res `201` entry. Admin → `403` on this route (Admin posts via `POST /staff/.../comments`).
 - `GET /api/tickets/:id/notes` — IT + Admin only. Requester → `403 FORBIDDEN` with no note data (AC-04).
-- `POST /api/tickets/:id/notes` — IT only (Admin read-only). Same validation as comments. Res `201`.
+- `POST /api/tickets/:id/notes` — IT only. Admin → `403` on this route (Admin reads via staff GET; only IT writes). Same validation as comments. Res `201`.
 - Append-only: no PUT/DELETE in Lab 3. Bodies escaped on render; author/time set by backend.
 
 ## 5. Admin user management (Administrator only; others 403)

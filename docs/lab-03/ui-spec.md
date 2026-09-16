@@ -5,7 +5,7 @@
 ## 1. Tokens & reusable rules (kept from Lab 2)
 
 - `theme.css`: `--zen-green-900..100`, `--zen-bg`, `--zen-card`, `--zen-border`, `--zen-text`, `--zen-danger`, `--zen-warning`, `--zen-success`; header 56px `.zen-header`; `.badge-{status|priority|role}`; `.required-star` red `*`; `.zen-readonly` gray bg; validation text below field (`role=alert`), `aria-required`, `aria-invalid`; focus ring visible; no horizontal overflow at 360px+.
-- Badges: status (8 values, distinct hues; `NEW` gray, `IN_PROGRESS` blue, `WAITING` amber, `RESOLVED` green, `CLOSED` dark, `REOPENED` purple, `CANCELLED` red), priority (`LOW` green, `MEDIUM` amber, `HIGH` red-orange, `URGENT` red), role (`REQUESTER` blue, `IT_STAFF` teal, `ADMINISTRATOR` purple), active (`Active` green, `Inactive` red).
+- Badges: status (8 Lab 3 values: `NEW` pale-green, `OPEN` light-blue, `IN_PROGRESS` purple, `WAITING_FOR_REQUESTER` burnt-orange, `RESOLVED` green, `CLOSED` slate-dark, `REOPENED` indigo, `CANCELLED` gray), priority (`LOW` green, `MEDIUM` amber, `HIGH` red-orange, `URGENT` red), role (`REQUESTER` blue, `IT_STAFF` teal, `ADMINISTRATOR` purple), active (`Active` green, `Inactive` red).
 - Buttons: primary green (save/login/post), secondary outline (cancel/back), danger outline (deactivate), disabled + spinner during busy.
 - Feedback patterns: `loading` skeleton/spinner (`role=status`), `saving` button spinner, `success` green banner, `validation` red under field, `empty` illustration + CTA, `no-results` + clear-filters, `forbidden` 403 card, `safe failure` red banner with retry (no stack).
 
@@ -33,26 +33,27 @@
 
 ### 3.3 Requester MyTickets / Create / Detail (`/`, `/create`, `/tickets/:id`)
 
-- Lab 2 preserved (search + Category/System/Status/Priority + sort + page size + Prev/Next, server-driven). Selector + `Change Requester` removed; header shows session user.
+- Lab 2 preserved (magnifier-button search + Category/System/Status/Priority + header sorting + page size + Prev/Next, server-driven). Selector + `Change Requester` removed; header shows session user.
 - Detail adds: `Public Comments` list (avatar initials, name + role badge, time, escaped body) + `Add Public Comment` box + `Post Comment`; `Problem Appears Resolved` button with confirm dialog (`Mark as appears resolved? IT Staff will verify.`); after set, show info banner `You marked this as appears resolved. Awaiting IT verification.` Button idempotent.
 - Attachments section unchanged (upload/download/remove with reason) but identity from session.
 
-### 3.4 Staff Ticket Queue (`/staff/queue`, IT + Admin read-only)
+### 3.4 Staff Ticket Queue (`/staff/queue`, IT + Admin, full ops)
 
-- Toolbar: `Search by ticket number, summary, or description…` + `Filters` toggle (Status, Category, Related System, Req Priority, IT Priority, Owner: All/Mine/Unassigned) + result count `Showing 1 to 10 of N tickets`.
-- Desktop: table columns `Ticket No. | Created Date | Summary | Category | Req. Priority | IT Priority | Status | Owner` + row click/`Open` → detail. No mega-grid: summary truncated 2 lines with title tooltip.
-- Mobile (<768px): cards with `No + status badge`, `summary`, `meta (category • date)`, `priorities + owner` row, `Open →` button.
-- Pagination: `Previous 1 2 3 … N Next`, page-size select. Empty (`No tickets yet`), no-results (`No tickets match — Clear filters`), forbidden (Admin mutation hidden; Requester gets 403 card), failure (retry).
-- Admin view: same list but all mutation buttons hidden + `Read-only` tag.
+- Filter card always visible: `Search` (magnifier button + Enter, no auto-search) + `Status, Category, Related System, Requested priority, IT priority, Owner: All/Mine/Unassigned` dropdowns with requester-style chevron icons + result count `Showing 1 to 10 of N tickets`.
+- Sorting via clickable column headers `Created Date / Req. Priority / IT Priority / Updated` (same arrow icons as Requester: up/down when active, gray dual-arrow when inactive); no sort dropdown.
+- Desktop: table columns `Ticket No. | Created Date | Summary | Category | Req. Priority | IT Priority | Status | Owner | Updated` + green `Open` → detail; dates date-only. No mega-grid: summary truncated 2 lines with title tooltip.
+- Mobile (<768px): cards with `No + status badge`, `summary`, `meta (category • date)`, `Updated` line, `priorities + owner` row, full-width green `Open →` button.
+- Pagination: page-size `{5,10,25}` + Prev/Next. Empty (`No tickets yet`), no-results (`No tickets match — Clear filters`), forbidden (Requester gets 403 card; 401 redirects to `/login`), failure (working Retry reloads).
 
-### 3.5 Staff Ticket Detail (`/staff/tickets/:id`, IT editable; Admin read-only)
+### 3.5 Staff Ticket Detail (`/staff/tickets/:id`, IT + Admin, full ops per AD-13)
 
 - Breadcrumb `My Queue > Ticket Detail` + `Back to Queue`.
-- Top grid (read-only except noted): `Ticket No., Category, Related System, Requester, Requested Priority (readonly badge), Current Status (IT: dropdown of allowed next only), Ticket Owner (IT: dropdown active IT/Admin + Unassigned), IT Priority (IT: dropdown)`, `Summary`, `Description`.
+- Top grid: `Ticket No., Category, Related System, Requester, Requested Priority (readonly badge), Current Status (dropdown, auto-saves; CANCELLED asks confirm modal), Ticket Owner (dropdown + Claim button when unassigned, auto-saves; unassigning active work asks confirm modal), IT Priority (dropdown, auto-saves)`, `Summary`, `Description`, `Created Date + Last Updated` (date-only). No Save buttons — select = save, with `Saving...` status + validation errors below.
+- Dropdowns use requester-style chevron icons.
 - `appearsResolved` banner (amber, prominent): `Requester indicates this appears resolved at <time>. Please verify before Resolving/Closing.` Hidden when false.
-- Tabs: `Public Comments (n)` (white/green) | `Internal Notes (n)` (amber-tinted + 🔒 `Private — IT & Admin only`) | `Attachments (n)` (read/download; upload disabled for staff in Lab 3) | (`Service Actions` tab hidden — Lab 4).
-- Composer areas visually distinct (different bg + lock icon + placeholder `Type internal note… (private)` vs `Type your comment here…`); posting to wrong channel impossible by layout (separate tabs).
-- Admin mode: all dropdowns/textareas/composers disabled with `Read-only` hint; lists still visible.
+- Tabs: `Public Comments (n)` (white/green) | `Internal Notes (n)` (amber-tinted + `Private - IT & Admin only`, plain ASCII, no emoji) | `Attachments (n)` (staff Download button; removed → Download blocked) | (`Service Actions` tab hidden — Lab 4).
+- Composer areas visually distinct (different bg + `Private - IT & Admin only` label + placeholder `Type internal note... (private)` vs `Type your comment here...`); posting to wrong channel impossible by layout (separate tabs).
+- 401 redirects to `/login`; 403 shows the forbidden card.
 
 ### 3.6 Admin User Management (`/admin/users`, Administrator only)
 

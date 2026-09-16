@@ -36,11 +36,11 @@ Email invite/reset, MFA/SSO/social, self-registration, Actions Taken, SLA/escala
 - FR-04: Requester creates/lists/views own tickets and attachments using backend-derived identity; client-supplied `requesterId` is ignored.
 - FR-05: Requester posts/lists Public Comments on owned tickets; Requester cannot access Internal Notes APIs.
 - FR-06: Requester can set `appearsResolved=true` on owned ticket (flag only, idempotent); cannot PATCH status/priority/owner.
-- FR-07: IT Staff lists queue with search, filters, sorting, pagination and opens any ticket detail; Administrator may list/view queue and detail read-only.
+- FR-07: IT Staff and Administrator list the queue with search, filters, sorting, pagination and open any ticket detail (AD-13 — full staff ops for both roles).
 - FR-08: IT Staff claims/assigns/reassigns `ownerId` (active IT Staff or Administrator only, or unassigned).
 - FR-09: IT Staff updates `itPriority`; `requestedPriority` is immutable.
 - FR-10: IT Staff performs only allowed status transitions per matrix; invalid transitions rejected.
-- FR-11: IT Staff posts/lists Public Comments and Internal Notes; Administrator may only list (GET) Public Comments and Internal Notes (read-only, no POST); Requester posts/lists Public Comments on owned tickets only (append-only, no edit/delete).
+- FR-11: IT Staff and Administrator post/list Public Comments via staff routes and list Internal Notes via staff GET; only IT Staff writes Internal Notes. On requester routes (`/api/tickets/:id/...`) Administrator has no POST (GET comments/notes allowed); Requester posts/lists Public Comments on owned tickets only (append-only, no edit/delete).
 - FR-12: Administrator lists users with name/email search + optional single role filter.
 - FR-13: Administrator creates user with name/email/one role/active/initial password; duplicate email rejected.
 - FR-14: Administrator edits name/email/role/active and resets initial password (`mustChange=true`); cannot deactivate self; cannot remove last active Admin; no user deletion.
@@ -95,12 +95,12 @@ Decisions (AD):
 | Operation | Requester (owner) | IT Staff | Administrator |
 |---|---|---|---|
 | Own tickets/attachments/comments | ✅ | ❌ (use staff APIs) | ❌ |
-| `GET /staff/tickets`, `GET /staff/tickets/:id`, `GET comments/notes` | ❌ 403 | ✅ | ✅ read-only |
-| `PATCH owner/priority/status`, `POST comments/notes` on tickets | ❌ 403 | ✅ | ✅ |
+| `GET /staff/tickets`, `GET /staff/tickets/:id`, `GET comments/notes` (staff + requester GETs) | ✅ (own) | ✅ | ✅ |
+| Staff mutations: `POST claim/assign`, `PATCH priority/status`, `POST staff comments`, `POST staff notes` (IT-only for notes) | ❌ 403 | ✅ | ✅ |
 | `PATCH appears-resolved` (own) | ✅ | ❌ | ❌ |
 | `/admin/users*` | ❌ 403 | ❌ 403 | ✅ |
 
-Rationale: IT and Admin share staff ticket ops in Phase 6 (AD-13); the earlier read-only split was superseded.
+Rationale: IT and Admin share staff ticket ops in Phase 6 (AD-13). Requester routes stay owner-scoped; staff routes are the IT/Admin contract.
 
 ## 6. UI Specification Summary
 
@@ -164,7 +164,7 @@ Every AC maps to ≥1 planned test in `docs/lab-03/tests.md` (Phase 2, Issue #33
 ## 11. Assumptions and Decisions
 
 - JWT-in-httpOnly-cookie chosen over `express-session` for statelessness with Vite proxy; no refresh tokens in Lab 3 (8h expiry acceptable for course).
-- Admin ticket access is read-only (matrix §5.2) to honor handout §4.3 separation and avoid scope creep; full Admin ticket ops explicitly deferred.
+- Staff ticket ops are shared by IT Staff and Administrator (AD-13); no Admin ticket restriction remains in Lab 3.
 - Seed uses 2 active Admins (handout minimum is 1) solely to distinguish self-deactivation from last-admin tests.
 - `client/.../lab-03 tests/` in handout interpreted as `client/tests/lab-03/`; server tests under `server/tests/lab-03/`; vitest configs extended to include new paths alongside legacy `tests/lab-0X/`.
 - Password rule mirrors mockup (≥8 + 4 character classes); comment/note limit 2000 aligns with Lab 2 description limit.
