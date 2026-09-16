@@ -141,4 +141,14 @@ describe('Lab 3 UserManagement (UI-05)', () => {
     renderMgmt();
     expect(await screen.findByText('Login page')).toBeInTheDocument();
   });
+
+  it('distinguishes empty list from filtered no-results', async () => {
+    mockApi(() => Promise.resolve(okList([])));
+    renderMgmt();
+    expect(await screen.findByText('No users found.')).toBeInTheDocument();
+
+    await userEvent.type(screen.getByPlaceholderText(/search users/i), 'zzz');
+    await userEvent.click(screen.getByRole('button', { name: /search users/i }));
+    expect(await screen.findByText('No users match your filters.')).toBeInTheDocument();
+  });
 });

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 type UserRole = 'REQUESTER' | 'IT_STAFF' | 'ADMINISTRATOR';
@@ -50,6 +50,17 @@ export function UserManagement({ currentUserId }: { currentUserId: number }) {
   const [banner, setBanner] = useState('');
   const [saving, setSaving] = useState(false);
   const [resetMsg, setResetMsg] = useState('');
+  const firstFieldRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!drawer) return;
+    firstFieldRef.current?.focus();
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setDrawer(null);
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [drawer]);
 
   const load = useCallback(async () => {
     setStatus('loading');
@@ -339,7 +350,7 @@ export function UserManagement({ currentUserId }: { currentUserId: number }) {
       </div>
 
       {users.length === 0 ? (
-        <p role="status">No users found.</p>
+        <p role="status">{appliedSearch || roleFilter ? 'No users match your filters.' : 'No users found.'}</p>
       ) : (
         <div className="table-responsive">
           <table className="table align-middle">
@@ -387,12 +398,14 @@ export function UserManagement({ currentUserId }: { currentUserId: number }) {
       )}
 
       {drawer && (
-        <div
-          className="card mb-3"
-          role="dialog"
-          aria-label={drawer.kind === 'create' ? 'Create New User' : 'Edit User'}
-        >
-          <div className="card-body">
+        <div className="zen-drawer-backdrop" onClick={() => !saving && setDrawer(null)}>
+          <div
+            className="zen-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label={drawer.kind === 'create' ? 'Create New User' : 'Edit User'}
+            onClick={(e) => e.stopPropagation()}
+          >
             <h2 className="h5 mb-3">{drawer.kind === 'create' ? 'Create New User' : 'Edit User'}</h2>
             {banner && (
               <p role="alert" className="text-danger">
@@ -405,6 +418,7 @@ export function UserManagement({ currentUserId }: { currentUserId: number }) {
               </label>
               <input
                 id="admin-name"
+                ref={firstFieldRef}
                 className={`form-control${fieldErrors.name ? ' is-invalid' : ''}`}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
