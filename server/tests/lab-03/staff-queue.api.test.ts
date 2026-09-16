@@ -133,7 +133,7 @@ describe('Lab 3 staff queue (QUEUE-01..06)', () => {
     }
   });
 
-  it('QUEUE-06: requester forbidden, admin read-only allowed, auth enforced', async () => {    const staffRes = await request(app)
+  it('QUEUE-06: requester forbidden, admin allowed (AD-13 full staff ops), auth enforced', async () => {    const staffRes = await request(app)
       .get('/api/staff/tickets')
       .set('Cookie', cookieFor(4, 'REQUESTER'));
     expect(staffRes.status).toBe(403);

@@ -423,7 +423,7 @@ export function StaffTicketDetail() {
           <div className="card-body">
             <p>Unassign will clear the owner and return active work to NEW. Keep RESOLVED/CLOSED/CANCELLED as is. Continue?</p>
             <div className="d-flex gap-2">
-              <button type="button" className="btn btn-warning btn-sm" onClick={doAssign}>Confirm Unassign</button>
+              <button type="button" className="btn btn-warning btn-sm" onClick={() => doAssign()}>Confirm Unassign</button>
               <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setShowUnassignConfirm(false)}>Cancel</button>
             </div>
           </div>
@@ -435,7 +435,7 @@ export function StaffTicketDetail() {
           <div className="card-body">
             <p>Cancel this ticket? This cannot be undone without Reopen.</p>
             <div className="d-flex gap-2">
-              <button type="button" className="btn btn-danger btn-sm" onClick={doStatusSave}>Confirm Cancel</button>
+              <button type="button" className="btn btn-danger btn-sm" onClick={() => doStatusSave()}>Confirm Cancel</button>
               <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setShowCancelConfirm(false)}>Cancel</button>
             </div>
           </div>

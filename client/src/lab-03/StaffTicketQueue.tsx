@@ -51,10 +51,8 @@ function SortIcon({ active, order }: { active: boolean; order: 'asc' | 'desc' })
 }
 
 export function StaffTicketQueue({
-  readOnly,
   onOpenTicket
 }: {
-  readOnly: boolean;
   onOpenTicket: (id: number) => void;
 }) {
   const [tickets, setTickets] = useState<QueueTicket[]>([]);
@@ -225,8 +223,7 @@ export function StaffTicketQueue({
   return (
     <main className="container py-4" style={{ maxWidth: '72rem' }}>
       <h1 className="h4 mb-3">
-        Staff Ticket Queue{' '}
-        {readOnly && <span className="badge bg-secondary">Read-only</span>}
+        Staff Ticket Queue
       </h1>
 
       <div className="card mb-3">

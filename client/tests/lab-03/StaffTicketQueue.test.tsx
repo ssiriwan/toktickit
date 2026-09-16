@@ -5,10 +5,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { StaffTicketQueue } from '../../src/lab-03/StaffTicketQueue';
 
-function renderQueue(readOnly = false, onOpenTicket: (id: number) => void = () => {}) {
+function renderQueue(onOpenTicket: (id: number) => void = () => {}) {
   return render(
     <MemoryRouter>
-      <StaffTicketQueue readOnly={readOnly} onOpenTicket={onOpenTicket} />
+      <StaffTicketQueue onOpenTicket={onOpenTicket} />
     </MemoryRouter>
   );
 }
@@ -69,19 +69,13 @@ describe('Lab 3 StaffTicketQueue (UI-03)', () => {
   it('renders rows with badges and an open action', async () => {
     const onOpen = vi.fn();
     mockQueue(rows);
-    renderQueue(false, onOpen);
+    renderQueue(onOpen);
 
     expect(await screen.findAllByText('TK-20260910-0001')).not.toHaveLength(0);
     expect(screen.getAllByText('Unassigned').length).toBeGreaterThanOrEqual(1);
     const openButtons = screen.getAllByRole('button', { name: 'Open' });
     await userEvent.click(openButtons[0]);
     expect(onOpen).toHaveBeenCalledWith(1);
-  });
-
-  it('shows read-only tag for administrators', async () => {
-    mockQueue(rows);
-    renderQueue(true);
-    expect(await screen.findByText('Read-only')).toBeInTheDocument();
   });
 
   it('shows empty state with no filters', async () => {
@@ -140,7 +134,7 @@ describe('Lab 3 StaffTicketQueue (UI-03)', () => {
     render(
       <MemoryRouter initialEntries={['/staff/queue']}>
         <Routes>
-          <Route path="/staff/queue" element={<StaffTicketQueue readOnly={false} onOpenTicket={() => {}} />} />
+          <Route path="/staff/queue" element={<StaffTicketQueue onOpenTicket={() => {}} />} />
           <Route path="/login" element={<p>Login page</p>} />
         </Routes>
       </MemoryRouter>
