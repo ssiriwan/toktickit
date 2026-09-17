@@ -77,6 +77,8 @@ test.describe('VIS-01 — Lab 3 responsive screenshots', () => {
     await loginAsStaff(page);
     await page.getByRole('button', { name: /^open$/i }).filter({ visible: true }).first().click();
     await expect(page).toHaveURL(/\/staff\/tickets\/\d+/);
+    // URL changes before the ticket payload arrives — wait for loaded content.
+    await expect(page.getByRole('tab', { name: /public comments/i })).toBeVisible({ timeout: 15000 });
     for (const viewport of VIEWPORTS) {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.screenshot({ path: `artifacts/lab-03/screenshots/staff-ticket-detail/detail-${viewport.name}.png` });
