@@ -1265,6 +1265,201 @@ export function createApp() {
     }
   });
 
+  // AC-12..16 / ADMIN-01..07: admin user management (Administrator only).
+  const adminGuards = [
+    requireAuth,
+    requirePasswordChanged,
+    requireRole('ADMINISTRATOR')
+  ];
+  const ADMIN_ROLES = ['REQUESTER', 'IT_STAFF', 'ADMINISTRATOR'];
+  const adminSelect = {
+    id: true, name: true, email: true, role: true,
+    isActive: true, mustChangePassword: true, createdAt: true
+  };
+
+  function dupEmailError(res: express.Response) {
+    return res.status(409).json({
+      error: {
+        code: 'DUPLICATE_EMAIL',
+        message: 'Email is already in use',
+        details: [{ field: 'email', message: 'Email is already in use' }]
+      }
+    });
+  }
+
+  function validEmail(value: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  }
+
+  /** True when deactivating/demoting this target would leave zero active admins. */
+  async function isLastActiveAdmin(targetId: number): Promise<boolean> {
+    const others = await prisma.user.count({
+      where: { role: 'ADMINISTRATOR', isActive: true, id: { not: targetId } }
+    });
+    return others === 0;
+  }
+
+  // ADMIN-01: list ordered by name; search name/email; single role filter.
+  app.get('/api/admin/users', ...adminGuards, async (req, res) => {
+    try {
+      const q = req.query as Record<string, string | undefined>;
+      const role = q.role?.trim();
+      if (role !== undefined && role !== '' && !ADMIN_ROLES.includes(role)) {
+        return invalidQuery(res);
+      }
+      const search = q.search?.trim() ?? '';
+      const users = await prisma.user.findMany({
+        where: {
+          ...(role ? { role: role as 'REQUESTER' | 'IT_STAFF' | 'ADMINISTRATOR' } : {}),
+          ...(search
+            ? {
+                OR: [
+                  { name: { contains: search, mode: 'insensitive' } },
+                  { email: { contains: search, mode: 'insensitive' } }
+                ]
+              }
+            : {})
+        },
+        orderBy: { name: 'asc' },
+        select: adminSelect
+      });
+      res.json({ users });
+    } catch {
+      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to load users' } });
+    }
+  });
+
+  // ADMIN-02/03: create with initial password (must change at next login).
+  app.post('/api/admin/users', ...adminGuards, async (req, res) => {
+    try {
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      const name = typeof body.name === 'string' ? body.name.trim() : '';
+      const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+      const role = typeof body.role === 'string' ? body.role : '';
+      const isActive = body.isActive;
+      const initialPassword = body.initialPassword;
+      const details: { field: string; message: string }[] = [];
+      if (!name || name.length > 100) details.push({ field: 'name', message: 'Name must be 1..100 characters' });
+      if (!validEmail(email)) details.push({ field: 'email', message: 'Valid email is required' });
+      if (!ADMIN_ROLES.includes(role)) details.push({ field: 'role', message: 'Role must be REQUESTER, IT_STAFF, or ADMINISTRATOR' });
+      if (typeof isActive !== 'boolean') details.push({ field: 'isActive', message: 'Active must be true or false' });
+      const passwordIssue = validatePasswordPolicy(initialPassword);
+      if (passwordIssue) details.push({ field: 'initialPassword', message: passwordIssue });
+      if (details.length > 0) {
+        return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Invalid user data', details } });
+      }
+      const existing = await prisma.user.findFirst({
+        where: { email: { equals: email, mode: 'insensitive' } }
+      });
+      if (existing) return dupEmailError(res);
+      const created = await prisma.user.create({
+        data: {
+          name, email, role: role as 'REQUESTER' | 'IT_STAFF' | 'ADMINISTRATOR',
+          isActive: isActive as boolean,
+          passwordHash: await hashPassword(initialPassword as string),
+          mustChangePassword: true
+        },
+        select: adminSelect
+      });
+      res.status(201).json(toSafeUser(created as Parameters<typeof toSafeUser>[0]));
+    } catch {
+      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to create user' } });
+    }
+  });
+
+  // ADMIN-04/05/06: edit with self-deactivate + last-admin guards.
+  app.patch('/api/admin/users/:id', ...adminGuards, async (req, res) => {
+    try {
+      const auth = sessionUser(req);
+      const targetId = Number(req.params.id);
+      if (!Number.isInteger(targetId) || targetId <= 0) return invalidQuery(res);
+      const target = await prisma.user.findUnique({ where: { id: targetId } });
+      if (!target) {
+        return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
+      }
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      const data: Record<string, unknown> = {};
+      const details: { field: string; message: string }[] = [];
+      if (body.name !== undefined) {
+        const name = typeof body.name === 'string' ? body.name.trim() : '';
+        if (!name || name.length > 100) details.push({ field: 'name', message: 'Name must be 1..100 characters' });
+        else data.name = name;
+      }
+      if (body.email !== undefined) {
+        const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+        if (!validEmail(email)) details.push({ field: 'email', message: 'Valid email is required' });
+        else {
+          const clash = await prisma.user.findFirst({
+            where: { email: { equals: email, mode: 'insensitive' }, id: { not: targetId } }
+          });
+          if (clash) return dupEmailError(res);
+          data.email = email;
+        }
+      }
+      if (body.role !== undefined) {
+        if (typeof body.role !== 'string' || !ADMIN_ROLES.includes(body.role)) {
+          details.push({ field: 'role', message: 'Role must be REQUESTER, IT_STAFF, or ADMINISTRATOR' });
+        } else data.role = body.role;
+      }
+      if (body.isActive !== undefined) {
+        if (typeof body.isActive !== 'boolean') {
+          details.push({ field: 'isActive', message: 'Active must be true or false' });
+        } else data.isActive = body.isActive;
+      }
+      if (details.length > 0) {
+        return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Invalid user data', details } });
+      }
+      if (targetId === auth.userId && data.isActive === false) {
+        return res.status(403).json({
+          error: { code: 'SELF_DEACTIVATION', message: 'You cannot deactivate your own account' }
+        });
+      }
+      const removesAdmin =
+        target.role === 'ADMINISTRATOR' &&
+        target.isActive &&
+        (data.isActive === false || (typeof data.role === 'string' && data.role !== 'ADMINISTRATOR'));
+      if (removesAdmin && (await isLastActiveAdmin(targetId))) {
+        return res.status(409).json({
+          error: { code: 'LAST_ADMIN', message: 'At least one active administrator must remain' }
+        });
+      }
+      const updated = await prisma.user.update({
+        where: { id: targetId },
+        data: data as never,
+        select: adminSelect
+      });
+      res.json(toSafeUser(updated as Parameters<typeof toSafeUser>[0]));
+    } catch {
+      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to update user' } });
+    }
+  });
+
+  // ADMIN-07: reset to a new initial password (target must change at next login).
+  app.post('/api/admin/users/:id/reset-password', ...adminGuards, async (req, res) => {
+    try {
+      const targetId = Number(req.params.id);
+      if (!Number.isInteger(targetId) || targetId <= 0) return invalidQuery(res);
+      const target = await prisma.user.findUnique({ where: { id: targetId } });
+      if (!target) {
+        return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
+      }
+      const initialPassword = (req.body ?? {} as Record<string, unknown>).initialPassword;
+      const issue = validatePasswordPolicy(initialPassword);
+      if (issue) {
+        return res.status(400).json({
+          error: { code: 'VALIDATION_ERROR', message: 'Invalid password', details: [{ field: 'initialPassword', message: issue }] }
+        });
+      }
+      await prisma.user.update({
+        where: { id: targetId },
+        data: { passwordHash: await hashPassword(initialPassword as string), mustChangePassword: true }
+      });
+      res.json({ id: targetId, mustChangePassword: true });
+    } catch {
+      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to reset password' } });
+    }
+  });
+
   app.post('/api/tickets/:id/attachments', ...requesterGuards, (req, res) => {
     const single = upload.single('file');
     single(req as never, res as never, async (err: unknown) => {

@@ -5,6 +5,7 @@ import { ChangePassword } from '../lab-03/ChangePassword';
 import { Login } from '../lab-03/Login';
 import { StaffTicketDetail } from '../lab-03/StaffTicketDetail';
 import { StaffTicketQueue } from '../lab-03/StaffTicketQueue';
+import { UserManagement } from '../lab-03/UserManagement';
 import { CreateTicket } from './CreateTicket';
 import { MyTickets } from './MyTickets';
 import { TicketDetail } from './TicketDetail';
@@ -86,7 +87,12 @@ function Header() {
                 >
                   Queue
                 </NavLink>
-                <span className="nav-link p-0" title="User management arrives in the next phase" aria-disabled="true">Admin (coming soon)</span>
+                <NavLink
+                  to="/admin/users"
+                  className={({ isActive }) => `nav-link p-0 ${isActive ? 'active' : ''}`}
+                >
+                  Admin
+                </NavLink>
               </>
             )}
           </nav>
@@ -126,6 +132,17 @@ function LoginRoute() {
       onLoggedIn={(mustChange) => navigate(mustChange ? '/change-password' : '/', { replace: true })}
     />
   );
+}
+
+function AdminRoute({ user }: { user: { id: number; role: string } }) {
+  if (user.role !== 'ADMINISTRATOR') {
+    return (
+      <p role="alert" className="container py-4 text-danger">
+        You do not have access to user management.
+      </p>
+    );
+  }
+  return <UserManagement currentUserId={user.id} />;
 }
 
 function Shell() {
@@ -168,12 +185,13 @@ function Shell() {
         <Routes>
           <Route
             path="/staff/queue"
-            element={<StaffTicketQueue readOnly={user.role === 'ADMINISTRATOR'} onOpenTicket={(id) => navigate(`/staff/tickets/${id}`)} />}
+            element={<StaffTicketQueue onOpenTicket={(id) => navigate(`/staff/tickets/${id}`)} />}
           />
           <Route
             path="/staff/tickets/:id"
             element={<StaffTicketDetail />}
           />
+          <Route path="/admin/users" element={<AdminRoute user={user} />} />
           <Route path="*" element={<Navigate to="/staff/queue" replace />} />
         </Routes>
       </>
@@ -258,6 +276,7 @@ function Shell() {
         path="/tickets/:id"
         element={<TicketDetailRoute requester={requester} onBack={() => navigate('/tickets')} />}
       />
+      <Route path="/admin/users" element={<AdminRoute user={user} />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
     </>

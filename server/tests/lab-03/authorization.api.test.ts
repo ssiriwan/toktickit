@@ -21,7 +21,7 @@ function cookieFor(
   return `toktickit_session=${signSession(id, role)}`;
 }
 
-describe('Lab 3 authorization (AUTHZ-01/02/05/06)', () => {
+describe('Lab 3 authorization (AUTHZ-01/02/04/05/06)', () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -102,6 +102,14 @@ describe('Lab 3 authorization (AUTHZ-01/02/05/06)', () => {
         url
       );
       expect(res.status).toBe(401);
+    }
+  });
+
+  it('AUTHZ-04: IT and Requester cannot access admin APIs, no user data', async () => {
+    for (const [role, id] of [['IT_STAFF', 3], ['REQUESTER', 7]] as const) {
+      const res = await request(app).get('/api/admin/users').set('Cookie', cookieFor(id, role));
+      expect(res.status).toBe(403);
+      expect(res.body).toEqual({ error: expect.objectContaining({ code: 'FORBIDDEN' }) });
     }
   });
 

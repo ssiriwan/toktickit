@@ -10,7 +10,7 @@ describe('Lab 3 Zen Green theme (STYLE-02/UI-06)', () => {
   it('theme.css exposes badge and readonly tokens', () => {
     const css = readFileSync(resolve(clientRoot, 'src/lab-02/theme.css'), 'utf-8');
     expect(css).toMatch(/--zen-/);
-    expect(css).toMatch(/badge-priority|badge-status/);
+    expect(css).toMatch(/badge-priority|badge-status|badge-role/);
     expect(css).toMatch(/zen-readonly|required-star/);
   });
 
