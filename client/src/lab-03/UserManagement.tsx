@@ -25,8 +25,8 @@ const ROLE_OPTIONS: { value: '' | UserRole; label: string }[] = [
   { value: 'ADMINISTRATOR', label: 'Administrator' }
 ];
 
-function roleBadgeClass(): string {
-  return 'bg-secondary';
+function roleBadgeClass(role: UserRole): string {
+  return `badge-role-${role}`;
 }
 
 export function UserManagement({ currentUserId }: { currentUserId: number }) {
@@ -376,7 +376,7 @@ export function UserManagement({ currentUserId }: { currentUserId: number }) {
                   </td>
                   <td className="d-none d-md-table-cell">{u.email}</td>
                   <td>
-                    <span className={`badge ${roleBadgeClass()}`}>{u.role}</span>
+                    <span className={`badge ${roleBadgeClass(u.role)}`}>{u.role}</span>
                   </td>
                   <td>
                     {u.isActive ? (

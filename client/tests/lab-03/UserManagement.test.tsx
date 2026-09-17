@@ -51,6 +51,9 @@ describe('Lab 3 UserManagement (UI-05)', () => {
     // Email is its own column header per ui-spec.
     const table = screen.getByRole('table');
     expect(within(table).getByRole('columnheader', { name: 'Email' })).toBeInTheDocument();
+    // Role badges use distinct ui-spec §1 colors per role.
+    expect(within(table).getByText('ADMINISTRATOR')).toHaveClass('badge-role-ADMINISTRATOR');
+    expect(within(table).getByText('REQUESTER')).toHaveClass('badge-role-REQUESTER');
   });
 
   it('searches only after the magnifier button is pressed', async () => {
