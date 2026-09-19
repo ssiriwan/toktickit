@@ -215,7 +215,9 @@ async function seedTickets() {
         requesterId: requester.id,
         ownerId: owner?.id ?? null,
         categoryId: category.id,
-        relatedSystemId: system.id
+        relatedSystemId: system.id,
+        appearsResolved: false,
+        appearsResolvedAt: null
       },
       create: {
         ticketNumber: t.ticketNumber,
@@ -227,7 +229,9 @@ async function seedTickets() {
         requesterId: requester.id,
         ownerId: owner?.id ?? null,
         categoryId: category.id,
-        relatedSystemId: system.id
+        relatedSystemId: system.id,
+        appearsResolved: false,
+        appearsResolvedAt: null
       }
     });
   }
