@@ -17,18 +17,23 @@
 - Only ONE issue active at a time. Do NOT start next Issue until current PR is approved+merged (unless the owner explicitly says otherwise).
 - Release at the end: PR `lab3-staging` → `main` (only after all Lab 3 phases done).
 
-## Current status (as of 2026-09-15)
+## Current status (as of 2026-09-19)
 - Lab 2: ✅ all 8 Issues done + released to `main` (PR #31). See git log `main` if needed; details below kept short.
-- Lab 3 — ✅ **PR #32 Spec contract:** MERGED into lab3-staging. `docs/lab-03/{specification,api-spec,ui-spec}`. Review: 8 fixes (drop `resolutionSummary` → Lab 4, brand typo, admin Email column, seed table, queue search/sort/filters, AC phasing, BR-21 no-lockout + BR-22 CSRF).
-- Lab 3 — ✅ **PR #33 Test plan:** MERGED. `docs/lab-03/tests.md` (AC-01..18 → 50+ rows, API/UI/E2E/VIS IDs). Review: 5 fixes (non-English leftover, UI-07/UI-08/VIS-01, split UNIT-01/UI-06).
-- Lab 3 — ✅ **PR #34 Auth foundation:** MERGED into lab3-staging (2026-09-11). `User` model + JWT httpOnly cookie session + login/logout/me/change-password + migration + idempotent seed. Review: 7 fixes (dummy bcrypt compare, seed preserves changed passwords, `TK-YYYYMMDD-XXXX` seed numbers, HTTP proof for API-04, split password messages, PG pin `postgres:17-alpine`, `body.requesterId` TODO Phase 4). Plus JWT fail-closed hardening (no fallback secret in production + unit test).
-- Lab 3 — ✅ **PR #35 Requester regression:** MERGED into lab3-staging (2026-09-12, `1314c43`). Session identity on all ticket/attachment APIs (selector + `X-Requester-Id` removed), comments/notes + `appearsResolved` role matrix, `Login`/`ChangePassword`/role `AppShell`, Lab 2 tests migrated to real-login helper. Review: 4 fixes (download credentials, notes middleware roles, phase4.* cleanup, placeholder a11y).
-- Lab 3 — ✅ **PR #36 Staff queue:** MERGED into lab3-staging (2026-09-12, `8420a56`). `GET /staff/tickets` (strict query validation, search ticketNumber+summary+description, filters, sort ticketDate/updatedAt/priorities, pagination ≤50) + queue UI (desktop table + mobile cards, Retry reloads, 401→login redirect). Review: 6 fixes + 2 nits.
-- ⏳ **PR #37 Staff detail (OPEN, needs review):** branch `feature/37-staff-detail` (`792ed60`, 2026-09-15, +710/−8). Claim/assign/reassign owner + `itPriority` (requested immutable) + status matrix + `StaffTicketDetail` UI + `staff-ticket-detail.api.test.ts` + `StaffTicketDetail.test.tsx`.
-- ⏳ **NEXT:** merge PR #37 → Admin user management (`users-admin` API + `UserManagement` UI — not yet implemented, no `users-admin.api.test.ts`/`UserManagement.test.tsx` yet) → E2E + screenshots + `lab3-staging` → `main` release.
-- **Unstaged right now:** `docs/lab-03/ai-use.md` + `docs/lab-03/reviewer.md` (evidence, updated continuously — do NOT commit mid-phase unless owner says so).
-- **Tests (2026-09-15 run):** `npm test` → 28 files / 143 tests passed. 1 non-blocking unhandled rejection in `Login.test.tsx` (`mustChangePassword` of null) — investigate before release.
-- **Note:** `docs/lab-03/reviewer.md` table row still says PR #36 "Open" but `gh` shows MERGED (2026-09-12) and its detail line says "Merged after 6 fixes" — fix the table row when touching reviewer.md next.
+- Lab 3 — ✅ **PR #32 Spec contract:** MERGED into lab3-staging. `docs/lab-03/{specification,api-spec,ui-spec}`.
+- Lab 3 — ✅ **PR #33 Test plan:** MERGED. `docs/lab-03/tests.md` (AC-01..18 → 50+ rows, API/UI/E2E/VIS IDs).
+- Lab 3 — ✅ **PR #34 Auth foundation:** MERGED into lab3-staging.
+- Lab 3 — ✅ **PR #35 Requester regression:** MERGED into lab3-staging.
+- Lab 3 — ✅ **PR #36 Staff queue:** MERGED into lab3-staging.
+- Lab 3 — ✅ **PR #37 Staff detail:** MERGED into lab3-staging (15 fixes + staff-users Admin guard + Phase 6 spec pass).
+- Lab 3 — ✅ **PR #39 Admin user management:** MERGED into lab3-staging (distinct role badges + drawer sheet).
+- Lab 3 — ✅ **PR #41 E2E flows + screenshots:** MERGED into lab3-staging (3 fixes).
+- Lab 3 — 🚀 **PR #43 Docs finalization (Issue #42):** APPROVED by @thhanabun ("lgtm.") on branch `feature/42-docs-final`. Ready to merge into `lab3-staging`.
+- ⏳ **NEXT:** Peer merges PR #43 → Close Issues #38, #40, #42 on GitHub Projects board → Create Release PR `lab3-staging` → `main` → Merge to `main` → Pull `main` locally → Build `Lab3_Submission/submission.pdf`.
+- **Tests & Artifacts:**
+  - `npm test`: 30 files / 163 tests passed (100% green).
+  - `npm run e2e:lab3`: 11 passed (100% green).
+  - `npm run build`: Vite build + tsc compile clean.
+  - 36 responsive/functional screenshots captured under `artifacts/lab-03/screenshots/` across 4 categories.
 
 ## Key decisions (do not silently change)
 - Lab 2 API error shape: `{ error: { code, message, details } }`. Codes: `VALIDATION_ERROR`, `INVALID_QUERY`, `INVALID_FILE_TYPE`, `FILE_TOO_LARGE`, `MAX_ATTACHMENTS`, `ACCESS_DENIED`, `NOT_FOUND`, `REMOVED`, `INTERNAL_ERROR`. (Changed from `{message, errors}` to match friend's better design; do not revert.)
