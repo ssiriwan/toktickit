@@ -29,7 +29,7 @@ export function Login({ onLoggedIn }: { onLoggedIn?: (mustChangePassword: boolea
       setFailure(result.message);
       return;
     }
-    onLoggedIn?.(result.user.mustChangePassword);
+    onLoggedIn?.(Boolean(result.user?.mustChangePassword));
   }
 
   return (

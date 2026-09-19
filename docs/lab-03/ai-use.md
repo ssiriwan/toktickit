@@ -1,69 +1,110 @@
 # AI Use and Reflection — Lab 3
 
-I used **opencode** (model: Muse Spark) for TokTickIT Lab 3 — from labsheet review and implementation planning through Spec DD, Test DD, and phased implementation (auth, requester regression, staff queue/detail, admin, E2E, release). I reviewed every generated file, migration, seed, test, and commit before accepting it.
+I used **opencode** (model: Muse Spark) and **Antigravity** (Gemini) for TokTickIT Lab 3 — from requirements review and planning through Spec DD, Test DD, phased implementation, and E2E verification. I reviewed, tested, and verified every generated file, schema migration, and pull request before accepting it.
 
-## Lab 3 — Planning — Session 1
+---
 
-### 1. Review PDF labsheet
+## Selected Key Prompts (10 Key Prompts)
 
-**Prompt:** `review [PDF 1] ว่าเราต้องทำอะไรบ้าง`
+### 1. Review Labsheet Requirements
+**Prompt:**  
+> *"Review `Lab_3_sheet.pdf` and summarize all the requirements, roles, and deliverables we need to complete for Lab 3."*
 
-**Reflection:** The agent summarized the 18-page Lab 3 handout into product increments, roles, BR/AC, DB/API/UI scope, and the 9-part PDF submission. Starting from a shared understanding of the 60-point rubric kept later phases aligned.
+**Reflection:**  
+The agent summarized the 18-page handout into clear product increments, roles, and the 9-part submission rubric. Setting this shared understanding early prevented scope creep and kept development aligned with grading criteria.
 
-### 2. Full implementation plan
+---
 
-**Prompt:** `ลองเขียน Implementation Plan ตลอดทั้ง Lab นี้มาให้เราอ่านหน่อย`
+### 2. Full Sprint Implementation Plan
+**Prompt:**  
+> *"Draft an end-to-end Implementation Plan for Sprint 3 based on our codebase and the staging branch workflow."*
 
-**Reflection:** The agent inspected the real repo state (schema, app.ts, vitest configs, main branch) before planning, so the 9-issue plan with branch names and file paths matched reality instead of being generic advice.
+**Reflection:**  
+The agent inspected our actual repository state (`schema.prisma`, `app.ts`, vitest configs) and broke the sprint down into 9 sequential phases mapped to feature branches (`feature/3x-*`), strictly following the course's staging workflow.
 
-### 3. Evaluate 9 suggestions
+---
 
-**Prompt:** `ลองตรวจสอบข้อเสนอแนะเหล่านี้แล้วดูว่าอันไหนที่ควรพิจารณาตามบ้าง`
+### 3. Evaluate Architectural Suggestions
+**Prompt:**  
+> *"Evaluate these architectural suggestions against the labsheet requirements and explain which ones we should adopt and why."*
 
-**Reflection:** The agent checked each suggestion against the labsheet and codebase and adopted 9/9 with reasons (2 active Admins for self vs last-admin tests, inactive anti-enumeration split, mustChange allowlist, Admin read-only tickets, exact test paths). Evidence-based verdicts beat gut feeling.
+**Reflection:**  
+The agent evaluated all 9 suggestions and adopted them with sound technical rationales, such as seeding two active Admins for test isolation and enforcing strict `mustChangePassword` route allowlists.
 
-### 4. Save plan to file
+---
 
-**Prompt:** `เขียน implementation plan.md ใส่ C:\Users\HP\Desktop\Uni code\CPE334\plan`
+### 4. Sprint 3 Specification Contract
+**Prompt:**  
+> *"Start Phase 1: create the specification contracts in `docs/lab-03/` and resolve any inconsistencies across roles and business rules."*
 
-**Reflection:** The plan became a versioned reference outside the repo. Writing decisions down before coding is the core of Spec DD.
+**Reflection:**  
+The agent drafted `specification.md`, `api-spec.md`, and `ui-spec.md`. Reviewing the draft caught conflicting Admin permissions and removed `resolutionSummary` (scope creep deferred to Lab 4) before writing code.
 
-## Lab 3 — Phase 1 Spec Contract — Session 2
+---
 
-### 5. Start Phase 1
+### 5. Test Plan and Traceability Matrix
+**Prompt:**  
+> *"Proceed to Phase 2: write the test plan in `tests.md` with full AC traceability mapping before we start implementation."*
 
-**Prompt:** `เริ่มทำตาม phase 1 implementation plan ได้เลย`
+**Reflection:**  
+The agent mapped AC-01..18 to over 50 planned test cases across unit, API, UI, and E2E layers. Version control proved its value when a disk incident truncated the file, and git allowed us to restore it cleanly.
 
-**Reflection:** The agent created `lab3-staging` from clean `main` (stashing Lab 2 screenshot leftovers first), branched `feature/32-spec-contract`, and wrote `specification.md`, `api-spec.md`, `ui-spec.md` with consistent decisions (JWT httpOnly, Admin read-only, appearsResolved flag).
+---
 
-### 6. Fix spec inconsistencies
+### 6. Database Migration & Authentication Foundation
+**Prompt:**  
+> *"Implement Phase 3: set up the User model, safe database migration with `itPriority` backfill, and bcrypt/JWT authentication with TDD tests."*
 
-**Prompt:** `แก้ spec คือ` → `แก้ทุกจุดเลยค่ะ`
+**Reflection:**  
+The agent safely migrated the database without losing Lab 2 tickets and implemented bcrypt/JWT authentication with TDD tests (94/94 green). We also noted that Lab 2 test teardowns cleared tickets, establishing the rule to re-seed after full test runs.
 
-**Reflection:** The agent re-read the spec and found FR-11 contradicting the authorization matrix (Admin POST vs read-only) plus a queue-search typo. Self-review before commit catches contract bugs that would multiply into code.
+---
 
-### 7. Commit and open PR
+### 7. Security Audit & Production Hardening
+**Prompt:**  
+> *"Audit our recent code for security vulnerabilities, especially client-supplied IDs and JWT secrets, and harden them properly."*
 
-**Prompt:** `commit แล้วเปิด PR ให้เพื่อนเราเลย`
+**Reflection:**  
+The review confirmed that APIs never trust client-supplied `requesterId`. The agent patched a potential development fallback secret to fail closed in production, backed by a dedicated unit test.
 
-**Reflection:** The agent committed, pushed, opened PR #32 into `lab3-staging`, and tagged the reviewer. Keeping the peer-review loop per Issue matches the course workflow.
+---
 
-### 8. Address PR #32 review (8 points)
+### 8. IT Staff Ticket Queue & Workflow Operations
+**Prompt:**  
+> *"The PR is merged, let's proceed to the next phase: implement the IT Staff ticket queue, detail operations, and the status transition matrix."*
 
-**Prompt:** `เพื่อนเม้นมา Needs fix: ...` (resolutionSummary scope creep, brand typo, admin Email column, seed table, queue search/sort/filters, tests.md phasing, login-attempt + CSRF BRs)
+**Reflection:**  
+Built the queue and detail endpoints with strict status transitions and responsive UI. Public Comments and Internal Notes were given distinct visual styling to prevent accidental leaks of internal communications.
 
-**Reflection:** All 8 points were valid spec gaps. The fixes (removing scope creep, adding BR-21/22, seed credential table) made the contract internally consistent before any implementation PR.
+---
 
-## Lab 3 — Phase 2 Test Plan — Session 3
+### 9. Administrator User Management & Safety Guards
+**Prompt:**  
+> *"Now implement Admin user management: build the drawer UI and enforce duplicate email, self-deactivation, and last-admin safety guards."*
 
-### 9. Write tests.md then fix review
+**Reflection:**  
+Implemented the admin module with robust server-side guards: duplicate emails return 409 with field details, self-deactivation is disabled with a tooltip, and database checks prevent removing the last active administrator.
 
-**Prompt:** `เริ่ม phase 2 เลย` → `เพื่อนรีวิวมา Needs fix: ...` (non-English text, missing UI-07/UI-08/VIS-01, split unit/style files)
+---
 
-**Reflection:** The test plan mapped AC-01..18 to 50+ rows with exact labsheet paths. During fixes the disk filled to 100% and truncated the file — the agent freed space via `npm cache clean`, restored from git, and re-applied. Tracked beats untracked: committed work survives incidents.
+### 10. E2E Test Suite & Responsive Screenshots
+**Prompt:**  
+> *"The PR is merged, let's start the final phase: implement the Playwright E2E tests and capture responsive screenshots matching all labsheet specs."*
+
+**Reflection:**  
+Configured single-worker execution with global setup/teardown account pinning, preventing database collisions and long timeouts. Fixed an async form race condition, achieving 11/11 green E2E tests and 14 clean responsive screenshots.
+
+---
 
 ## My Reflection
 
-Using the agent as a **specification agent** (planning, matrices, traceability) forced me to decide auth mechanism, role separation, and transition rules up front, so implementation phases had no ambiguity. As a **coding agent** (migration SQL backfill, auth middleware, seed, TDD tests) it was fastest when the contract already fixed shapes and codes — I only had to verify diffs, test output, and reviewer comments. Peer review by Thanabun caught what generation missed (typos, missing columns, scope creep). I will keep this file updated with each new prompt.
+### Using AI as a Specification Agent
+Using the AI during planning, specification, and test design was the most effective part of the workflow. Defining rules, authorization matrices, and acceptance criteria up front eliminated ambiguity before writing code. When peer review identified gaps, resolving them in documentation first kept subsequent implementation clean and focused.
 
-> Log continues below as new sessions happen.
+### Using AI as a Coding Agent
+The AI was fast and reliable when guided by clear contracts and failing tests (TDD), especially for boilerplate routes, migrations, and assertions. However, human engineering oversight was critical:
+1. **Test Concurrency:** Configuring sequential Playwright execution to prevent database deadlocks on shared seed accounts.
+2. **Async UI Timing:** Explicitly awaiting network responses during form submissions to prevent race conditions.
+3. **Peer Review:** Addressing feedback from Thanabun Tikaew to refine badge tokens, UI edge cases, and role restrictions.
+
+Combining Spec DD, Test DD, AI assistance, and rigorous peer review resulted in a clean, resilient, and fully traceable product increment.
