@@ -101,6 +101,7 @@ test.describe('VIS-01 — Lab 3 responsive screenshots', () => {
 
     // App shell user & role display
     await page.goto('/staff/queue');
+    await expect(page.getByText(/TK-/).filter({ visible: true }).first()).toBeVisible({ timeout: 15000 });
     await expect(page.getByText(/ADMINISTRATOR/).filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
     await page.screenshot({ path: 'artifacts/lab-03/screenshots/authentication/app-shell-role.png' });
 
@@ -147,6 +148,8 @@ test.describe('VIS-01 — Lab 3 responsive screenshots', () => {
     await loginAsStaff(page);
     await page.goto('/staff/queue');
     await expect(page.getByText(/TK-/).filter({ visible: true }).first()).toBeVisible({ timeout: 15000 });
+    await page.getByPlaceholder(/search by ticket number/i).fill('TK-20260910-0001');
+    await page.getByRole('button', { name: /^search$/i }).click();
     await page.getByRole('button', { name: /^open$/i }).filter({ visible: true }).first().click();
     await expect(page).toHaveURL(/\/staff\/tickets\/\d+/);
     await expect(page.getByRole('tab', { name: /public comments/i })).toBeVisible({ timeout: 15000 });
@@ -161,18 +164,15 @@ test.describe('VIS-01 — Lab 3 responsive screenshots', () => {
     await page.screenshot({ path: 'artifacts/lab-03/screenshots/staff-ticket-detail/detail-claim-action.png' });
     await page.screenshot({ path: 'artifacts/lab-03/screenshots/staff-ticket-detail/detail-priority-status.png' });
 
-    const stamp = Date.now();
+    // Public comments tab (showing seeded comments)
     await page.getByRole('tab', { name: /public comments/i }).click();
-    await page.getByLabel(/add public comment/i).fill(`Public update for submission verification (${stamp})`);
-    await page.getByRole('button', { name: /post comment/i }).click();
-    await expect(page.getByText(String(stamp))).toBeVisible({ timeout: 10000 });
-    await page.screenshot({ path: 'artifacts/lab-03/screenshots/staff-ticket-detail/detail-public-comments.png' });
+    await expect(page.getByText(/investigating the issue/i)).toBeVisible({ timeout: 10000 });
+    await page.screenshot({ path: 'artifacts/lab-03/screenshots/staff-ticket-detail/detail-public-comments.png', fullPage: true });
 
+    // Internal notes tab (showing seeded internal note with amber styling)
     await page.getByRole('tab', { name: /internal notes/i }).click();
-    await page.getByLabel(/add internal note/i).fill(`Internal staff diagnosis note (${stamp})`);
-    await page.getByRole('button', { name: /post note/i }).click();
-    await expect(page.getByText(String(stamp))).toBeVisible({ timeout: 10000 });
-    await page.screenshot({ path: 'artifacts/lab-03/screenshots/staff-ticket-detail/detail-internal-notes.png' });
+    await expect(page.getByText(/battery health at 82%/i)).toBeVisible({ timeout: 10000 });
+    await page.screenshot({ path: 'artifacts/lab-03/screenshots/staff-ticket-detail/detail-internal-notes.png', fullPage: true });
   });
 
   test('user management', async ({ page, browser }) => {
