@@ -18,7 +18,7 @@
 | https://github.com/ssiriwan/toktickit/pull/37 | #37 | feat(lab-03): staff ticket detail ops + status matrix + detail UI | Merged — 15 fixes + staff-users Admin guard + Phase 6 spec-consistency pass |
 | https://github.com/ssiriwan/toktickit/pull/39 | #38 | feat(lab-03): admin user management API + UI | Merged — distinct role badges + drawer sheet |
 | https://github.com/ssiriwan/toktickit/pull/41 | #40 | test(lab-03): E2E flows + responsive screenshots | Merged — 3 fixes (auth await, locator scoping, temp cleanup) |
-| https://github.com/ssiriwan/toktickit/pull/43 | #42 | docs: Lab 3 Final — tests.md, ai-use, reviewer, test evidence | Awaiting Review |
+| https://github.com/ssiriwan/toktickit/pull/43 | #42 | docs: Lab 3 Final — tests.md, ai-use, reviewer, test evidence | Approved by @thhanabun (LGTM) |
 
 ### Reviews Received — Details
 
@@ -30,7 +30,7 @@
 - **PR #37 (Staff detail):** Merged after 15 fixes — staff routes (claim/assign/priority/status/comments/notes/download/directory), 3 matrix rows corrected + 400 VALIDATION_ERROR, NEW↔OPEN coupling, Admin full staff ops (AD-13), confirm modals, 401→login, queue/detail UI polish (green Open button, Updated column, date-only, always-visible filters, header sort, requester-style dropdowns, auto-save detail, magnifier search) + Phase 6 spec-consistency pass (FR-07/FR-11/matrix/api-spec/ui-spec/tests.md aligned to AD-13).
 - **PR #39 (Admin user management):** Merged — `GET/POST/PATCH/reset-password /api/admin/users` + `UserManagement` UI + `users-admin.api.test.ts`/`UserManagement.test.tsx` (ADMIN-01..07, UI-05, AUTHZ-04). Review round 1: role badges must use distinct ui-spec §1 colors (fixed with `.badge-role-*` tokens reusing the badge-status palette + UI/style test assertions); StaffTicketDetail author badges intentionally left channel-colored (public gray vs internal amber per ui-spec tabs).
 - **PR #41 (E2E flows + screenshots):** Merged after 3 fixes — (1) await auth responses in login/change helpers to prevent form unmount swallowing responses, (2) scope responsive-duplicate locators to visible elements, (3) accept appears-resolved confirmation dialog and clean temp test users in setup.
-- **PR #43 (Docs finalization):** Awaiting review from @thhanabun — flips tests.md to Pass, curates 10 key prompts in ai-use.md, captures test-run-evidence.md, and fixes Login.tsx null dereference.
+- **PR #43 (Docs finalization):** Approved by @thhanabun ("lgtm."). Delivers: (1) `tests.md` flipped to 100% Pass across all 30 test files / 163 test cases with full AC traceability, (2) `ai-use.md` curated with 10 representative prompts and reflections across 5 phases, (3) `test-run-evidence.md` with complete verbatim logs for unit/integration (`npm test`), E2E (`npm run e2e:lab3`), and full build (`npm run build`), (4) `Login.tsx` null dereference fix on unauthenticated error responses, (5) 36 automated responsive screenshots across 4 categories (authentication, staff-queue, staff-ticket-detail, user-management) with `fullPage: true` capture and verified non-empty state, and (6) `prisma/seed.ts` reset fix for idempotent test runs.
 
 ## Pull Requests I Reviewed (partner repo: thhanabun/Software_Eng_Lab)
 
@@ -44,6 +44,7 @@
 | https://github.com/thhanabun/Software_Eng_Lab/pull/42 | Lab 3 Administrator User Management (Issue #34) | Merged — request changes (1 high), re-review approved |
 | https://github.com/thhanabun/Software_Eng_Lab/pull/43 | Lab 3 E2E Tests and Responsive Visual Evidence (Issue #35) | Merged — approve, 3 non-blocking, re-review all closed |
 | https://github.com/thhanabun/Software_Eng_Lab/pull/44 | docs: Lab 3 Final — tests.md + README (Issue 36) | Merged — approve, 4 non-blocking |
+| https://github.com/thhanabun/Software_Eng_Lab/pull/45 | release: Lab 3 Auth, Roles, and Admin → main | Open — request changes (1 code + 3 docs blockers) |
 
 ### Reviews Given — Details
 
@@ -55,5 +56,6 @@
 - **PR #42 (admin users):** Request changes (1 high): 409 duplicate email missing `details:[{field:email}]` so client field highlight falls back to generic banner. Non-blocking: no list pagination cap, last-admin check race (use `$transaction`), POST `active` silent coercion, reset without confirm field. Re-review `52433d6`+`10f6bd2`: 409 details fixed on both create/update + stray `SE_Implement.md` (3434 lines) removed — good to merge.
 - **PR #43 (e2e):** Approve. 3 non-blocking: (1) mustchange test fails on isolated re-run without setup, (2) screenshots gitignored so reviewer can't inspect directly, (3) missing change-password screenshots. Re-review `f0a2049`/`ab70bad`/`5da4d8a`: all 3 closed (self-healing comment, §12 screenshot paths, change-password PNGs in 3 viewports) + full `ai-use.md`/`reviewer.md` rewrite — good to merge.
 - **PR #44 (final docs):** Approve. 4 non-blocking: confirm UI password hint matches backend rule, duplicate mismatch texts need distinct aria roles, confirm server-side LAST_ADMIN 409, attach real test output before PDF Part 9.
+- **PR #45 (release to main):** Request changes — 1 code blocker: (1) login `||` short-circuits the dummy-hash compare (`routes/auth.ts:43`), so unknown-email skips bcrypt entirely — timing oracle contradicting the comment above it; fix `verifyLoginPassword(password, user?.passwordHash ?? null)`. 3 docs blockers: (2) CN-01..05 map to non-existent `comments-notes.api.test.ts` (CN-05 boundary has zero evidence anywhere), (3) MIG-02 points to non-existent `migration.api.test.ts` (real tests in `users-admin`), (4) docs cite `artifacts/lab-03/screenshots/` paths but `.gitignore` ignores artifacts and zero PNGs are tracked — commit them or reword to PDF-reference. Nits: README still documents Lab 2 selector + omits dev logins, no global 401→login (error banner instead), last-admin guard reads filtered list client-side, dead clause in ChangePassword, reviewer.md #43 status stale, `Lab_3_sheet.pdf` tracked despite ignore rule.
 
 > This file is updated continuously as reviews happen.
