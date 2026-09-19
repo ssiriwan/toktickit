@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import type { Requester } from './RequesterSelection';
+import type { Requester } from '../lab-03/AuthContext';
 
 type Ticket = {
   id: number;
@@ -25,7 +25,7 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'empty'>('loading');
   const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [systemFilter, setSystemFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -63,8 +63,8 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
   async function loadTickets() {
     setStatus('loading');
     try {
-      const params = new URLSearchParams({ requesterId: String(requester.id) });
-      if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
+      const params = new URLSearchParams();
+      if (appliedSearch.trim()) params.set('search', appliedSearch.trim());
       if (categoryFilter) params.set('categoryId', categoryFilter);
       if (systemFilter) params.set('relatedSystemId', systemFilter);
       if (statusFilter) params.set('status', statusFilter);
@@ -74,7 +74,7 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
       params.set('page', String(page));
       params.set('pageSize', String(pageSize));
 
-      const res = await fetch(`/api/tickets?${params.toString()}`);
+      const res = await fetch(`/api/tickets?${params.toString()}`, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed');
       const data = (await res.json()) as {
         tickets: Ticket[];
@@ -83,7 +83,7 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
       setTickets(data.tickets);
       setPagination(data.pagination);
       if (data.tickets.length === 0) {
-        const hasActiveFilter = !!(debouncedSearch.trim() || categoryFilter || systemFilter || statusFilter || priorityFilter);
+        const hasActiveFilter = !!(appliedSearch.trim() || categoryFilter || systemFilter || statusFilter || priorityFilter);
         setStatus(hasActiveFilter ? 'success' : 'empty');
         if (data.tickets.length === 0 && !hasActiveFilter) setStatus('empty');
         else if (data.tickets.length === 0 && hasActiveFilter) {
@@ -98,18 +98,13 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
   }
 
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search), 300);
-    return () => clearTimeout(timer);
-  }, [search]);
-
-  useEffect(() => {
     loadTickets();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requester.id, page, pageSize, sort, order, debouncedSearch, categoryFilter, systemFilter, statusFilter, priorityFilter]);
+  }, [requester.id, page, pageSize, sort, order, appliedSearch, categoryFilter, systemFilter, statusFilter, priorityFilter]);
 
   const handleSearch = () => {
+    setAppliedSearch(search);
     setPage(1);
-    loadTickets();
   };
 
   const handleFilterChange = (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -120,7 +115,7 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
   // Auto-search is handled via main useEffect dependencies; page reset is done in handlers
 
   // Determine no-results vs empty for rendering
-  const hasActiveFilter = !!(debouncedSearch.trim() || categoryFilter || systemFilter || statusFilter || priorityFilter);
+  const hasActiveFilter = !!(appliedSearch.trim() || categoryFilter || systemFilter || statusFilter || priorityFilter);
   const showEmpty = status === 'empty' && !hasActiveFilter;
   const showNoResults = status === 'success' && tickets.length === 0 && hasActiveFilter;
 
@@ -134,20 +129,25 @@ export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
             <div className="col-md-3">
               <label className="form-label small text-muted mb-1">Search</label>
               <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
-                </span>
                 <input
                   placeholder="Search tickets..."
+                  aria-label="Search tickets"
                   className="form-control"
-                  style={{ paddingLeft: '2rem' }}
+                  style={{ paddingRight: '2.5rem' }}
                   value={search}
                   onChange={(e) => {
                     setSearch(e.target.value);
-                    setPage(1);
                   }}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 />
+                <button
+                  type="button"
+                  aria-label="Search"
+                  onClick={handleSearch}
+                  style={{ position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', color: '#6B7280', padding: '0.375rem', cursor: 'pointer' }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+                </button>
               </div>
             </div>
             <div className="col-md-2">

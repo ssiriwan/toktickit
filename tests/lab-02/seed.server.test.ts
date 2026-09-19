@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { prisma } from '../../server/src/db';
 
 beforeAll(async () => {
-  const reqCount = await prisma.requesterUser.count();
+  const reqCount = await prisma.user.count({ where: { role: 'REQUESTER' } });
   if (reqCount === 0) {
     throw new Error(
       'Seed data required. Run `npm run prisma:seed` before running this test.'
@@ -34,12 +34,12 @@ describe('Lab 2 seed content (API-02)', () => {
   });
 
   it('has at least four active requesters', async () => {
-    const count = await prisma.requesterUser.count({ where: { isActive: true } });
+    const count = await prisma.user.count({ where: { role: 'REQUESTER', isActive: true } });
     expect(count).toBeGreaterThanOrEqual(4);
   });
 
   it('has at least one inactive requester', async () => {
-    const count = await prisma.requesterUser.count({ where: { isActive: false } });
+    const count = await prisma.user.count({ where: { role: 'REQUESTER', isActive: false } });
     expect(count).toBeGreaterThanOrEqual(1);
   });
 });

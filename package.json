@@ -15,7 +15,8 @@
     "test:server": "npm --workspace server run test",
     "prisma:generate": "npm --workspace server run prisma:generate",
     "prisma:migrate": "npm --workspace server run prisma:migrate",
-    "prisma:seed": "npm --workspace server run prisma:seed"
+    "prisma:seed": "npm --workspace server run prisma:seed",
+    "e2e:lab3": "playwright test --config playwright.lab03.config.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

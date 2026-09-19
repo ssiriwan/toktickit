@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { CreateTicket } from '../../client/src/lab-02/CreateTicket';
-import type { Requester } from '../../client/src/lab-02/RequesterSelection';
+import type { Requester } from '../../client/src/lab-03/AuthContext';
 
 const requester: Requester = {
   id: 1,

@@ -3,16 +3,21 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { createApp } from '../../server/src/app';
 import { prisma } from '../../server/src/db';
+import { cleanupTestUsers, loginAs, type TestSession } from './session.helper';
 
 const app = createApp();
 
 describe('TokTickIT API GET /api/tickets/:id', () => {
   let ticketId: number;
   let otherTicketId: number;
+  let sessionA: TestSession;
+  let sessionB: TestSession;
 
   beforeAll(async () => {
     await prisma.attachment.deleteMany({});
     await prisma.ticket.deleteMany({});
+    sessionA = await loginAs('detail-a');
+    sessionB = await loginAs('detail-b');
     const t1 = await prisma.ticket.create({
       data: {
         ticketNumber: `TK-TEST-DETAIL1`,
@@ -21,7 +26,7 @@ describe('TokTickIT API GET /api/tickets/:id', () => {
         currentStatus: 'NEW',
         requestedPriority: 'MEDIUM',
         ticketDate: new Date(),
-        requesterId: 1,
+        requesterId: sessionA.userId,
         categoryId: 1,
         relatedSystemId: 1
       }
@@ -34,7 +39,7 @@ describe('TokTickIT API GET /api/tickets/:id', () => {
         currentStatus: 'NEW',
         requestedPriority: 'LOW',
         ticketDate: new Date(),
-        requesterId: 2,
+        requesterId: sessionB.userId,
         categoryId: 1,
         relatedSystemId: 1
       }
@@ -46,29 +51,35 @@ describe('TokTickIT API GET /api/tickets/:id', () => {
   afterAll(async () => {
     await prisma.attachment.deleteMany({});
     await prisma.ticket.deleteMany({});
+    await cleanupTestUsers();
   });
 
   it('returns owned ticket with attachments', async () => {
-    const res = await request(app).get(`/api/tickets/${ticketId}`).query({ requesterId: 1 });
+    const res = await request(app).get(`/api/tickets/${ticketId}`).set('Cookie', sessionA.cookie);
     expect(res.status).toBe(200);
     expect(res.body.ticketNumber).toMatch(/^TK-/);
     expect(res.body.attachments).toBeDefined();
   });
 
   it('rejects cross-requester access with 403', async () => {
-    const res = await request(app).get(`/api/tickets/${ticketId}`).query({ requesterId: 2 });
+    const res = await request(app).get(`/api/tickets/${ticketId}`).set('Cookie', sessionB.cookie);
     expect(res.status).toBe(403);
     expect(res.body.error.code).toBe('ACCESS_DENIED');
   });
 
   it('returns 404 for non-existent ticket', async () => {
-    const res = await request(app).get('/api/tickets/999999').query({ requesterId: 1 });
+    const res = await request(app).get('/api/tickets/999999').set('Cookie', sessionA.cookie);
     expect(res.status).toBe(404);
     expect(res.body.error.code).toBe('NOT_FOUND');
   });
 
-  it('returns 400 when requesterId missing', async () => {
+  it('returns 401 without session', async () => {
     const res = await request(app).get(`/api/tickets/${ticketId}`);
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(401);
+  });
+
+  it('other ticket is visible to its own owner', async () => {
+    const res = await request(app).get(`/api/tickets/${otherTicketId}`).set('Cookie', sessionB.cookie);
+    expect(res.status).toBe(200);
   });
 });

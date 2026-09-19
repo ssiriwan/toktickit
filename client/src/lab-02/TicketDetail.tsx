@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import type { Requester } from './RequesterSelection';
+import type { Requester } from '../lab-03/AuthContext';
 
 type Attachment = {
   id: number;
@@ -20,6 +20,7 @@ type TicketDetailData = {
   description: string;
   currentStatus: string;
   requestedPriority: string;
+  appearsResolved?: boolean;
   ticketDate: string;
   updatedAt: string;
   requester: { id: number; name: string; email: string };
@@ -42,11 +43,30 @@ export function TicketDetail({ ticketId, requester, onBack }: TicketDetailProps)
   const [removeError, setRemoveError] = useState<Record<number, string>>({});
   const [removeReason, setRemoveReason] = useState<Record<number, string>>({});
   const [showReasonFor, setShowReasonFor] = useState<number | null>(null);
+  const [comments, setComments] = useState<
+    { id: number; body: string; createdAt: string; author: { id: number; name: string; role: string } }[]
+  >([]);
+  const [commentDraft, setCommentDraft] = useState('');
+  const [commentError, setCommentError] = useState<string | null>(null);
+  const [commentBusy, setCommentBusy] = useState(false);
+  const [resolveBusy, setResolveBusy] = useState(false);
+  const [resolveError, setResolveError] = useState<string | null>(null);
+
+  async function loadComments() {
+    try {
+      const res = await fetch(`/api/tickets/${ticketId}/comments`, { credentials: 'include' });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (Array.isArray(data)) setComments(data);
+    } catch {
+      // comments are secondary; ticket already loaded
+    }
+  }
 
   async function load() {
     setStatus('loading');
     try {
-      const res = await fetch(`/api/tickets/${ticketId}?requesterId=${requester.id}`);
+      const res = await fetch(`/api/tickets/${ticketId}`, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed');
       const data = (await res.json()) as TicketDetailData;
       setTicket(data);
@@ -58,8 +78,9 @@ export function TicketDetail({ ticketId, requester, onBack }: TicketDetailProps)
 
   useEffect(() => {
     load();
+    loadComments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ticketId, requester.id]);
+  }, [ticketId]);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const input = e.target as HTMLInputElement;
@@ -79,8 +100,9 @@ export function TicketDetail({ ticketId, requester, onBack }: TicketDetailProps)
     }
     const form = new FormData();
     form.append('file', file);
-    const res = await fetch(`/api/tickets/${ticketId}/attachments?requesterId=${requester.id}`, {
+    const res = await fetch(`/api/tickets/${ticketId}/attachments`, {
       method: 'POST',
+      credentials: 'include',
       body: form
     });
     if (!res.ok) {
@@ -99,7 +121,7 @@ export function TicketDetail({ ticketId, requester, onBack }: TicketDetailProps)
     }
     setDownloadError(null);
     try {
-      const res = await fetch(`/api/attachments/${att.id}/download?requesterId=${requester.id}`);
+      const res = await fetch(`/api/attachments/${att.id}/download`, { credentials: 'include' });
       if (!res.ok) {
         const body = await res.json().catch(() => ({} as { error?: { code?: string; message?: string } }));
         if (body.error?.code === 'REMOVED') setDownloadError('Attachment has been removed');
@@ -129,8 +151,9 @@ export function TicketDetail({ ticketId, requester, onBack }: TicketDetailProps)
       return;
     }
     setRemoveError({ ...removeError, [id]: '' });
-    const res = await fetch(`/api/attachments/${id}/remove?requesterId=${requester.id}`, {
+    const res = await fetch(`/api/attachments/${id}/remove`, {
       method: 'PATCH',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reason })
     });
@@ -141,6 +164,56 @@ export function TicketDetail({ ticketId, requester, onBack }: TicketDetailProps)
       setShowReasonFor(null);
       setRemoveError({ ...removeError, [id]: '' });
       await load();
+    }
+  }
+
+  async function handlePostComment() {
+    const text = commentDraft.trim();
+    if (!text || commentBusy) {
+      if (!text) setCommentError('Comment must not be empty');
+      return;
+    }
+    setCommentBusy(true);
+    setCommentError(null);
+    try {
+      const res = await fetch(`/api/tickets/${ticketId}/comments`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body: text })
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({} as { error?: { message?: string } }));
+        setCommentError(body.error?.message || 'Failed to post comment');
+      } else {
+        setCommentDraft('');
+        await loadComments();
+      }
+    } catch {
+      setCommentError('Failed to post comment');
+    } finally {
+      setCommentBusy(false);
+    }
+  }
+
+  async function handleAppearsResolved() {
+    if (!window.confirm('Mark this ticket as appears resolved? IT Staff will verify.')) return;
+    setResolveBusy(true);
+    setResolveError(null);
+    try {
+      const res = await fetch(`/api/tickets/${ticketId}/appears-resolved`, {
+        method: 'PATCH',
+        credentials: 'include'
+      });
+      if (!res.ok) {
+        setResolveError('Failed to update. Please try again.');
+      } else {
+        await load();
+      }
+    } catch {
+      setResolveError('Failed to update. Please try again.');
+    } finally {
+      setResolveBusy(false);
     }
   }
 
@@ -186,6 +259,63 @@ export function TicketDetail({ ticketId, requester, onBack }: TicketDetailProps)
             <strong>Description:</strong>
           </p>
           <div className="zen-readonly mt-1">{ticket.description}</div>
+        </div>
+      </section>
+
+      <section className="card mb-3">
+        <div className="card-header">Public Comments ({comments.length})</div>
+        <div className="card-body">
+          {ticket.appearsResolved ? (
+            <p className="alert alert-info" role="status">
+              You marked this as appears resolved. Awaiting IT verification.
+            </p>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="btn btn-outline-success btn-sm mb-3"
+                disabled={resolveBusy}
+                onClick={handleAppearsResolved}
+              >
+                {resolveBusy ? 'Saving...' : 'Problem Appears Resolved'}
+              </button>
+              {resolveError && <p className="text-danger" role="alert">{resolveError}</p>}
+            </>
+          )}
+          {comments.length === 0 && <p className="text-muted">No comments yet.</p>}
+          {comments.map((c) => (
+            <div key={c.id} className="border-bottom py-2">
+              <div>
+                <strong>{c.author.name}</strong>{' '}
+                <span className="badge bg-secondary">{c.author.role}</span>{' '}
+                <small className="text-muted">{new Date(c.createdAt).toLocaleString()}</small>
+              </div>
+              <div>{c.body}</div>
+            </div>
+          ))}
+          <div className="mt-3">
+            <label htmlFor="new-comment" className="form-label">
+              Add Public Comment
+            </label>
+            <textarea
+              id="new-comment"
+              className="form-control"
+              rows={3}
+              value={commentDraft}
+              maxLength={2000}
+              onChange={(e) => setCommentDraft(e.target.value)}
+              placeholder="Type your comment here..."
+            />
+            {commentError && <small className="text-danger mt-1 d-block" role="alert">{commentError}</small>}
+            <button
+              type="button"
+              className="btn btn-primary btn-sm mt-2"
+              disabled={commentBusy}
+              onClick={handlePostComment}
+            >
+              {commentBusy ? 'Posting...' : 'Post Comment'}
+            </button>
+          </div>
         </div>
       </section>
 

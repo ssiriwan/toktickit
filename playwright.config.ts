@@ -2,6 +2,9 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
+  // Lab 3 specs need dedicated setup (seed pin) + workers:1 — run via
+  // `npm run e2e:lab3` (playwright.lab03.config.ts), never the default config.
+  testIgnore: '**/lab-03/**',
   timeout: 30 * 1000,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
