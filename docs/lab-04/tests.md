@@ -5,7 +5,7 @@
 ## 1. Strategy
 
 - TDD: failing test first per Issue (`feature/*` branch), then implementation, then peer review by `@thhanabun`. One issue active at a time; merge into `lab4-staging`; release `lab4-staging` → `main` at the end.
-- Layers: API/integration (supertest/vitest, real DB `toktickit-db`) → UI component (vitest + jsdom + Testing Library) → E2E (Playwright) → visual/responsive (3-viewport screenshots).
+- Layers: unit (pure helpers: window math, payload validation) → API/integration (supertest/vitest, real DB `toktickit-db`) → UI component (vitest + jsdom + Testing Library) → UI style (Zen Green tokens/badges/focus assertions) → E2E (Playwright) → performance-smoke (dashboard p95 on seeded DB) → visual/responsive (3-viewport screenshots).
 - Security tests call APIs directly (no UI) to prove backend enforcement (AC-03/05/08/09).
 - Regression: full Lab 1–3 suites stay green alongside Lab 4 paths; legacy tickets covered by AC-18.
 - Config: `server/vitest.config.ts` includes `server/tests/lab-04/**/*.test.ts`; `client/vitest.config.ts` includes `client/tests/lab-04/**/*.test.tsx` (additive, no deletion of old includes).
@@ -14,6 +14,8 @@
 
 | Test ID | Type | AC | What It Tests | Expected Result | Automated Test File | Final |
 |---|---|---|---|---|---|---|
+| UNIT-01 | Unit | AC-02,10 | "Recently" window helper: UTC boundary incl. exactly-7d edge, future `updatedAt` excluded | boundary dates classified correctly | `server/tests/lab-04/dashboard-window.unit.test.ts` | Planned |
+| UNIT-02 | Unit | AC-01 | Action payload validation helper: trim/blank description, invalid ISO, >24h-future `actionDateTime` | per-field verdicts match BR-05/BR-29 | `server/tests/lab-04/action-validation.unit.test.ts` | Planned |
 | ACT-01 | API | AC-01 | Staff creates action (defaults: self performer, PENDING, now) | 201 + linked `ticketId` + performer=self | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
 | ACT-02 | API | AC-01 | List actions asc by `actionDateTime` with performer object | 200 ordered array | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
 | ACT-03 | API/security | AC-03 | Assign action to inactive staff | `400 INACTIVE_ASSIGNEE` | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
@@ -40,26 +42,30 @@
 | SD-03 | API/security | AC-10 | Requester calls staff/admin dashboards | 403 | `server/tests/lab-04/staff-dashboard.api.test.ts` | Planned |
 | UI-01 | UI | AC-14 | Action form: validation + debounce (double-click = 1 POST) | 1 request, errors shown | `client/tests/lab-04/ActionsTaken.test.tsx` | Planned |
 | UI-02 | UI | AC-15 | Requester detail: actions visible, Add/Edit absent | read-only list | `client/tests/lab-04/ActionsTaken.test.tsx` | Planned |
-| UI-03 | UI | AC-12 | RequesterDashboard cards + drill-down nav | nav to `/tickets` filter | `client/tests/lab-04/RequesterDashboard.test.tsx` | Planned |
-| UI-04 | UI | AC-13 | StaffDashboard cards + queue filter nav | nav to `/staff/queue?…` | `client/tests/lab-04/StaffDashboard.test.tsx` | Planned |
+| UI-03 | UI | AC-12 | RequesterDashboard: 5 cards 1:1 with API metrics + drill-down nav | nav to `/tickets` + matching filter | `client/tests/lab-04/RequesterDashboard.test.tsx` | Planned |
+| UI-04 | UI | AC-13 | StaffDashboard: 7 cards 1:1 with API metrics + queue filter nav | nav to `/staff/queue?…` | `client/tests/lab-04/StaffDashboard.test.tsx` | Planned |
 | UI-05 | UI | AC-16 | Status control lists only allowed targets | options == matrix row | `client/tests/lab-04/TicketWorkflow.test.tsx` | Planned |
 | UI-06 | UI | AC-17 | Gate warning on RESOLVED attempt w/o Completed | warning rendered, save blocked | `client/tests/lab-04/TicketWorkflow.test.tsx` | Planned |
-| E2E-01 | E2E | AC-19 | Create action → complete → resolve → close | flow green | `e2e/lab-04/actions-taken-flow.spec.ts` | Planned |
+| UI-07 | UI/style | AC-12,13,15 | Zen Green tokens, action-status badges, readonly vs editable, validation placement, focus | style assertions | `client/tests/lab-04/theme.style.test.tsx` | Planned |
+| PERF-01 | Perf-smoke | AC-10,11 | Requester/staff/admin dashboards p95 < 1s on seeded DB | timing assertion green | `server/tests/lab-04/dashboard.perf-smoke.test.ts` | Planned |
+| E2E-01 | E2E | AC-19 | Create action → complete with result → requester sees read-only | flow green | `e2e/lab-04/actions-taken-flow.spec.ts` | Planned |
 | E2E-02 | E2E | AC-20 | Dashboard metrics → drill-down lands filtered | flow green | `e2e/lab-04/dashboards.spec.ts` | Planned |
+| E2E-03 | E2E | AC-06,07,19 | Gate blocks RESOLVED → complete action → resolve → close | flow green | `e2e/lab-04/ticket-resolution.spec.ts` | Planned |
 | VIS-01 | Visual | Part 9 | 4 primary screens × 3 viewports (1280/768/375) | readable, no overflow | `artifacts/lab-04/screenshots/*` | Planned |
 
 ## 3. Coverage checklist
 
-- [ ] Actions CRUD + validation + inactive-assignee + requester-403 (ACT-01..11, UI-01/02, E2E-01)
-- [ ] Workflow matrix + gate + concurrency + legacy regression (WF-01..07, UI-05/06, E2E-01)
-- [ ] Dashboards server-computed + role-isolated + drill-down (RD-01..03, SD-01..03, UI-03/04, E2E-02)
+- [ ] Actions CRUD + validation + inactive-assignee + requester-403 (ACT-01..11, UNIT-02, UI-01/02, E2E-01)
+- [ ] Workflow matrix + gate + concurrency + legacy regression (WF-01..07, UI-05/06, E2E-03)
+- [ ] Dashboards server-computed + role-isolated + drill-down (UNIT-01, RD-01..03, SD-01..03, UI-03/04, PERF-01, E2E-02)
+- [ ] Style consistency Lab 4 screens (UI-07) + responsive + visual (VIS-01) + a11y (labels, alert/status roles, focus, keyboard)
 - [ ] Responsive + visual (VIS-01) + a11y (labels, alert/status roles, focus, keyboard)
 - [ ] `npm test` green (legacy + new), `npm run build` clean, seed idempotent, backup taken
 
 ## 4. Execution
 
 - `npm test`: _to run on `lab4-staging` after implementation PRs (target: 30+ files / >190 tests, 0 failed)._
-- `npm run e2e:lab4` (to add): _E2E-01/02 green on chromium with seed pinning._
+- `npm run e2e:lab4` (to add): _E2E-01..03 green on chromium with seed pinning._
 - `npm run build`: _client (vite) + server (tsc) clean._
 - Seed fixtures for tests: requesters ×2 (isolation), active/inactive staff, tickets across 8 statuses + unassigned, actions (0 / 1-completed / multi-performer / follow-up).
 - `Final` column flips to `Pass` only after the 100% green run + evidence screenshots under `artifacts/lab-04/screenshots/`.

@@ -44,7 +44,7 @@ Stakeholder wants proof of work: every ticket shows what IT actually did (who, w
 - FR-11: Ticket → `RESOLVED` requires the resolution gate (≥1 `COMPLETED` action).
 - FR-12: Requester `appearsResolved` is a display flag + banner for staff; never changes ticket status.
 - FR-13: Stale ticket-status edits (via `updatedAt`) → `409`.
-- FR-14: Requester Dashboard shows own-ticket stats (Open, Waiting, Recently Updated, Recently Resolved) + drill-down.
+- FR-14: Requester Dashboard shows own-ticket stats (Open, Waiting, Recently Updated, Recently Resolved, Closed) + drill-down.
 - FR-15: Staff Dashboard shows operational stats (Unassigned, My Assigned, status breakdown, Urgent) + drill-down.
 - FR-16: Admin Dashboard shows staff-dashboard stats plus user-account summary.
 
@@ -70,11 +70,15 @@ Stakeholder wants proof of work: every ticket shows what IT actually did (who, w
 - BR-18: Requester dashboard metrics filter `requesterId = self` only.
 - BR-19: Requester `totalOpen` = statuses `[NEW, OPEN, IN_PROGRESS, WAITING_FOR_REQUESTER, REOPENED]`.
 - BR-20: Requester `waitingForRequester` = status `WAITING_FOR_REQUESTER`.
-- BR-21: Requester `recentlyUpdated` = own tickets updated within last 7 days.
+- BR-21: Requester `recentlyUpdated` = own tickets updated within the "recently" window (BR-28).
 - BR-22: Staff `unassigned` = `ownerId IS NULL` AND status NOT IN `(CLOSED, CANCELLED)`.
 - BR-23: Staff `myAssigned` = `ownerId = self` AND status NOT IN `(CLOSED, CANCELLED)`.
 - BR-24: All dashboard numbers are computed by server-side DB queries; never client-side.
 - BR-25: Every form disables double-submit (submitting state) and preserves input on failed save.
+- BR-26: Requester `recentlyResolved` = own tickets with `currentStatus = RESOLVED` AND `updatedAt` within the "recently" window (BR-28).
+- BR-27: Requester `closed` = own tickets with `currentStatus = CLOSED` (all-time, not windowed — a closed ticket stays counted).
+- BR-28: The "recently" window is `updatedAt >= now − 7×24h`, computed server-side in UTC. API timestamps stay ISO-8601 UTC; the client formats them into local time for display.
+- BR-29: `actionDateTime` must be valid ISO-8601 (else `400 VALIDATION_ERROR`, `details:[{field:actionDateTime}]`); omitted → server `now()`. Dates more than 24h in the future are rejected (clock-skew/scheduling tolerance); any past date is accepted so earlier work can be backfilled.
 
 ### 5.1 Ticket status transition matrix (permitted actor: IT Staff and Administrator)
 
@@ -108,7 +112,7 @@ Rationale: staff routes are the IT/Admin contract (Lab 3 AD-13 extended); reques
 
 ## 6. UI Specification Summary
 
-AppShell gains a **Dashboard** entry per role; `/` renders the role dashboard after login. Requester Dashboard: welcome banner, 4 metric cards with drill-down to My Tickets, quick actions, 5 most-recent tickets, loading/error/empty states. Staff Dashboard: welcome banner + Refresh, 5 metric cards with drill-down to Staff Queue (status/owner filters), admin user-summary strip + link to `/admin/users`, recent/urgent tickets, quick actions. Ticket Detail (staff): Actions Taken section (table/cards with Date/Time, Description, Result, Performed-by, Status badge, Follow-up flag/note, Attachment notes), `+ Add Action Taken` modal, edit/status drawer, performer dropdown lists active IT Staff/Admin only, status dropdown filtered to matrix-allowed targets, resolution-gate warning blocks `RESOLVED` without a Completed action. Ticket Detail (requester): same data as readable cards, no Add/Edit controls. Full spec: `ui-spec.md`.
+AppShell gains a **Dashboard** entry per role; `/` renders the role dashboard after login. Requester Dashboard: welcome banner, 5 metric cards 1:1 with the API metrics (`totalOpen → My Open Tickets`, `waitingForRequester`, `recentlyUpdated`, `recentlyResolved`, `closed`) each drilling into My Tickets with the matching filter, quick actions, 5 most-recent tickets, loading/error/empty states. Staff Dashboard: welcome banner + Refresh, 7 metric cards 1:1 with the API metrics (`newCount → New`, `openCount → Open`, `inProgressCount → In Progress`, `waitingForRequesterCount`, `myAssignedCount → My Assigned`, `unassignedCount → Unassigned`, `urgentCount → Urgent`) each drilling into Staff Queue with the matching filter, admin user-summary strip + link to `/admin/users`, recent/urgent tickets, quick actions. Ticket Detail (staff): Actions Taken section (table/cards with Date/Time, Description, Result, Performed-by, Status badge, Follow-up flag/note, Attachment notes), `+ Add Action Taken` modal, edit/status drawer, performer dropdown lists active IT Staff/Admin only, status dropdown filtered to matrix-allowed targets, resolution-gate warning blocks `RESOLVED` without a Completed action. Ticket Detail (requester): same data as readable cards, no Add/Edit controls. Full spec: `ui-spec.md`.
 
 ## 7. Data Changes
 
@@ -148,7 +152,7 @@ Error shape kept from Labs 2–3: `{ error: { code, message, details? } }` + `RE
 - AC-16: Staff status control lists only matrix-allowed targets. — `client/tests/lab-04/TicketWorkflow.test.tsx`
 - AC-17: Gate warning shown when `RESOLVED` attempted without Completed action. — TicketWorkflow UI
 - AC-18: Migrated legacy tickets readable, no data loss. — ticket-workflow API
-- AC-19: Full action→resolve→close flow green end-to-end. — `e2e/lab-04/actions-taken-flow.spec.ts`
+- AC-19: Full action→resolve→close flow green end-to-end. — `e2e/lab-04/actions-taken-flow.spec.ts` + `e2e/lab-04/ticket-resolution.spec.ts`
 - AC-20: Dashboard drill-down correct in a real browser. — `e2e/lab-04/dashboards.spec.ts`
 
 Every AC maps to ≥1 test in `docs/lab-04/tests.md` (this PR is spec-only; implementation PRs #47+ turn rows green).
@@ -167,5 +171,5 @@ Every AC maps to ≥1 test in `docs/lab-04/tests.md` (this PR is spec-only; impl
 - Additive Prisma migration only; dashboards are read-model aggregations, no new write paths beyond actions/status.
 - `attachmentNotes` is a text pointer (Lab 2 attachment binaries stay on tickets; no file upload on actions).
 - Action status lifecycle is linear `PENDING → IN_PROGRESS → COMPLETED` with `CANCELLED` as side-exit; no reopen of cancelled actions (create a new one).
-- Dashboard windows: "recently" = 7 days (BR-21); "recent tickets" lists = 5 latest by `updatedAt`.
+- Dashboard windows: "recently" = BR-28 window (server UTC, `updatedAt >= now − 7×24h`); "recent tickets" lists = 5 latest by `updatedAt`. Dashboard endpoints never 404 on empty data — they return zeroed metrics + `recentTickets: []`.
 - Vitest configs extended to `server/tests/lab-04/**` and `client/tests/lab-04/**` alongside existing includes.

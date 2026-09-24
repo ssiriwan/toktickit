@@ -15,8 +15,8 @@
 ### POST /api/staff/tickets/:ticketId/actions
 
 - Role: `IT_STAFF`, `ADMINISTRATOR`.
-- Req: `{ description: string(1..2000 trim, required), actionDateTime?: ISO (default now), performedById?: int (default self), status?: PENDING|IN_PROGRESS|COMPLETED|CANCELLED (default PENDING), result?: string|null, followUpRequired?: boolean (default false), followUpNote?: string|null, attachmentNotes?: string|null }`.
-- Rules: `performedById` must be active `IT_STAFF`/`ADMINISTRATOR` else `400 INACTIVE_ASSIGNEE` (inactive) or `400 VALIDATION_ERROR` (wrong role / unknown user); `followUpRequired=true` requires `followUpNote` 1..2000 trim else `400 VALIDATION_ERROR` (`details:[{field:followUpNote}]`); `status=COMPLETED` requires non-empty `result` else `400 VALIDATION_ERROR` (`details:[{field:result}]`); `description` blank/over-long → `400 VALIDATION_ERROR`.
+- Req: `{ description: string(1..2000 trim, required), actionDateTime?: ISO-8601 (default now; valid range per BR-29), performedById?: int (default self), status?: PENDING|IN_PROGRESS|COMPLETED|CANCELLED (default PENDING), result?: string|null, followUpRequired?: boolean (default false), followUpNote?: string|null, attachmentNotes?: string|null }`.
+- Rules: `performedById` must be active `IT_STAFF`/`ADMINISTRATOR` else `400 INACTIVE_ASSIGNEE` (inactive) or `400 VALIDATION_ERROR` (wrong role / unknown user); `actionDateTime` invalid or >24h in the future → `400 VALIDATION_ERROR` (`details:[{field:actionDateTime}]`); `followUpRequired=true` requires `followUpNote` 1..2000 trim else `400 VALIDATION_ERROR` (`details:[{field:followUpNote}]`); `status=COMPLETED` requires non-empty `result` else `400 VALIDATION_ERROR` (`details:[{field:result}]`); `description` blank/over-long → `400 VALIDATION_ERROR`.
 - Res `201`: created action (full shape as in GET, single object).
 - Example req: `{ "description": "Inspected network socket", "actionDateTime": "2026-09-22T11:00:00.000Z", "performedById": 3, "status": "IN_PROGRESS", "followUpRequired": true, "followUpNote": "Need to order replacement wall plate", "attachmentNotes": "photo_wall_plate.jpg" }`.
 
@@ -37,11 +37,13 @@
 
 ## 3. Dashboards (server-computed, never client-side — BR-24)
 
+Window rule: "recently" = BR-28 (`updatedAt >= now − 7×24h`, server UTC). Empty data is not an error: endpoints return zeroed metrics + `recentTickets: []`.
+
 ### GET /api/requester/dashboard
 
 - Role: `REQUESTER`. All metrics filter `requesterId = self` (BR-18).
 - Res `200`: `{ metrics: { totalOpen, waitingForRequester, recentlyUpdated, recentlyResolved, closed }, recentTickets: [{ id, ticketNumber, summary, currentStatus, requestedPriority, updatedAt }×5] }`.
-- Definitions: `totalOpen` = `[NEW, OPEN, IN_PROGRESS, WAITING_FOR_REQUESTER, REOPENED]` (BR-19); `waitingForRequester` = `WAITING_FOR_REQUESTER` (BR-20); `recentlyUpdated` = own tickets updated ≤7d (BR-21); `recentlyResolved` = own `RESOLVED` (+`CLOSED` if resolved within window — fixed in implementation PR); `closed` = own `CLOSED`; `recentTickets` = 5 latest own by `updatedAt`.
+- Definitions: `totalOpen` = `[NEW, OPEN, IN_PROGRESS, WAITING_FOR_REQUESTER, REOPENED]` (BR-19); `waitingForRequester` = `WAITING_FOR_REQUESTER` (BR-20); `recentlyUpdated` = own tickets updated within the BR-28 window (BR-21); `recentlyResolved` = own `RESOLVED` within the BR-28 window (BR-26); `closed` = own `CLOSED`, all-time (BR-27); `recentTickets` = 5 latest own by `updatedAt`.
 - Other roles → `403`.
 
 ### GET /api/staff/dashboard

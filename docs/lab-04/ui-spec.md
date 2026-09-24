@@ -18,11 +18,11 @@
 
 ### 3.1 Requester Dashboard (`/`, `RequesterDashboard.tsx`)
 
-- Welcome banner `Welcome back, {name}!`; 4 metric cards (My Open Tickets, In Progress, Resolved, Closed) — each a button drilling into `/tickets` with the matching status filter; Quick Actions `+ Create Ticket`, `View My Tickets`; `My Recent Tickets` (5, status badge, click → detail); Loading spinner, Error alert + Retry, Empty state (`No tickets yet — create your first ticket`) when the user never filed.
+- Welcome banner `Welcome back, {name}!`; 5 metric cards 1:1 with `GET /api/requester/dashboard` metrics — `My Open Tickets (totalOpen)` → `/tickets`, `Waiting for Requester` → `/tickets?status=WAITING_FOR_REQUESTER`, `Recently Updated` → `/tickets?sort=updatedAt&order=desc`, `Recently Resolved` → `/tickets?status=RESOLVED`, `Closed` → `/tickets?status=CLOSED` (`totalOpen` spans 5 statuses so its card links the unfiltered list); Quick Actions `+ Create Ticket`, `View My Tickets`; `My Recent Tickets` (5, status badge, click → detail); Loading spinner, Error alert + Retry, Empty state (`No tickets yet — create your first ticket`) when the user never filed.
 
 ### 3.2 Staff Dashboard (`/`, `StaffDashboard.tsx`, IT + Admin)
 
-- Welcome banner `Welcome back, {name}!` + `Refresh` button refetching metrics; 5 metric cards (New → `/staff/queue?status=NEW`, Open, In Progress, Waiting for Requester, My Assigned → `/staff/queue?owner=me`) + `Urgent` highlight; Administrator strip: user counts (Total, Requester, Staff, Admin) + link `/admin/users`; `Recent Tickets` (5 latest/urgent, owner + badges, click → detail); Quick Actions `Create Ticket` (requester-mode create is hidden for staff — button opens ticket search), `Search Tickets`, `My Queue`; Loading/Error-Retry/Empty states.
+- Welcome banner `Welcome back, {name}!` + `Refresh` button refetching metrics; 7 metric cards 1:1 with `GET /api/staff/dashboard` metrics — `New` → `/staff/queue?status=NEW`, `Open` → `?status=OPEN`, `In Progress` → `?status=IN_PROGRESS`, `Waiting for Requester` → `?status=WAITING_FOR_REQUESTER`, `My Assigned` → `/staff/queue?owner=me`, `Unassigned` → `/staff/queue?owner=unassigned`, `Urgent` → `/staff/queue?itPriority=URGENT`; Administrator strip: user counts (Total, Requester, Staff, Admin) + link `/admin/users`; `Recent Tickets` (5 latest/urgent, owner + badges, click → detail); Quick Actions `Create Ticket` (requester-mode create is hidden for staff — button opens ticket search), `Search Tickets`, `My Queue`; Loading/Error-Retry/Empty states.
 
 ### 3.3 Actions Taken on Staff Ticket Detail (`StaffTicketDetail.tsx` + `lab-04/ActionsTakenList.tsx`)
 
