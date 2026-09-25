@@ -56,7 +56,7 @@ interface TicketSeed {
   ticketNumber: string;
   summary: string;
   description: string;
-  currentStatus: 'NEW' | 'OPEN' | 'IN_PROGRESS' | 'WAITING_FOR_REQUESTER' | 'RESOLVED' | 'CLOSED' | 'REOPENED';
+  currentStatus: 'NEW' | 'OPEN' | 'IN_PROGRESS' | 'WAITING_FOR_REQUESTER' | 'RESOLVED' | 'CLOSED' | 'REOPENED' | 'CANCELLED';
   requestedPriority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   itPriority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   requesterEmail: string;
@@ -161,6 +161,18 @@ const TICKETS: TicketSeed[] = [
     ownerEmail: null,
     category: 'Account and Access',
     system: 'Email'
+  },
+  {
+    ticketNumber: 'TK-20260910-0009',
+    summary: 'Duplicate monitor request withdrawn',
+    description: 'Requester cancelled after finding a spare monitor in storage.',
+    currentStatus: 'CANCELLED',
+    requestedPriority: 'LOW',
+    itPriority: 'LOW',
+    requesterEmail: 'requester1@toktickit.local',
+    ownerEmail: null,
+    category: 'Hardware',
+    system: 'Corporate Laptop'
   }
 ];
 
