@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -115,8 +115,7 @@ describe('Lab 4 ActionsTaken (UI-01/02)', () => {
     });
   });
 
-  it('UI-02: requester sees actions read-only with no Add/Edit controls', async () => {
-    vi.stubGlobal(
+  it('UI-02: requester sees actions read-only with no Add/Edit controls', async () => {    vi.stubGlobal(
       'fetch',
       vi.fn((url: string) =>
         Promise.resolve({ ok: true, status: 200, json: async () => (String(url).includes('/actions') ? actions : []) })
@@ -129,5 +128,32 @@ describe('Lab 4 ActionsTaken (UI-01/02)', () => {
     expect(screen.queryByRole('button', { name: /add action taken/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /edit/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /mark completed/i })).not.toBeInTheDocument();
+  });
+
+  it('UI-01b: edit filters lifecycle statuses and omits unchanged dateTime', async () => {
+    const user = userEvent.setup();
+    const calls: FetchCall[] = [];
+    stubStaff(calls);
+    render(<ActionsTakenList ticketId={1} mode="staff" />);
+    expect(await screen.findByText('Replaced faulty RAM stick')).toBeInTheDocument();
+
+    // Editing the COMPLETED action offers only COMPLETED (lifecycle-filtered).
+    const edits = screen.getAllByRole('button', { name: /^edit$/i });
+    await user.click(edits[0]);
+    const dialog = screen.getByRole('dialog');
+    const statusSelect = within(dialog).getByLabelText('Status') as HTMLSelectElement;
+    const options = within(statusSelect).getAllByRole('option');
+    expect(options.map((o) => (o as HTMLOptionElement).value)).toEqual(['COMPLETED']);
+
+    // Description-only edit: PATCH body carries no actionDateTime (no seconds churn).
+    await user.clear(within(dialog).getByLabelText(/description/i));
+    await user.type(within(dialog).getByLabelText(/description/i), 'Replaced faulty RAM stick v2');
+    await user.click(within(dialog).getByRole('button', { name: /^save action$/i }));
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+    const patch = calls.find((c) => c.options?.method === 'PATCH');
+    expect(patch).toBeDefined();
+    expect(JSON.parse(patch?.options?.body ?? '{}')).not.toHaveProperty('actionDateTime');
   });
 });

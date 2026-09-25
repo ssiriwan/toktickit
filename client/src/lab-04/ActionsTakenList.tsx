@@ -23,6 +23,13 @@ interface StaffUser {
 
 const ACTION_STATUSES = ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
 const TERMINAL_STATUSES = ['COMPLETED', 'CANCELLED'];
+/** Client mirror of the server lifecycle (server still enforces; this only prevents the round-trip). */
+const EDIT_STATUS_OPTIONS: Record<string, string[]> = {
+  PENDING: ['PENDING', 'IN_PROGRESS', 'CANCELLED'],
+  IN_PROGRESS: ['IN_PROGRESS', 'COMPLETED', 'CANCELLED'],
+  COMPLETED: ['COMPLETED'],
+  CANCELLED: ['CANCELLED']
+};
 
 function toLocalInputValue(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -66,6 +73,7 @@ export function ActionsTakenList({ ticketId, mode }: { ticketId: number; mode: '
 
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<ActionTakenItem | null>(null);
+  const [editOriginalMinutes, setEditOriginalMinutes] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(() => emptyForm(''));
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formBanner, setFormBanner] = useState<string | null>(null);
@@ -119,6 +127,7 @@ export function ActionsTakenList({ ticketId, mode }: { ticketId: number; mode: '
 
   function openCreate() {
     setEditing(null);
+    setEditOriginalMinutes(null);
     const fallback = staffUsers.length > 0 ? String(staffUsers[0].id) : '';
     setForm(emptyForm(myId !== null ? String(myId) : fallback));
     setFieldErrors({});
@@ -128,9 +137,11 @@ export function ActionsTakenList({ ticketId, mode }: { ticketId: number; mode: '
 
   function openEdit(action: ActionTakenItem) {
     setEditing(action);
+    const minuteValue = toLocalInputValue(new Date(action.actionDateTime));
+    setEditOriginalMinutes(minuteValue);
     setForm({
       description: action.description,
-      dateTime: toLocalInputValue(new Date(action.actionDateTime)),
+      dateTime: minuteValue,
       performedById: String(action.performedBy.id),
       status: action.status,
       result: action.result ?? '',
@@ -172,9 +183,8 @@ export function ActionsTakenList({ ticketId, mode }: { ticketId: number; mode: '
     setSubmitting(true);
     setFormBanner(null);
     try {
-      const payload = {
+      const base = {
         description: form.description.trim(),
-        actionDateTime: new Date(form.dateTime).toISOString(),
         performedById: Number(form.performedById),
         status: form.status,
         result: form.result.trim() || null,
@@ -182,6 +192,10 @@ export function ActionsTakenList({ ticketId, mode }: { ticketId: number; mode: '
         followUpNote: form.followUpNote.trim() || null,
         attachmentNotes: form.attachmentNotes.trim() || null
       };
+      // datetime-local drops seconds: resend only when the minute value changed.
+      const dateTime =
+        !editing || form.dateTime !== editOriginalMinutes ? new Date(form.dateTime).toISOString() : undefined;
+      const payload = dateTime === undefined ? base : { ...base, actionDateTime: dateTime };
       const url = editing
         ? `/api/staff/tickets/${ticketId}/actions/${editing.id}`
         : `/api/staff/tickets/${ticketId}/actions`;
@@ -382,7 +396,7 @@ export function ActionsTakenList({ ticketId, mode }: { ticketId: number; mode: '
                   value={form.status}
                   onChange={(e) => setForm({ ...form, status: e.target.value })}
                 >
-                  {ACTION_STATUSES.map((s) => (
+                  {(editing ? (EDIT_STATUS_OPTIONS[editing.status] ?? [editing.status]) : ACTION_STATUSES).map((s) => (
                     <option key={s} value={s}>{formatStatus(s)}</option>
                   ))}
                 </select>
