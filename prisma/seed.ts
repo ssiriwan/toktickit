@@ -237,6 +237,93 @@ async function seedTickets() {
   }
 }
 
+interface ActionSeed {
+  ticketNumber: string;
+  actionDateTime: string;
+  description: string;
+  result: string | null;
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  performerEmail: string;
+  followUpRequired: boolean;
+  followUpNote: string | null;
+  attachmentNotes: string | null;
+}
+
+// Lab 4: zero-action tickets (TK-20260910-0002/0005/0008) are intentionally
+// left empty (resolution-gate + empty-state proof); the legacy RESOLVED
+// ticket (0004) keeps no actions and still counts in dashboards.
+const ACTIONS: ActionSeed[] = [
+  {
+    ticketNumber: 'TK-20260910-0001',
+    actionDateTime: '2026-09-11T10:00:00.000Z',
+    description: 'Replaced faulty RAM stick and ran a full memory test.',
+    result: 'Memory test passed 100%, battery drain back to normal.',
+    status: 'COMPLETED',
+    performerEmail: 'it1@toktickit.local',
+    followUpRequired: false,
+    followUpNote: null,
+    attachmentNotes: 'memtest_report.pdf'
+  },
+  {
+    ticketNumber: 'TK-20260910-0003',
+    actionDateTime: '2026-09-12T09:00:00.000Z',
+    description: 'Reproduced the sync failure on a test device.',
+    result: 'Reinstalled the mail profile; inbox syncs on the test device.',
+    status: 'COMPLETED',
+    performerEmail: 'it2@toktickit.local',
+    followUpRequired: false,
+    followUpNote: null,
+    attachmentNotes: null
+  },
+  {
+    ticketNumber: 'TK-20260910-0003',
+    actionDateTime: '2026-09-13T14:30:00.000Z',
+    description: 'Checking whether contacts and calendar also sync for the requester.',
+    result: null,
+    status: 'IN_PROGRESS',
+    performerEmail: 'it3@toktickit.local',
+    followUpRequired: true,
+    followUpNote: 'Confirm with the requester whether contacts also sync.',
+    attachmentNotes: 'sync_screenshot.png'
+  },
+  {
+    ticketNumber: 'TK-20260910-0006',
+    actionDateTime: '2026-09-14T11:15:00.000Z',
+    description: 'Re-scanning library access points for interference.',
+    result: null,
+    status: 'IN_PROGRESS',
+    performerEmail: 'it1@toktickit.local',
+    followUpRequired: false,
+    followUpNote: null,
+    attachmentNotes: null
+  }
+];
+
+async function seedActions() {
+  for (const a of ACTIONS) {
+    const ticket = await prisma.ticket.findUniqueOrThrow({ where: { ticketNumber: a.ticketNumber } });
+    const performer = await prisma.user.findUniqueOrThrow({ where: { email: a.performerEmail } });
+    const existing = await prisma.actionTaken.count({
+      where: { ticketId: ticket.id, description: a.description }
+    });
+    if (existing === 0) {
+      await prisma.actionTaken.create({
+        data: {
+          ticketId: ticket.id,
+          actionDateTime: new Date(a.actionDateTime),
+          description: a.description,
+          result: a.result,
+          status: a.status,
+          performedById: performer.id,
+          followUpRequired: a.followUpRequired,
+          followUpNote: a.followUpNote,
+          attachmentNotes: a.attachmentNotes
+        }
+      });
+    }
+  }
+}
+
 async function seedSamples() {
   const ticket = await prisma.ticket.findUniqueOrThrow({
     where: { ticketNumber: 'TK-20260910-0001' }
@@ -277,8 +364,9 @@ async function main() {
   await seedRelatedSystems();
   await seedUsers();
   await seedTickets();
+  await seedActions();
   await seedSamples();
-  console.log('Seed complete: categories, systems, users, tickets, samples.');
+  console.log('Seed complete: categories, systems, users, tickets, actions, samples.');
 }
 
 main()
