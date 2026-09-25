@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import { ActionsTakenList } from '../lab-04/ActionsTakenList';
+
 type DetailTicket = {
   id: number;
   ticketNumber: string;
@@ -521,6 +523,12 @@ export function StaffTicketDetail() {
           </div>
         </section>
       )}
+
+      <div className="card mt-3">
+        <div className="card-body">
+          <ActionsTakenList ticketId={ticketId} mode="staff" />
+        </div>
+      </div>
     </main>
   );
 }

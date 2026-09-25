@@ -159,6 +159,10 @@ html, body {
 .badge-role-REQUESTER { background: #DBEAFE !important; color: #1D4ED8 !important; border: 1px solid #BFDBFF; }
 .badge-role-IT_STAFF { background: #CCFBF1 !important; color: #0F766E !important; border: 1px solid #99F6E4; }
 .badge-role-ADMINISTRATOR { background: #F3E8FF !important; color: #7E22CE !important; border: 1px solid #E9D5FF; }
+.badge-action-PENDING { background: #F1F5F9 !important; color: #475569 !important; border: 1px solid #E2E8F0; }
+.badge-action-IN_PROGRESS { background: #F3E8FF !important; color: #7E22CE !important; border: 1px solid #E9D5FF; }
+.badge-action-COMPLETED { background: #DCFCE7 !important; color: #166534 !important; border: 1px solid #BBF7D0; }
+.badge-action-CANCELLED { background: #E5E7EB !important; color: #4B5563 !important; border: 1px solid #D1D5DB; }
 
 /* Required asterisk */
 .required-star { color: var(--zen-error-border); }
