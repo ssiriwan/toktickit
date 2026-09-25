@@ -73,4 +73,4 @@ Window rule: "recently" = BR-28 (`updatedAt >= now − 7×24h`, server UTC). Emp
 ## 5. Status codes & safe errors
 
 - `200/201` success; `400 VALIDATION_ERROR | INVALID_QUERY | INVALID_TRANSITION | RESOLUTION_GATE_VIOLATION | INACTIVE_ASSIGNEE`; `401 UNAUTHENTICATED | INVALID_CREDENTIALS`; `403 FORBIDDEN | ACCESS_DENIED | ACCOUNT_INACTIVE | PASSWORD_CHANGE_REQUIRED`; `404 NOT_FOUND`; `409 STALE_UPDATE | DUPLICATE_EMAIL | LAST_ADMIN | ALREADY_ASSIGNED`; `410 REMOVED`; `500 INTERNAL_ERROR`.
-- Central shape: `{ error: { code, message, details? } }`; `details` only for field-level validation (`followUpNote`, `result`, `description`, `clientUpdatedAt`) or allowed-transition hints. No stacks, no enumeration.
+- Central shape: `{ error: { code, message, details? } }`; `details` only for field-level validation (`description`, `actionDateTime`, `followUpNote`, `result`, `clientUpdatedAt`) or allowed-transition hints. No stacks, no enumeration.
