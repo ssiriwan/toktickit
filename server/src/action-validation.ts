@@ -30,7 +30,16 @@ export function validateActionDateTime(input: unknown, now: Date = new Date()): 
   if (input === undefined || input === null || input === '') {
     return { ok: true, value: now };
   }
-  const date = input instanceof Date ? input : new Date(input as string);
+  if (input instanceof Date) {
+    if (Number.isNaN(input.getTime())) {
+      return { ok: false, details: [{ field: 'actionDateTime', message: 'Action date must be a valid ISO-8601 date' }] };
+    }
+    return { ok: true, value: input };
+  }
+  if (typeof input !== 'string') {
+    return { ok: false, details: [{ field: 'actionDateTime', message: 'Action date must be a valid ISO-8601 date' }] };
+  }
+  const date = new Date(input);
   if (Number.isNaN(date.getTime())) {
     return { ok: false, details: [{ field: 'actionDateTime', message: 'Action date must be a valid ISO-8601 date' }] };
   }
@@ -71,6 +80,18 @@ export function validateFollowUpNote(
     };
   }
   return { ok: true, value: text };
+}
+
+/** Action lifecycle (spec §11): linear PENDING → IN_PROGRESS → COMPLETED, CANCELLED side-exit, no reopen. */
+export const ACTION_TRANSITIONS: Record<string, readonly string[]> = {
+  PENDING: ['PENDING', 'IN_PROGRESS', 'CANCELLED'],
+  IN_PROGRESS: ['IN_PROGRESS', 'COMPLETED', 'CANCELLED'],
+  COMPLETED: ['COMPLETED'],
+  CANCELLED: ['CANCELLED']
+};
+
+export function isActionTransitionAllowed(from: string, to: string): boolean {
+  return ACTION_TRANSITIONS[from]?.includes(to) ?? false;
 }
 
 /**

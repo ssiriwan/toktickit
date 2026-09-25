@@ -287,4 +287,54 @@ describe('Lab 4 actions taken foundation (ACT-01..12)', () => {
       .send({ description: 'Check', actionDateTime: future });
     expect(farFuture.status).toBe(400);
   });
+
+  it('ACT-13: action lifecycle enforced (linear, terminal COMPLETED/CANCELLED)', async () => {
+    mockUsers();
+    mockTicket();
+    const actions = mockActions({
+      findFirst: vi.fn().mockResolvedValue({ id: 11, ticketId: 1, status: 'COMPLETED', result: 'done' }),
+      update: vi.fn().mockImplementation(async (args: never) => ({ id: 11, ...(args as { data: object }).data }))
+    });
+    const cookie = cookieFor(3, 'IT_STAFF');
+
+    const reopen = await request(app)
+      .patch('/api/staff/tickets/1/actions/11')
+      .set('Cookie', cookie)
+      .send({ status: 'PENDING' });
+    expect(reopen.status).toBe(400);
+    expect(reopen.body.error.details).toEqual(
+      expect.arrayContaining([expect.objectContaining({ field: 'status' })])
+    );
+
+    actions.findFirst.mockResolvedValue({ id: 12, ticketId: 1, status: 'PENDING', result: null });
+    const skip = await request(app)
+      .patch('/api/staff/tickets/1/actions/12')
+      .set('Cookie', cookie)
+      .send({ status: 'COMPLETED', result: 'done' });
+    expect(skip.status).toBe(400);
+
+    const advance = await request(app)
+      .patch('/api/staff/tickets/1/actions/12')
+      .set('Cookie', cookie)
+      .send({ status: 'IN_PROGRESS' });
+    expect(advance.status).toBe(200);
+  });
+
+  it('ACT-14: explicitly clearing result while COMPLETED is rejected', async () => {
+    mockUsers();
+    mockTicket();
+    mockActions({
+      findFirst: vi.fn().mockResolvedValue({ id: 11, ticketId: 1, status: 'COMPLETED', result: 'done' })
+    });
+
+    const res = await request(app)
+      .patch('/api/staff/tickets/1/actions/11')
+      .set('Cookie', cookieFor(3, 'IT_STAFF'))
+      .send({ result: '' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.details).toEqual(
+      expect.arrayContaining([expect.objectContaining({ field: 'result' })])
+    );
+  });
 });

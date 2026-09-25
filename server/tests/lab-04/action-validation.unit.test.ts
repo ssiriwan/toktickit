@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   checkActionPerformer,
+  isActionTransitionAllowed,
   validateActionDateTime,
   validateActionDescription,
   validateActionResult,
@@ -31,6 +32,18 @@ describe('Lab 4 action validation helpers (UNIT-02)', () => {
     expect(far.ok).toBe(false);
     const near = validateActionDateTime(new Date(now.getTime() + 3600 * 1000).toISOString(), now);
     expect(near.ok).toBe(true);
+    expect(validateActionDateTime(123, now).ok).toBe(false);
+    expect(validateActionDateTime(true, now).ok).toBe(false);
+  });
+
+  it('lifecycle: linear forward only, terminal COMPLETED/CANCELLED', () => {
+    expect(isActionTransitionAllowed('PENDING', 'IN_PROGRESS')).toBe(true);
+    expect(isActionTransitionAllowed('PENDING', 'PENDING')).toBe(true);
+    expect(isActionTransitionAllowed('PENDING', 'COMPLETED')).toBe(false);
+    expect(isActionTransitionAllowed('IN_PROGRESS', 'COMPLETED')).toBe(true);
+    expect(isActionTransitionAllowed('COMPLETED', 'PENDING')).toBe(false);
+    expect(isActionTransitionAllowed('CANCELLED', 'IN_PROGRESS')).toBe(false);
+    expect(isActionTransitionAllowed('BOGUS', 'PENDING')).toBe(false);
   });
 
   it('followUpNote: required iff followUpRequired', () => {

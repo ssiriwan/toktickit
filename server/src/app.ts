@@ -29,6 +29,7 @@ import { uploadsDir } from './uploads.js';
 import {
   ACTION_STATUSES,
   checkActionPerformer,
+  isActionTransitionAllowed,
   validateActionDateTime,
   validateActionDescription,
   validateActionResult,
@@ -1395,8 +1396,13 @@ export function createApp() {
       }
       const targetStatus = body.status === undefined ? action.status : body.status;
       if (body.status !== undefined) {
-        if (!(ACTION_STATUSES as readonly string[]).includes(body.status)) {
-          return actionValidationError(res, [{ field: 'status', message: 'Status is invalid' }]);
+        if (
+          !(ACTION_STATUSES as readonly string[]).includes(body.status) ||
+          !isActionTransitionAllowed(action.status, body.status)
+        ) {
+          return actionValidationError(res, [
+            { field: 'status', message: `Transition from ${action.status} to ${body.status} is not permitted` }
+          ]);
         }
         data.status = body.status;
       }
@@ -1417,11 +1423,22 @@ export function createApp() {
         if (!note.ok) return actionValidationError(res, note.details);
         data.followUpNote = note.value;
       }
-      if (body.result !== undefined || targetStatus === 'COMPLETED') {
-        const result = validateActionResult(targetStatus, body.result, action.result);
-        if (!result.ok) return actionValidationError(res, result.details);
-        if (body.result !== undefined) data.result = result.value;
-        else if (targetStatus === 'COMPLETED') data.result = result.value;
+      if (body.result !== undefined) {
+        if (body.result !== null && typeof body.result !== 'string') {
+          return actionValidationError(res, [{ field: 'result', message: 'Result must be a string' }]);
+        }
+        const trimmed = typeof body.result === 'string' ? body.result.trim() : '';
+        if (trimmed.length > 2000) {
+          return actionValidationError(res, [{ field: 'result', message: 'Result must be at most 2000 characters' }]);
+        }
+        if (targetStatus === 'COMPLETED' && trimmed === '') {
+          return actionValidationError(res, [{ field: 'result', message: 'Result cannot be cleared while COMPLETED' }]);
+        }
+        data.result = trimmed || null;
+      } else if (targetStatus === 'COMPLETED' && !(typeof action.result === 'string' && action.result.trim())) {
+        const missing = validateActionResult(targetStatus, undefined, action.result);
+        if (!missing.ok) return actionValidationError(res, missing.details);
+        data.result = missing.value;
       }
       if (body.attachmentNotes !== undefined) {
         if (body.attachmentNotes !== null && typeof body.attachmentNotes !== 'string') {

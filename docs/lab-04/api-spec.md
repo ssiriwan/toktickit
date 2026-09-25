@@ -23,7 +23,8 @@
 ### PATCH /api/staff/tickets/:ticketId/actions/:actionId
 
 - Role: `IT_STAFF`, `ADMINISTRATOR`. Partial body: any subset of `{ description, actionDateTime, performedById, status, result, followUpRequired, followUpNote, attachmentNotes }`.
-- Same field rules as POST, applied to the merged record (e.g. setting `status=COMPLETED` without a result — either in body or already stored — is rejected; clearing `result` while `COMPLETED` is rejected).
+- Same field rules as POST, applied to the merged record (e.g. setting `status=COMPLETED` without a result — either in body or already stored — is rejected; explicitly clearing `result` (`""`) while `COMPLETED` is rejected).
+- Action lifecycle enforced (spec §11): `PENDING → IN_PROGRESS | CANCELLED`, `IN_PROGRESS → COMPLETED | CANCELLED`, `COMPLETED`/`CANCELLED` terminal. Off-lifecycle `status` → `400 VALIDATION_ERROR` (`details:[{field:status}]`, `Transition from X to Y is not permitted`). Repeating the current status is a no-op.
 - Action must belong to the ticket in path else `404 NOT_FOUND`.
 - Res `200`: updated action. Requester → `403`.
 
