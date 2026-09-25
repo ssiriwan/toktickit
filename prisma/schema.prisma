@@ -31,6 +31,13 @@ enum Role {
   ADMINISTRATOR
 }
 
+enum ActionStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
 model Category {
   id        Int      @id @default(autoincrement())
   name      String   @unique
@@ -52,6 +59,7 @@ model User {
   assignedTickets    Ticket[]  @relation("OwnerTickets")
   publicComments     PublicComment[]
   internalNotes      InternalNote[]
+  actionsTaken       ActionTaken[]
 
   @@index([role, isActive])
 }
@@ -88,6 +96,7 @@ model Ticket {
   attachments        Attachment[]
   publicComments     PublicComment[]
   internalNotes      InternalNote[]
+  actionsTaken       ActionTaken[]
 
   @@index([requesterId, createdAt])
   @@index([currentStatus])
@@ -119,6 +128,27 @@ model InternalNote {
   author    User     @relation(fields: [authorId], references: [id])
 
   @@index([ticketId, createdAt])
+}
+
+model ActionTaken {
+  id               Int          @id @default(autoincrement())
+  ticketId         Int
+  actionDateTime   DateTime     @default(now())
+  description      String
+  result           String?
+  status           ActionStatus @default(PENDING)
+  performedById    Int
+  followUpRequired Boolean      @default(false)
+  followUpNote     String?
+  attachmentNotes  String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  ticket      Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  performedBy User   @relation(fields: [performedById], references: [id])
+
+  @@index([ticketId, actionDateTime])
+  @@index([performedById])
 }
 
 model Attachment {

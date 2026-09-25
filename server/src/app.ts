@@ -26,6 +26,15 @@ import type { AuthenticatedRequest } from './auth-middleware.js';
 import { prisma } from './db.js';
 import { nextTicketNumber, toDateStamp } from './ticket-number.js';
 import { uploadsDir } from './uploads.js';
+import {
+  ACTION_STATUSES,
+  checkActionPerformer,
+  isActionTransitionAllowed,
+  validateActionDateTime,
+  validateActionDescription,
+  validateActionResult,
+  validateFollowUpNote
+} from './action-validation.js';
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
@@ -1228,6 +1237,245 @@ export function createApp() {
       select: { id: true, body: true, createdAt: true, author: { select: authorSelect } }
     });
     return res.status(201).json(note);
+  });
+
+  // Lab 4: Actions Taken — staff list/create/update + requester read-only.
+  const actionPerformerSelect = { id: true, name: true, role: true };
+  const actionSelect = {
+    id: true,
+    ticketId: true,
+    actionDateTime: true,
+    description: true,
+    result: true,
+    status: true,
+    performedBy: { select: actionPerformerSelect },
+    followUpRequired: true,
+    followUpNote: true,
+    attachmentNotes: true,
+    createdAt: true,
+    updatedAt: true
+  };
+
+  function inactiveAssigneeError(res: express.Response) {
+    return res.status(400).json({
+      error: { code: 'INACTIVE_ASSIGNEE', message: 'Assignee is no longer active' }
+    });
+  }
+
+  function actionValidationError(res: express.Response, details: { field: string; message: string }[]) {
+    return res.status(400).json({
+      error: { code: 'VALIDATION_ERROR', message: 'Action is invalid', details }
+    });
+  }
+
+  /** BR-03/BR-04 gate shared by create + performer reassignment. */
+  async function resolveActionPerformer(
+    res: express.Response,
+    performedById: number
+  ): Promise<{ id: number; role: string; isActive: boolean } | undefined> {
+    if (!Number.isInteger(performedById) || performedById <= 0) {
+      actionValidationError(res, [{ field: 'performedById', message: 'Assignee is invalid' }]);
+      return undefined;
+    }
+    const user = await prisma.user.findUnique({
+      where: { id: performedById },
+      select: { id: true, role: true, isActive: true }
+    });
+    const check = checkActionPerformer(user);
+    if (!check.ok) {
+      if (check.code === 'INACTIVE_ASSIGNEE') return inactiveAssigneeError(res) as unknown as undefined;
+      return actionValidationError(res, [{ field: 'performedById', message: check.message }]) as unknown as undefined;
+    }
+    return user as { id: number; role: string; isActive: boolean };
+  }
+
+  function parseActionId(raw: unknown): number | null {
+    if (typeof raw !== 'string') return null;
+    const n = Number(raw);
+    if (!Number.isInteger(n) || n <= 0) return null;
+    return n;
+  }
+
+  // ACT-02/ACT-08: list actions asc (staff route + requester owner-scoped route below).
+  app.get('/api/staff/tickets/:id/actions', ...staffGuards, async (req, res) => {
+    try {
+      const ticketId = parseActionId(req.params.id);
+      if (ticketId === null) return invalidQuery(res);
+      const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+      if (!ticket) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+      const actions = await prisma.actionTaken.findMany({
+        where: { ticketId },
+        orderBy: { actionDateTime: 'asc' },
+        select: actionSelect
+      });
+      return res.json(actions);
+    } catch {
+      return res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to load actions' } });
+    }
+  });
+
+  // ACT-01/ACT-03..05/ACT-11/ACT-12: staff creates an action.
+  app.post('/api/staff/tickets/:id/actions', ...staffGuards, async (req, res) => {
+    try {
+      const auth = sessionUser(req);
+      const ticketId = parseActionId(req.params.id);
+      if (ticketId === null) return invalidQuery(res);
+      const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+      if (!ticket) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+      const body = req.body ?? {};
+
+      const desc = validateActionDescription(body.description);
+      if (!desc.ok) return actionValidationError(res, desc.details);
+      const when = validateActionDateTime(body.actionDateTime);
+      if (!when.ok) return actionValidationError(res, when.details);
+      const status = body.status === undefined ? 'PENDING' : body.status;
+      if (!(ACTION_STATUSES as readonly string[]).includes(status)) {
+        return actionValidationError(res, [{ field: 'status', message: 'Status is invalid' }]);
+      }
+      const performerId = body.performedById === undefined ? auth.userId : Number(body.performedById);
+      const performer = await resolveActionPerformer(res, performerId);
+      if (!performer) return;
+      const followUpRequired = body.followUpRequired === undefined ? false : body.followUpRequired;
+      if (typeof followUpRequired !== 'boolean') {
+        return actionValidationError(res, [{ field: 'followUpRequired', message: 'Follow-up flag must be a boolean' }]);
+      }
+      const note = validateFollowUpNote(followUpRequired, body.followUpNote);
+      if (!note.ok) return actionValidationError(res, note.details);
+      const result = validateActionResult(status, body.result, null);
+      if (!result.ok) return actionValidationError(res, result.details);
+      let attachmentNotes: string | null = null;
+      if (body.attachmentNotes !== undefined && body.attachmentNotes !== null) {
+        if (typeof body.attachmentNotes !== 'string') {
+          return actionValidationError(res, [{ field: 'attachmentNotes', message: 'Attachment notes must be a string' }]);
+        }
+        attachmentNotes = body.attachmentNotes.trim() || null;
+      }
+
+      const created = await prisma.actionTaken.create({
+        data: {
+          ticketId,
+          actionDateTime: when.value,
+          description: desc.value,
+          result: result.value,
+          status,
+          performedById: performer.id,
+          followUpRequired,
+          followUpNote: note.value,
+          attachmentNotes
+        },
+        select: actionSelect
+      });
+      return res.status(201).json(created);
+    } catch {
+      return res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to create action' } });
+    }
+  });
+
+  // ACT-09/ACT-10: staff partially updates an action (scoped to its ticket).
+  app.patch('/api/staff/tickets/:id/actions/:actionId', ...staffGuards, async (req, res) => {
+    try {
+      const ticketId = parseActionId(req.params.id);
+      const actionId = parseActionId(req.params.actionId);
+      if (ticketId === null || actionId === null) return invalidQuery(res);
+      const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+      if (!ticket) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+      const action = await prisma.actionTaken.findFirst({ where: { id: actionId, ticketId } });
+      if (!action) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Action not found' } });
+      const body = req.body ?? {};
+      const data: Record<string, unknown> = {};
+
+      if (body.description !== undefined) {
+        const desc = validateActionDescription(body.description);
+        if (!desc.ok) return actionValidationError(res, desc.details);
+        data.description = desc.value;
+      }
+      if (body.actionDateTime !== undefined) {
+        const when = validateActionDateTime(body.actionDateTime);
+        if (!when.ok) return actionValidationError(res, when.details);
+        data.actionDateTime = when.value;
+      }
+      const targetStatus = body.status === undefined ? action.status : body.status;
+      if (body.status !== undefined) {
+        if (
+          !(ACTION_STATUSES as readonly string[]).includes(body.status) ||
+          !isActionTransitionAllowed(action.status, body.status)
+        ) {
+          return actionValidationError(res, [
+            { field: 'status', message: `Transition from ${action.status} to ${body.status} is not permitted` }
+          ]);
+        }
+        data.status = body.status;
+      }
+      if (body.performedById !== undefined) {
+        const performer = await resolveActionPerformer(res, Number(body.performedById));
+        if (!performer) return;
+        data.performedById = performer.id;
+      }
+      const targetFollowUp = body.followUpRequired === undefined ? action.followUpRequired : body.followUpRequired;
+      if (body.followUpRequired !== undefined) {
+        if (typeof body.followUpRequired !== 'boolean') {
+          return actionValidationError(res, [{ field: 'followUpRequired', message: 'Follow-up flag must be a boolean' }]);
+        }
+        data.followUpRequired = body.followUpRequired;
+      }
+      if (body.followUpNote !== undefined || body.followUpRequired !== undefined) {
+        const note = validateFollowUpNote(targetFollowUp, body.followUpNote === undefined ? action.followUpNote : body.followUpNote);
+        if (!note.ok) return actionValidationError(res, note.details);
+        data.followUpNote = note.value;
+      }
+      if (body.result !== undefined) {
+        if (body.result !== null && typeof body.result !== 'string') {
+          return actionValidationError(res, [{ field: 'result', message: 'Result must be a string' }]);
+        }
+        const trimmed = typeof body.result === 'string' ? body.result.trim() : '';
+        if (trimmed.length > 2000) {
+          return actionValidationError(res, [{ field: 'result', message: 'Result must be at most 2000 characters' }]);
+        }
+        if (targetStatus === 'COMPLETED' && trimmed === '') {
+          return actionValidationError(res, [{ field: 'result', message: 'Result cannot be cleared while COMPLETED' }]);
+        }
+        data.result = trimmed || null;
+      } else if (targetStatus === 'COMPLETED' && !(typeof action.result === 'string' && action.result.trim())) {
+        const missing = validateActionResult(targetStatus, undefined, action.result);
+        if (!missing.ok) return actionValidationError(res, missing.details);
+        data.result = missing.value;
+      }
+      if (body.attachmentNotes !== undefined) {
+        if (body.attachmentNotes !== null && typeof body.attachmentNotes !== 'string') {
+          return actionValidationError(res, [{ field: 'attachmentNotes', message: 'Attachment notes must be a string' }]);
+        }
+        data.attachmentNotes = typeof body.attachmentNotes === 'string' ? body.attachmentNotes.trim() || null : null;
+      }
+
+      const updated = await prisma.actionTaken.update({
+        where: { id: action.id },
+        data,
+        select: actionSelect
+      });
+      return res.json(updated);
+    } catch {
+      return res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to update action' } });
+    }
+  });
+
+  // ACT-08 (FR-08/BR-09): requester reads own ticket's actions, read-only.
+  app.get('/api/tickets/:id/actions', ...requesterGuards, async (req, res) => {
+    try {
+      const auth = sessionUser(req);
+      const ticketId = parseActionId(req.params.id);
+      if (ticketId === null) return invalidQuery(res);
+      const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+      if (!ticket) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+      if (ticket.requesterId !== auth.userId) return denied(res);
+      const actions = await prisma.actionTaken.findMany({
+        where: { ticketId },
+        orderBy: { actionDateTime: 'asc' },
+        select: actionSelect
+      });
+      return res.json(actions);
+    } catch {
+      return res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to load actions' } });
+    }
   });
 
   // STOP-06: staff user directory (active IT/Admin ordered by name, requester 403)

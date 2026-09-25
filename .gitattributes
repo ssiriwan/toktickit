@@ -1,0 +1,3 @@
+# Keep Prisma migration checksums stable across OSes: migrate dev hashes raw
+# bytes, so CRLF conversion on Windows breaks drift detection.
+prisma/migrations/*.sql text eol=lf

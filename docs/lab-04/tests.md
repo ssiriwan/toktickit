@@ -28,6 +28,8 @@
 | ACT-10 | API | AC-07 | PATCH action → COMPLETED without result | `400 VALIDATION_ERROR` (`details:[{field:result}]`) | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
 | ACT-11 | API | AC-05 | Blank/over-2000 description | `400 VALIDATION_ERROR` | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
 | ACT-12 | API | AC-01 | Invalid ISO / >24h-future `actionDateTime` (BR-29) | `400 VALIDATION_ERROR` (`details:[{field:actionDateTime}]`) | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
+| ACT-13 | API | FR-06 | Off-lifecycle action transition (COMPLETED→PENDING, PENDING→COMPLETED skip, same-value no-op ok) | `400` + `details:[{field:status}]` / 200 | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
+| ACT-14 | API | AC-07 | Explicit `result: ""` clear while COMPLETED | `400 VALIDATION_ERROR` (`details:[{field:result}]`) | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
 | WF-01 | API | AC-06 | `IN_PROGRESS → RESOLVED` with zero actions | `400 RESOLUTION_GATE_VIOLATION` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
 | WF-02 | API | AC-07 | `IN_PROGRESS → RESOLVED` with 1 COMPLETED action | 200 `RESOLVED` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
 | WF-03 | API | AC-08 | Off-matrix (e.g. `NEW → RESOLVED`, `CANCELLED → OPEN`) | `400 INVALID_TRANSITION` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
@@ -56,7 +58,7 @@
 
 ## 3. Coverage checklist
 
-- [ ] Actions CRUD + validation + inactive-assignee + requester-403 (ACT-01..12, UNIT-02, UI-01/02, E2E-01)
+- [ ] Actions CRUD + validation + inactive-assignee + requester-403 (ACT-01..14, UNIT-02, UI-01/02, E2E-01)
 - [ ] Workflow matrix + gate + concurrency + legacy regression (WF-01..07, UI-05/06, E2E-03)
 - [ ] Dashboards server-computed + role-isolated + drill-down (UNIT-01, RD-01..03, SD-01..03, UI-03/04, PERF-01, E2E-02)
 - [ ] Style consistency Lab 4 screens (UI-07) + responsive + visual (VIS-01) + a11y (labels, alert/status roles, focus, keyboard)
