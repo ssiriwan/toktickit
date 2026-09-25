@@ -60,7 +60,6 @@
 - [ ] Workflow matrix + gate + concurrency + legacy regression (WF-01..07, UI-05/06, E2E-03)
 - [ ] Dashboards server-computed + role-isolated + drill-down (UNIT-01, RD-01..03, SD-01..03, UI-03/04, PERF-01, E2E-02)
 - [ ] Style consistency Lab 4 screens (UI-07) + responsive + visual (VIS-01) + a11y (labels, alert/status roles, focus, keyboard)
-- [ ] Responsive + visual (VIS-01) + a11y (labels, alert/status roles, focus, keyboard)
 - [ ] `npm test` green (legacy + new), `npm run build` clean, seed idempotent, backup taken
 
 ## 4. Execution
