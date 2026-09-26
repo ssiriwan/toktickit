@@ -62,12 +62,25 @@ export function StaffTicketQueue({
 
   const [search, setSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  // Dashboard drill-down links pre-apply filters via URL query (validated).
+  // Reads window.location directly (no router hook) so the component also
+  // renders outside a Router in legacy tests.
+  const [searchParams] = useState(() => new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search));
+  const [statusFilter, setStatusFilter] = useState(() => {
+    const s = searchParams.get('status') ?? '';
+    return STATUSES.includes(s) ? s : '';
+  });
   const [categoryFilter, setCategoryFilter] = useState('');
   const [systemFilter, setSystemFilter] = useState('');
   const [reqPriority, setReqPriority] = useState('');
-  const [itPriority, setItPriority] = useState('');
-  const [ownerFilter, setOwnerFilter] = useState('');
+  const [itPriority, setItPriority] = useState(() => {
+    const p = searchParams.get('itPriority') ?? '';
+    return PRIORITIES.includes(p) ? p : '';
+  });
+  const [ownerFilter, setOwnerFilter] = useState(() => {
+    const o = searchParams.get('owner') ?? '';
+    return o === 'me' || o === 'unassigned' ? o : '';
+  });
   const [sort, setSort] = useState('updatedAt');
   const [order, setOrder] = useState<'asc' | 'desc'>('desc');
   const [pageSize, setPageSize] = useState(10);
