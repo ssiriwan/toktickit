@@ -35,6 +35,8 @@ import {
   validateActionResult,
   validateFollowUpNote
 } from './action-validation.js';
+import { recentWindowCutoff } from './dashboard-window.js';
+import type { TicketStatus } from '@prisma/client';
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
@@ -778,6 +780,12 @@ export function createApp() {
     requireRole('IT_STAFF')
   ];
 
+  const adminGuards = [
+    requireAuth,
+    requirePasswordChanged,
+    requireRole('ADMINISTRATOR')
+  ];
+
   const STATUSES = [
     'NEW',
     'OPEN',
@@ -1478,6 +1486,96 @@ export function createApp() {
     }
   });
 
+  // Lab 4: role dashboards — all metrics computed by server-side DB queries (BR-24).
+  // Empty data returns zeroed metrics + recentTickets: [] (never 404).
+  const REQUESTER_OPEN_STATUSES: TicketStatus[] = ['NEW', 'OPEN', 'IN_PROGRESS', 'WAITING_FOR_REQUESTER', 'REOPENED'];
+  const TERMINAL_STATUSES: TicketStatus[] = ['CLOSED', 'CANCELLED'];
+
+  // RD-01..03 / FR-14 / BR-18..21,26..28: requester sees self-only stats.
+  app.get('/api/requester/dashboard', ...requesterGuards, async (req, res) => {
+    try {
+      const auth = sessionUser(req);
+      const now = new Date();
+      const cutoff = recentWindowCutoff(now);
+      const [totalOpen, waitingForRequester, recentlyUpdated, recentlyResolved, closed, recentTickets] =
+        await Promise.all([
+          prisma.ticket.count({ where: { requesterId: auth.userId, currentStatus: { in: REQUESTER_OPEN_STATUSES } } }),
+          prisma.ticket.count({ where: { requesterId: auth.userId, currentStatus: 'WAITING_FOR_REQUESTER' } }),
+          prisma.ticket.count({ where: { requesterId: auth.userId, updatedAt: { gte: cutoff, lte: now } } }),
+          prisma.ticket.count({
+            where: { requesterId: auth.userId, currentStatus: 'RESOLVED', updatedAt: { gte: cutoff, lte: now } }
+          }),
+          prisma.ticket.count({ where: { requesterId: auth.userId, currentStatus: 'CLOSED' } }),
+          prisma.ticket.findMany({
+            where: { requesterId: auth.userId },
+            orderBy: { updatedAt: 'desc' },
+            take: 5,
+            select: { id: true, ticketNumber: true, summary: true, currentStatus: true, requestedPriority: true, updatedAt: true }
+          })
+        ]);
+      return res.json({
+        metrics: { totalOpen, waitingForRequester, recentlyUpdated, recentlyResolved, closed },
+        recentTickets
+      });
+    } catch {
+      return res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to load dashboard' } });
+    }
+  });
+
+  async function getStaffDashboardMetrics(staffId: number) {
+    const [newCount, openCount, inProgressCount, waitingForRequesterCount, myAssignedCount, unassignedCount, urgentCount, recentTickets] =
+      await Promise.all([
+        prisma.ticket.count({ where: { currentStatus: 'NEW' } }),
+        prisma.ticket.count({ where: { currentStatus: 'OPEN' } }),
+        prisma.ticket.count({ where: { currentStatus: 'IN_PROGRESS' } }),
+        prisma.ticket.count({ where: { currentStatus: 'WAITING_FOR_REQUESTER' } }),
+        prisma.ticket.count({ where: { ownerId: staffId, currentStatus: { notIn: TERMINAL_STATUSES } } }),
+        prisma.ticket.count({ where: { ownerId: null, currentStatus: { notIn: TERMINAL_STATUSES } } }),
+        prisma.ticket.count({ where: { itPriority: 'URGENT', currentStatus: { notIn: TERMINAL_STATUSES } } }),
+        prisma.ticket.findMany({
+          orderBy: { updatedAt: 'desc' },
+          take: 5,
+          select: {
+            id: true, ticketNumber: true, summary: true, currentStatus: true,
+            itPriority: true, updatedAt: true, owner: { select: { id: true, name: true } }
+          }
+        })
+      ]);
+    return {
+      metrics: { newCount, openCount, inProgressCount, waitingForRequesterCount, myAssignedCount, unassignedCount, urgentCount },
+      recentTickets
+    };
+  }
+
+  // SD-01/FR-15/BR-22..24: operational stats for IT Staff and Administrator.
+  app.get('/api/staff/dashboard', ...staffGuards, async (req, res) => {
+    try {
+      return res.json(await getStaffDashboardMetrics(sessionUser(req).userId));
+    } catch {
+      return res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to load dashboard' } });
+    }
+  });
+
+  // SD-02/FR-16: staff metrics plus the user-account summary (Administrator only).
+  app.get('/api/admin/dashboard', ...adminGuards, async (req, res) => {
+    try {
+      const dashboard = await getStaffDashboardMetrics(sessionUser(req).userId);
+      const [totalUsers, activeRequesters, activeStaff, activeAdmins, inactiveUsers] = await Promise.all([
+        prisma.user.count(),
+        prisma.user.count({ where: { role: 'REQUESTER', isActive: true } }),
+        prisma.user.count({ where: { role: 'IT_STAFF', isActive: true } }),
+        prisma.user.count({ where: { role: 'ADMINISTRATOR', isActive: true } }),
+        prisma.user.count({ where: { isActive: false } })
+      ]);
+      return res.json({
+        ...dashboard,
+        userSummary: { totalUsers, activeRequesters, activeStaff, activeAdmins, inactiveUsers }
+      });
+    } catch {
+      return res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to load dashboard' } });
+    }
+  });
+
   // STOP-06: staff user directory (active IT/Admin ordered by name, requester 403)
   app.get('/api/staff/users', ...staffGuards, async (_req, res) => {
     try {
@@ -1514,11 +1612,6 @@ export function createApp() {
   });
 
   // AC-12..16 / ADMIN-01..07: admin user management (Administrator only).
-  const adminGuards = [
-    requireAuth,
-    requirePasswordChanged,
-    requireRole('ADMINISTRATOR')
-  ];
   const ADMIN_ROLES = ['REQUESTER', 'IT_STAFF', 'ADMINISTRATOR'];
   const adminSelect = {
     id: true, name: true, email: true, role: true,
