@@ -74,6 +74,12 @@ describe('Lab 4 staff/admin dashboards (SD-01..03)', () => {
       myAssignedCount: 5, unassignedCount: 6, urgentCount: 2
     });
     expect(res.body.recentTickets).toEqual(recentTickets);
+    expect(vi.mocked(prisma.ticket.findMany)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: [{ itPriority: 'desc' }, { updatedAt: 'desc' }],
+        take: 5
+      })
+    );
     expect(countSpy).toHaveBeenCalledWith(
       expect.objectContaining({ where: expect.objectContaining({ ownerId: null }) })
     );

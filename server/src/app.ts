@@ -1533,7 +1533,8 @@ export function createApp() {
         prisma.ticket.count({ where: { ownerId: null, currentStatus: { notIn: TERMINAL_STATUSES } } }),
         prisma.ticket.count({ where: { itPriority: 'URGENT', currentStatus: { notIn: TERMINAL_STATUSES } } }),
         prisma.ticket.findMany({
-          orderBy: { updatedAt: 'desc' },
+          // Urgent first (PG enum sorts LOW < MEDIUM < HIGH < URGENT), then latest.
+          orderBy: [{ itPriority: 'desc' }, { updatedAt: 'desc' }],
           take: 5,
           select: {
             id: true, ticketNumber: true, summary: true, currentStatus: true,
