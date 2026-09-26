@@ -60,6 +60,8 @@ describe('Lab 4 StaffDashboard (UI-04)', () => {
       '/staff/queue?owner=unassigned'
     );
     expect(screen.getByRole('link', { name: /urgent/i })).toHaveAttribute('href', '/staff/queue?itPriority=URGENT');
+    expect(screen.getByRole('link', { name: /^my queue$/i })).toHaveAttribute('href', '/staff/queue?owner=me');
+    expect(screen.getByRole('link', { name: /search tickets/i })).toHaveAttribute('href', '/staff/queue');
     expect(screen.queryByText(/user summary/i)).not.toBeInTheDocument();
   });
 

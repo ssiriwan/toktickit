@@ -111,7 +111,8 @@ export function StaffDashboard({ userName, role }: { userName: string; role: 'IT
         </section>
       )}
       <div className="d-flex gap-2 mb-3">
-        <Link to="/staff/queue" className="btn btn-primary btn-sm">My Queue</Link>
+        <Link to="/staff/queue?owner=me" className="btn btn-primary btn-sm">My Queue</Link>
+        <Link to="/staff/queue" className="btn btn-outline-secondary btn-sm">Search Tickets</Link>
       </div>
       <section aria-label="Recent Tickets">
         <h2 className="h5">Recent Tickets</h2>
