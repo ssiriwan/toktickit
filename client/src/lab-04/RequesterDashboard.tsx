@@ -69,43 +69,58 @@ export function RequesterDashboard({ userName }: { userName: string }) {
   return (
     <main className="container py-4" style={{ maxWidth: '56rem' }}>
       <h1 className="h4">Welcome back, {userName}!</h1>
-      <div className="row g-2 my-3">
+      <div className="row row-cols-2 row-cols-md-5 g-2 my-3 justify-content-center mx-auto" style={{ maxWidth: '52rem' }}>
         {CARDS.map((c) => (
-          <div key={c.key} className="col-6 col-md-4">
-            <Link to={c.to} className="card text-decoration-none h-100">
-              <div className="card-body text-center">
-                <div className="h3 mb-0">{metrics[c.key]}</div>
-                <div className="text-muted small">{c.label}</div>
+          <div key={c.key} className="col">
+            <Link to={c.to} className="card text-decoration-none h-100" style={{ borderRadius: '0.75rem' }}>
+              <div className="card-body d-flex flex-column" style={{ minHeight: '7.5rem' }}>
+                <div className="text-start small" style={{ color: '#374151', minHeight: '2.8rem' }}>{c.label}</div>
+                <div className="h3 mb-0 fw-bold text-start mt-1" style={{ color: '#111' }}>{metrics[c.key]}</div>
+                <div className="text-start small mt-auto" style={{ color: 'var(--zen-primary)' }}>View all</div>
               </div>
             </Link>
           </div>
         ))}
       </div>
-      <div className="d-flex gap-2 mb-3">
+      <div className="d-flex gap-2 mb-3 mx-auto ps-1" style={{ maxWidth: '52rem' }}>
         <Link to="/create" className="btn btn-primary btn-sm">+ Create Ticket</Link>
         <Link to="/tickets" className="btn btn-outline-secondary btn-sm">View My Tickets</Link>
       </div>
-      <section aria-label="My Recent Tickets">
-        <h2 className="h5">My Recent Tickets</h2>
-        {isEmpty && recentTickets.length === 0 ? (
-          <p className="text-muted">
-            No tickets yet — <Link to="/create">create your first ticket</Link>.
-          </p>
-        ) : recentTickets.length === 0 ? (
-          <p className="text-muted">No recent tickets.</p>
-        ) : (
-          recentTickets.map((t) => (
-            <div key={t.id} className="card mb-2">
-              <div className="card-body py-2 d-flex justify-content-between align-items-center gap-2 flex-wrap">
-                <Link to={`/tickets/${t.id}`}>{t.summary}</Link>
-                <span>
-                  <span className={`badge badge-status-${t.currentStatus}`}>{t.currentStatus.replace(/_/g, ' ')}</span>{' '}
-                  <small className="text-muted">{new Date(t.updatedAt).toLocaleDateString()}</small>
-                </span>
+      <section aria-label="My Recent Tickets" className="card" style={{ borderRadius: '0.75rem' }}>
+        <div className="card-body">
+          <h2 className="h5">My Recent Tickets</h2>
+          {isEmpty && recentTickets.length === 0 ? (
+            <p className="text-muted mb-0">
+              No tickets yet — <Link to="/create">create your first ticket</Link>.
+            </p>
+          ) : recentTickets.length === 0 ? (
+            <p className="text-muted mb-0">No recent tickets.</p>
+          ) : (
+            <>
+              <div className="row d-none d-md-flex text-muted small border-bottom pb-1 mb-1" aria-hidden="true">
+                <div className="col-md-7">Ticket</div>
+                <div className="col-md-3">Status</div>
+                <div className="col-md-2">Updated</div>
               </div>
-            </div>
-          ))
-        )}
+              {recentTickets.map((t, i) => (
+                <div key={t.id} className={`row py-2 align-items-center${i > 0 ? ' border-top' : ''}`}>
+                  <div className="col-12 col-md-7">
+                    <Link to={`/tickets/${t.id}`} className="fw-bold text-decoration-none" style={{ color: 'var(--zen-primary)' }}>{t.ticketNumber}</Link>
+                    <div style={{ color: '#111' }}>{t.summary}</div>
+                  </div>
+                  <div className="col-6 col-md-3">
+                    <span className="d-md-none text-muted small me-1">Status:</span>
+                    <span className={`badge badge-status-${t.currentStatus}`}>{t.currentStatus.replace(/_/g, ' ')}</span>
+                  </div>
+                  <div className="col-6 col-md-2">
+                    <span className="d-md-none text-muted small me-1">Updated:</span>
+                    <small className="text-muted">{new Date(t.updatedAt).toLocaleDateString()}</small>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
       </section>
     </main>
   );

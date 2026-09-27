@@ -65,8 +65,9 @@ describe('Lab 4 RequesterDashboard (UI-03)', () => {
     stubDashboard(payload, []);
     renderDash();
 
-    const recent = await screen.findByRole('link', { name: /laptop battery drains quickly/i });
+    const recent = await screen.findByRole('link', { name: /TK-20260922-0014/i });
     expect(recent).toHaveAttribute('href', '/tickets/14');
+    expect(screen.getByText(/laptop battery drains quickly/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /create ticket/i })).toHaveAttribute('href', '/create');
     expect(screen.getByRole('link', { name: /view my tickets/i })).toHaveAttribute('href', '/tickets');
   });

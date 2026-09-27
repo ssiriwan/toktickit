@@ -52,16 +52,16 @@ describe('Lab 4 StaffDashboard (UI-04)', () => {
     renderDash();
 
     expect(await screen.findByText(/welcome back, it alice!/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /2 new/i })).toHaveAttribute('href', '/staff/queue?status=NEW');
-    expect(screen.getByRole('link', { name: /3 open/i })).toHaveAttribute('href', '/staff/queue?status=OPEN');
+    expect(screen.getByRole('link', { name: /new 2/i })).toHaveAttribute('href', '/staff/queue?status=NEW');
+    expect(screen.getByRole('link', { name: /open 3/i })).toHaveAttribute('href', '/staff/queue?status=OPEN');
     expect(screen.getByRole('link', { name: /my assigned/i })).toHaveAttribute('href', '/staff/queue?owner=me');
     expect(screen.getByRole('link', { name: /unassigned/i })).toHaveAttribute(
       'href',
       '/staff/queue?owner=unassigned'
     );
     expect(screen.getByRole('link', { name: /urgent/i })).toHaveAttribute('href', '/staff/queue?itPriority=URGENT');
-    expect(screen.getByRole('link', { name: /^my queue$/i })).toHaveAttribute('href', '/staff/queue?owner=me');
-    expect(screen.getByRole('link', { name: /search tickets/i })).toHaveAttribute('href', '/staff/queue');
+    expect(screen.getByRole('link', { name: /^view my tickets$/i })).toHaveAttribute('href', '/staff/queue?owner=me');
+    expect(screen.queryByRole('link', { name: /^search tickets$/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/user summary/i)).not.toBeInTheDocument();
   });
 
@@ -80,11 +80,13 @@ describe('Lab 4 StaffDashboard (UI-04)', () => {
     expect(calls.filter((u) => u.includes('/api/admin/dashboard')).length).toBe(before + 1);
   });
 
-  it('lists recent tickets linking to staff detail', async () => {
+  it('lists recent tickets with green ticket-number links and column layout', async () => {
     stubDashboard(staffPayload, []);
     renderDash();
 
-    const recent = await screen.findByRole('link', { name: /laptop battery drains quickly/i });
+    const recent = await screen.findByRole('link', { name: /TK-20260922-0014/i });
     expect(recent).toHaveAttribute('href', '/staff/tickets/14');
+    expect(screen.getByText(/laptop battery drains quickly/i)).toBeInTheDocument();
+    expect(screen.getByText(/last updated/i)).toBeInTheDocument();
   });
 });

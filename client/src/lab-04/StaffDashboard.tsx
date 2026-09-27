@@ -84,15 +84,22 @@ export function StaffDashboard({ userName, role }: { userName: string; role: 'IT
     <main className="container py-4" style={{ maxWidth: '64rem' }}>
       <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <h1 className="h4 mb-0">Welcome back, {userName}!</h1>
-        <button type="button" className="btn btn-outline-secondary btn-sm" onClick={load}>Refresh</button>
+        <button type="button" className="btn btn-outline-secondary btn-sm" onClick={load}>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="me-1" style={{ verticalAlign: '-2px' }}>
+            <path d="M13.5 8a5.5 5.5 0 1 1-1.61-3.89" />
+            <path d="M13.5 1.5v3h-3" />
+          </svg>
+          Refresh
+        </button>
       </div>
-      <div className="row g-2 my-3">
+      <div className="row g-2 my-3 justify-content-center mx-auto" style={{ maxWidth: '52rem' }}>
         {CARDS.map((c) => (
           <div key={c.key} className="col-6 col-md-4 col-lg-3">
-            <Link to={c.to} className="card text-decoration-none h-100">
-              <div className="card-body text-center">
-                <div className="h3 mb-0">{metrics[c.key]}</div>
-                <div className="text-muted small">{c.label}</div>
+            <Link to={c.to} className="card text-decoration-none h-100" style={{ borderRadius: '0.75rem' }}>
+              <div className="card-body d-flex flex-column" style={{ minHeight: '7.5rem' }}>
+                <div className="text-start small" style={{ color: '#374151', minHeight: '1.4rem' }}>{c.label}</div>
+                <div className="h3 mb-0 fw-bold text-start mt-1" style={{ color: '#111' }}>{metrics[c.key]}</div>
+                <div className="text-start small mt-auto" style={{ color: 'var(--zen-primary)' }}>View all</div>
               </div>
             </Link>
           </div>
@@ -110,28 +117,50 @@ export function StaffDashboard({ userName, role }: { userName: string; role: 'IT
           </div>
         </section>
       )}
-      <div className="d-flex gap-2 mb-3">
-        <Link to="/staff/queue?owner=me" className="btn btn-primary btn-sm">My Queue</Link>
-        <Link to="/staff/queue" className="btn btn-outline-secondary btn-sm">Search Tickets</Link>
-      </div>
-      <section aria-label="Recent Tickets">
-        <h2 className="h5">Recent Tickets</h2>
-        {recentTickets.length === 0 ? (
-          <p className="text-muted">No recent tickets.</p>
-        ) : (
-          recentTickets.map((t) => (
-            <div key={t.id} className="card mb-2">
-              <div className="card-body py-2 d-flex justify-content-between align-items-center gap-2 flex-wrap">
-                <Link to={`/staff/tickets/${t.id}`}>{t.summary}</Link>
-                <span>
-                  <span className={`badge badge-status-${t.currentStatus}`}>{t.currentStatus.replace(/_/g, ' ')}</span>{' '}
-                  <span className={`badge badge-priority-${t.itPriority}`}>{t.itPriority}</span>{' '}
-                  <small className="text-muted">{t.owner ? t.owner.name : 'Unassigned'}</small>
-                </span>
+      <section aria-label="Recent Tickets" className="card" style={{ borderRadius: '0.75rem' }}>
+        <div className="card-body">
+          <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+            <h2 className="h5 mb-0">Recent Tickets</h2>
+            <Link to="/staff/queue?owner=me" className="small text-decoration-none ms-auto" style={{ color: 'var(--zen-primary)', fontWeight: 600 }}>View my tickets</Link>
+          </div>
+          {recentTickets.length === 0 ? (
+            <p className="text-muted mb-0">No recent tickets.</p>
+          ) : (
+            <>
+              <div className="row d-none d-md-flex text-muted small border-bottom pb-1 mb-1" aria-hidden="true">
+                <div className="col-md-4">Ticket</div>
+                <div className="col-md-2">IT Priority</div>
+                <div className="col-md-2">Status</div>
+                <div className="col-md-2">Owner</div>
+                <div className="col-md-2">Last Updated</div>
               </div>
-            </div>
-          ))
-        )}
+              {recentTickets.map((t, i) => (
+                <div key={t.id} className={`row py-2 align-items-center${i > 0 ? ' border-top' : ''}`}>
+                  <div className="col-12 col-md-4">
+                    <Link to={`/staff/tickets/${t.id}`} className="fw-bold text-decoration-none" style={{ color: 'var(--zen-primary)' }}>{t.ticketNumber}</Link>
+                    <div>{t.summary}</div>
+                  </div>
+                  <div className="col-6 col-md-2">
+                    <span className="d-md-none text-muted small me-1">Priority:</span>
+                    <span className={`badge badge-priority-${t.itPriority}`}>{t.itPriority}</span>
+                  </div>
+                  <div className="col-6 col-md-2">
+                    <span className="d-md-none text-muted small me-1">Status:</span>
+                    <span className={`badge badge-status-${t.currentStatus}`}>{t.currentStatus.replace(/_/g, ' ')}</span>
+                  </div>
+                  <div className="col-6 col-md-2">
+                    <span className="d-md-none text-muted small me-1">Owner:</span>
+                    <small className="text-muted">{t.owner ? t.owner.name : 'Unassigned'}</small>
+                  </div>
+                  <div className="col-6 col-md-2">
+                    <span className="d-md-none text-muted small me-1">Updated:</span>
+                    <small className="text-muted">{new Date(t.updatedAt).toLocaleDateString()}</small>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
       </section>
     </main>
   );
