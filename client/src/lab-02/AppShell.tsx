@@ -59,6 +59,7 @@ function Header() {
           <nav className="d-flex gap-3">
             <NavLink
               to="/"
+              end
               className={({ isActive }) => `nav-link p-0 ${isActive ? 'active' : ''}`}
             >
               Dashboard
