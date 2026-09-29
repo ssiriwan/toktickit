@@ -64,11 +64,14 @@ test.describe('VIS-01 — Lab 4 responsive screenshots', () => {
       await page.screenshot({ path: `artifacts/lab-04/screenshots/requester-dashboard/dashboard-${viewport.name}.png` });
     }
 
-    // Drill-down lands filtered.
+    // Drill-down lands filtered with rows (My Open covers requester2's tickets).
     await page.setViewportSize({ width: 1280, height: 720 });
-    await page.getByRole('link', { name: /closed/i }).click();
-    await expect(page).toHaveURL(/\/tickets\?status=CLOSED/);
-    await page.screenshot({ path: 'artifacts/lab-04/screenshots/requester-dashboard/drill-down-closed.png' });
+    await page.getByRole('link', { name: /my open tickets/i }).click();
+    await expect(page).toHaveURL(/\/tickets$/);
+    await expect(page.getByText(/TK-/).filter({ visible: true }).first()).toBeVisible({ timeout: 15000 });
+    // Settle StrictMode remount reloads before capturing.
+    await expect(page.getByText(/loading tickets/i)).toHaveCount(0, { timeout: 15000 });
+    await page.screenshot({ path: 'artifacts/lab-04/screenshots/requester-dashboard/drill-down-open.png' });
   });
 
   test('staff dashboard', async ({ page }) => {
@@ -79,12 +82,14 @@ test.describe('VIS-01 — Lab 4 responsive screenshots', () => {
       await page.screenshot({ path: `artifacts/lab-04/screenshots/staff-dashboard/dashboard-${viewport.name}.png` });
     }
 
-    // Drill-down lands on the filtered queue.
+    // Drill-down lands on the filtered queue with rows (it3 owns nothing
+    // active, so use the Unassigned card which always has seed rows).
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.goto('/');
-    await page.getByRole('link', { name: /^my assigned/i }).click();
-    await expect(page).toHaveURL(/\/staff\/queue\?owner=me/);
-    await page.screenshot({ path: 'artifacts/lab-04/screenshots/staff-dashboard/drill-down-my-assigned.png' });
+    await page.getByRole('link', { name: /^unassigned /i }).click();
+    await expect(page).toHaveURL(/\/staff\/queue\?owner=unassigned/);
+    await expect(page.getByText(/TK-/).filter({ visible: true }).first()).toBeVisible({ timeout: 15000 });
+    await page.screenshot({ path: 'artifacts/lab-04/screenshots/staff-dashboard/drill-down-unassigned.png' });
   });
 
   test('actions taken on staff ticket detail', async ({ page }) => {
@@ -96,7 +101,9 @@ test.describe('VIS-01 — Lab 4 responsive screenshots', () => {
     await page.getByRole('button', { name: /^search$/i }).click();
     await page.getByRole('button', { name: /^open$/i }).filter({ visible: true }).first().click();
     await expect(page).toHaveURL(/\/staff\/tickets\/\d+/);
-    await expect(page.getByText(/actions taken/i).first()).toBeVisible({ timeout: 15000 });
+    // Wait for the actions section to finish loading (not the skeleton text).
+    await expect(page.getByText(/loading actions taken/i)).toHaveCount(0, { timeout: 15000 });
+    await expect(page.getByText(/actions taken \(\d+\)/i).first()).toBeVisible({ timeout: 10000 });
 
     for (const viewport of VIEWPORTS) {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
@@ -106,11 +113,15 @@ test.describe('VIS-01 — Lab 4 responsive screenshots', () => {
       });
     }
 
-    // Add-action form state.
+    // Add-action form state (scrolled into view so nothing is cut off).
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.getByRole('button', { name: /add action taken/i }).click();
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 10000 });
-    await page.screenshot({ path: 'artifacts/lab-04/screenshots/actions-taken/add-action-form.png' });
+    await page.getByRole('button', { name: /^save action$/i }).scrollIntoViewIfNeeded();
+    await page.screenshot({
+      path: 'artifacts/lab-04/screenshots/actions-taken/add-action-form.png',
+      fullPage: true
+    });
     await page.getByRole('button', { name: /^cancel$/i }).last().click();
   });
 
@@ -121,6 +132,7 @@ test.describe('VIS-01 — Lab 4 responsive screenshots', () => {
     // requester2 owns TK-20260910-0006, which carries a seeded IN_PROGRESS action.
     await page.getByText('TK-20260910-0006').filter({ visible: true }).first().click();
     await expect(page).toHaveURL(/\/tickets\/\d+/);
+    await expect(page.getByText(/loading actions taken/i)).toHaveCount(0, { timeout: 15000 });
     await expect(page.getByText(/actions taken/i).first()).toBeVisible({ timeout: 15000 });
     await expect(page.getByRole('button', { name: /add action taken/i })).toHaveCount(0);
 
