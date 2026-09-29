@@ -115,16 +115,17 @@ export function StaffTicketDetail() {
 
   // Resolution-gate input: whether a COMPLETED action exists (guarded —
   // legacy fetch stubs may answer with a non-array for unknown URLs).
-  // Refreshed after every child action mutation via onChanged.
-  async function loadGateState() {
+  // Returns the fresh value; the state copy is a best-effort cache only —
+  // the status control always rechecks live before allowing RESOLVED.
+  async function loadGateState(): Promise<boolean> {
     try {
       const res = await fetch(`/api/staff/tickets/${ticketId}/actions`, { credentials: 'include' });
       const data: unknown = res.ok ? await res.json().catch(() => []) : [];
-      if (Array.isArray(data)) {
-        setHasCompletedAction(data.some((a) => (a as { status?: string }).status === 'COMPLETED'));
-      }
+      const completed = Array.isArray(data) && data.some((a) => (a as { status?: string }).status === 'COMPLETED');
+      setHasCompletedAction(completed);
+      return completed;
     } catch {
-      // gate stays conservative (false) when unreadable
+      return hasCompletedAction;
     }
   }
 
@@ -214,7 +215,7 @@ export function StaffTicketDetail() {
   async function handleStatusChange(value: string) {
     setStatusDraft(value);
     setGateWarning(null);
-    if (value === 'RESOLVED' && !hasCompletedAction) {
+    if (value === 'RESOLVED' && !(await loadGateState())) {
       // Resolution gate: block before any round-trip when no Completed action exists.
       setGateWarning('Resolution gate: add at least one Completed action before resolving.');
       if (ticket) setStatusDraft(ticket.currentStatus);

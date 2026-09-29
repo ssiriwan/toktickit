@@ -72,7 +72,7 @@ export function ActionsTakenList({
   ticketId: number;
   mode: 'staff' | 'requester';
   /** Called after any successful mutation so parents can refresh derived state. */
-  onChanged?: () => void;
+  onChanged?: () => unknown;
 }) {
   const [actions, setActions] = useState<ActionTakenItem[]>([]);
   const [state, setState] = useState<'loading' | 'success' | 'error' | 'forbidden'>('loading');
@@ -236,7 +236,9 @@ export function ActionsTakenList({
       setShowForm(false);
       setEditing(null);
       await load();
-      onChanged?.();
+      // Awaited: callers (and users) observe fresh parent state the moment
+      // the dialog closes — otherwise the resolution gate races the refresh.
+      await onChanged?.();
     } catch {
       setFormBanner('Failed to save action');
     } finally {
@@ -270,7 +272,7 @@ export function ActionsTakenList({
         return;
       }
       await load();
-      onChanged?.();
+      await onChanged?.();
     } catch {
       setRowError('Failed to update action');
     } finally {
