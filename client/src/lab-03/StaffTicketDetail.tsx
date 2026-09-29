@@ -109,18 +109,24 @@ export function StaffTicketDetail() {
         if (list) setUsers(list);
       })
       .catch(() => {});
-    // Resolution-gate input: whether a COMPLETED action exists (guarded —
-    // legacy fetch stubs may answer with a non-array for unknown URLs).
-    fetch(`/api/staff/tickets/${ticketId}/actions`, { credentials: 'include' })
-      .then((r) => (r.ok ? r.json() : []))
-      .then((data: unknown) => {
-        if (Array.isArray(data)) {
-          setHasCompletedAction(data.some((a) => (a as { status?: string }).status === 'COMPLETED'));
-        }
-      })
-      .catch(() => {});
+    loadGateState();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ticketId]);
+
+  // Resolution-gate input: whether a COMPLETED action exists (guarded —
+  // legacy fetch stubs may answer with a non-array for unknown URLs).
+  // Refreshed after every child action mutation via onChanged.
+  async function loadGateState() {
+    try {
+      const res = await fetch(`/api/staff/tickets/${ticketId}/actions`, { credentials: 'include' });
+      const data: unknown = res.ok ? await res.json().catch(() => []) : [];
+      if (Array.isArray(data)) {
+        setHasCompletedAction(data.some((a) => (a as { status?: string }).status === 'COMPLETED'));
+      }
+    } catch {
+      // gate stays conservative (false) when unreadable
+    }
+  }
 
   async function handleClaim() {
     setSaving('owner');
@@ -575,7 +581,7 @@ export function StaffTicketDetail() {
 
       <div className="card mt-3">
         <div className="card-body">
-          <ActionsTakenList ticketId={ticketId} mode="staff" />
+          <ActionsTakenList ticketId={ticketId} mode="staff" onChanged={loadGateState} />
         </div>
       </div>
     </main>

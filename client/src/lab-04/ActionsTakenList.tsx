@@ -64,7 +64,16 @@ function emptyForm(defaultPerformer: string): FormState {
   };
 }
 
-export function ActionsTakenList({ ticketId, mode }: { ticketId: number; mode: 'staff' | 'requester' }) {
+export function ActionsTakenList({
+  ticketId,
+  mode,
+  onChanged
+}: {
+  ticketId: number;
+  mode: 'staff' | 'requester';
+  /** Called after any successful mutation so parents can refresh derived state. */
+  onChanged?: () => void;
+}) {
   const [actions, setActions] = useState<ActionTakenItem[]>([]);
   const [state, setState] = useState<'loading' | 'success' | 'error' | 'forbidden'>('loading');
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -218,6 +227,7 @@ export function ActionsTakenList({ ticketId, mode }: { ticketId: number; mode: '
       setShowForm(false);
       setEditing(null);
       await load();
+      onChanged?.();
     } catch {
       setFormBanner('Failed to save action');
     } finally {
@@ -251,6 +261,7 @@ export function ActionsTakenList({ ticketId, mode }: { ticketId: number; mode: '
         return;
       }
       await load();
+      onChanged?.();
     } catch {
       setRowError('Failed to update action');
     } finally {
