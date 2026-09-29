@@ -53,7 +53,7 @@
 | UI-06 | UI | AC-17 | Gate warning on RESOLVED attempt w/o Completed | warning rendered, save blocked | `client/tests/lab-04/TicketWorkflow.test.tsx` | Pass |
 | UI-06b | UI | AC-09 | Stale 409 renders refresh-and-retry banner | banner + working Refresh | `client/tests/lab-04/TicketWorkflow.test.tsx` | Pass |
 | UI-06c | UI | AC-06,07 | Complete action refreshes gate, RESOLVED sends PATCH | warning gone, 1 PATCH | `client/tests/lab-04/TicketWorkflow.test.tsx` | Pass |
-| UI-07 | UI/style | AC-12,13,15 | Zen Green tokens, action-status badges, readonly vs editable, validation placement, focus | style assertions | `client/tests/lab-04/theme.style.test.tsx` | Pass |
+| UI-07 | UI/style (smoke: static token references, not render coverage) | AC-12,13,15 | Zen Green tokens, action-status badges, readonly vs editable, validation placement, focus | style assertions | `client/tests/lab-04/theme.style.test.tsx` | Pass |
 | PERF-01 | Perf-smoke | AC-10,11 | Requester/staff/admin dashboards p95 < 1s on seeded DB | timing assertion green | `server/tests/lab-04/dashboard.perf-smoke.test.ts` | Pass |
 | E2E-01 | E2E | AC-19 | Create action → complete with result → requester sees read-only | flow green | `e2e/lab-04/actions-taken-flow.spec.ts` | Pass |
 | E2E-02 | E2E | AC-20 | Dashboard metrics → drill-down lands filtered | flow green | `e2e/lab-04/dashboards.spec.ts` | Pass |
