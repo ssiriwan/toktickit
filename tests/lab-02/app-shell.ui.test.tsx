@@ -46,13 +46,22 @@ describe('TokTickIT auth app shell (Lab 3 regression)', () => {
         if (String(url).includes('/api/auth/me')) {
           return Promise.resolve(jsonResponse({ user: requesterUser }));
         }
+        if (String(url).includes('/api/requester/dashboard')) {
+          return Promise.resolve(
+            jsonResponse({
+              metrics: { totalOpen: 0, waitingForRequester: 0, recentlyUpdated: 0, recentlyResolved: 0, closed: 0 },
+              recentTickets: []
+            })
+          );
+        }
         return Promise.resolve(jsonResponse({ tickets: [], pagination: { page: 1, pageSize: 10, totalItems: 0, totalPages: 0 } }));
       })
     );
 
     render(<AppShell />);
 
-    expect(await screen.findByText(/signed in as/i)).toBeInTheDocument();
+    // Lab 4 contract: requester home "/" is the dashboard (merged PR #46).
+    expect(await screen.findByText(/welcome back/i)).toBeInTheDocument();
     expect(screen.getByText('REQUESTER')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /logout/i })).toBeInTheDocument();
     expect(screen.queryByText(/change requester/i)).not.toBeInTheDocument();
@@ -79,12 +88,20 @@ describe('TokTickIT auth app shell (Lab 3 regression)', () => {
       if (String(url).includes('/api/auth/me') && init?.method !== 'POST') {
         return Promise.resolve(jsonResponse({ user: requesterUser }));
       }
+      if (String(url).includes('/api/requester/dashboard')) {
+        return Promise.resolve(
+          jsonResponse({
+            metrics: { totalOpen: 0, waitingForRequester: 0, recentlyUpdated: 0, recentlyResolved: 0, closed: 0 },
+            recentTickets: []
+          })
+        );
+      }
       return Promise.resolve(jsonResponse({ tickets: [], pagination: { page: 1, pageSize: 10, totalItems: 0, totalPages: 0 } }));
     });
     vi.stubGlobal('fetch', fetchMock);
 
     render(<AppShell />);
-    await screen.findByText(/signed in as/i);
+    await screen.findByText(/welcome back/i);
 
     // Subsequent /me calls now report anonymous.
     fetchMock.mockImplementation((url: string) => {

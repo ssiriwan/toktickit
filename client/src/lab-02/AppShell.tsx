@@ -6,6 +6,8 @@ import { Login } from '../lab-03/Login';
 import { StaffTicketDetail } from '../lab-03/StaffTicketDetail';
 import { StaffTicketQueue } from '../lab-03/StaffTicketQueue';
 import { UserManagement } from '../lab-03/UserManagement';
+import { RequesterDashboard } from '../lab-04/RequesterDashboard';
+import { StaffDashboard } from '../lab-04/StaffDashboard';
 import { CreateTicket } from './CreateTicket';
 import { MyTickets } from './MyTickets';
 import { TicketDetail } from './TicketDetail';
@@ -55,6 +57,13 @@ function Header() {
             TokTickIT
           </Link>
           <nav className="d-flex gap-3">
+            <NavLink
+              to="/"
+              end
+              className={({ isActive }) => `nav-link p-0 ${isActive ? 'active' : ''}`}
+            >
+              Dashboard
+            </NavLink>
             {user.role === 'REQUESTER' && (
               <>
                 <NavLink
@@ -184,6 +193,15 @@ function Shell() {
         <Header />
         <Routes>
           <Route
+            path="/"
+            element={
+              <StaffDashboard
+                userName={user.name}
+                role={user.role === 'ADMINISTRATOR' ? 'ADMINISTRATOR' : 'IT_STAFF'}
+              />
+            }
+          />
+          <Route
             path="/staff/queue"
             element={<StaffTicketQueue onOpenTicket={(id) => navigate(`/staff/tickets/${id}`)} />}
           />
@@ -192,7 +210,7 @@ function Shell() {
             element={<StaffTicketDetail />}
           />
           <Route path="/admin/users" element={<AdminRoute user={user} />} />
-          <Route path="*" element={<Navigate to="/staff/queue" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </>
     );
@@ -206,30 +224,7 @@ function Shell() {
       <Routes>
       <Route
         path="/"
-        element={
-          <main className="py-5 container" style={{ maxWidth: '42rem' }}>
-            <h1 className="h4">TokTickIT</h1>
-            <p className="text-muted">
-              Signed in as <strong>{requester.name}</strong> ({requester.email})
-            </p>
-            <div className="d-flex gap-2">
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => navigate('/create')}
-              >
-                Create Ticket
-              </button>
-              <button
-                type="button"
-                className="btn btn-outline-secondary"
-                onClick={() => navigate('/tickets')}
-              >
-                My Tickets
-              </button>
-            </div>
-          </main>
-        }
+        element={<RequesterDashboard userName={requester.name} />}
       />
       <Route
         path="/login"
