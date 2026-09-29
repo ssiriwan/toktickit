@@ -156,4 +156,32 @@ describe('Lab 4 ActionsTaken (UI-01/02)', () => {
     expect(patch).toBeDefined();
     expect(JSON.parse(patch?.options?.body ?? '{}')).not.toHaveProperty('actionDateTime');
   });
+  it('UI-01c: performer defaults backfill when directory arrives after the form opens', async () => {
+    const user = userEvent.setup();
+    let releaseMe!: (v: object) => void;
+    let releaseUsers!: (v: object) => void;
+    const meGate = new Promise<object>((r) => (releaseMe = r));
+    const usersGate = new Promise<object>((r) => (releaseUsers = r));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => {
+        const u = String(url);
+        if (u.endsWith('/api/auth/me')) return meGate.then((v) => ({ ok: true, status: 200, json: async () => v }));
+        if (u.endsWith('/api/staff/users')) {
+          return usersGate.then((v) => ({ ok: true, status: 200, json: async () => v }));
+        }
+        return Promise.resolve({ ok: true, status: 200, json: async () => [] });
+      })
+    );
+    render(<ActionsTakenList ticketId={1} mode="staff" />);
+    await user.click(await screen.findByRole('button', { name: /add action taken/i }));
+    // Form opens before identity/directory arrive: no performer yet.
+    expect((screen.getByLabelText(/performed by/i) as HTMLSelectElement).value).toBe('');
+    releaseMe(me);
+    releaseUsers(staffUsers);
+    // Backfilled to self once responses land.
+    await waitFor(() => {
+      expect((screen.getByLabelText(/performed by/i) as HTMLSelectElement).value).toBe('3');
+    });
+  });
 });

@@ -144,6 +144,15 @@ export function ActionsTakenList({
     setShowForm(true);
   }
 
+  // Backfill the default performer when the directory/identity responses
+  // arrive after the create form already opened (slow networks).
+  useEffect(() => {
+    if (!showForm || editing) return;
+    const fallback = myId !== null ? String(myId) : staffUsers.length > 0 ? String(staffUsers[0].id) : '';
+    if (!fallback) return;
+    setForm((f) => (f.performedById === '' ? { ...f, performedById: fallback } : f));
+  }, [showForm, editing, staffUsers, myId]);
+
   function openEdit(action: ActionTakenItem) {
     setEditing(action);
     const minuteValue = toLocalInputValue(new Date(action.actionDateTime));
