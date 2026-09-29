@@ -20,6 +20,7 @@
 | https://github.com/ssiriwan/toktickit/pull/54 | #53 (plan: #51) | Role dashboards UI (Issue #53) | MERGED into `lab4-staging` (`37580ee`, 2026-09-29) — round 1 (3 non-blockings: NavLink end fixed, evidence WIP acknowledged) |
 | https://github.com/ssiriwan/toktickit/pull/56 | #55 (plan: #49) | Ticket workflow hardening and resolution gate (Issue #55) | MERGED into `lab4-staging` (`06330e2`, 2026-09-29) — round 1 (1 blocking: stale gate) fixed via `onChanged` + UI-06c |
 | https://github.com/ssiriwan/toktickit/pull/58 | #57 (plan: #52) | Final hardening, regression, screenshots, release prep (Issue #57) | MERGED into `lab4-staging` (`9654f8a`, 2026-09-29) — round 1 (Passed + E2E race + performer race, both fixed) + round 2 (traceability rows + UI-07 file + smoke-level note) |
+| https://github.com/ssiriwan/toktickit/pull/60 | #59 (plan: #52) | Final docs: reviewer and ai-use curation (Issue #59) | Open — awaiting @thhanabun review |
 
 ### Reviews Received — Details
 
