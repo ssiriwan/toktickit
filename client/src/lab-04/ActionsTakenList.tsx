@@ -72,7 +72,7 @@ export function ActionsTakenList({
   ticketId: number;
   mode: 'staff' | 'requester';
   /** Called after any successful mutation so parents can refresh derived state. */
-  onChanged?: () => void;
+  onChanged?: () => unknown;
 }) {
   const [actions, setActions] = useState<ActionTakenItem[]>([]);
   const [state, setState] = useState<'loading' | 'success' | 'error' | 'forbidden'>('loading');
@@ -143,6 +143,15 @@ export function ActionsTakenList({
     setFormBanner(null);
     setShowForm(true);
   }
+
+  // Backfill the default performer when the directory/identity responses
+  // arrive after the create form already opened (slow networks).
+  useEffect(() => {
+    if (!showForm || editing) return;
+    const fallback = myId !== null ? String(myId) : staffUsers.length > 0 ? String(staffUsers[0].id) : '';
+    if (!fallback) return;
+    setForm((f) => (f.performedById === '' ? { ...f, performedById: fallback } : f));
+  }, [showForm, editing, staffUsers, myId]);
 
   function openEdit(action: ActionTakenItem) {
     setEditing(action);
@@ -227,7 +236,9 @@ export function ActionsTakenList({
       setShowForm(false);
       setEditing(null);
       await load();
-      onChanged?.();
+      // Awaited: callers (and users) observe fresh parent state the moment
+      // the dialog closes — otherwise the resolution gate races the refresh.
+      await onChanged?.();
     } catch {
       setFormBanner('Failed to save action');
     } finally {
@@ -261,7 +272,7 @@ export function ActionsTakenList({
         return;
       }
       await load();
-      onChanged?.();
+      await onChanged?.();
     } catch {
       setRowError('Failed to update action');
     } finally {

@@ -11,3 +11,5 @@ prisma/dev.db
 prisma/*.db
 uploads/
 server/uploads/
+test-results/
+playwright-report/
