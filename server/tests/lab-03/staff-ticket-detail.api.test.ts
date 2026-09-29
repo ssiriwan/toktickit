@@ -124,42 +124,44 @@ describe('Lab 3 staff ticket detail (DETAIL-01..07)', () => {
 
   it('DETAIL-04/05: status transitions per matrix (including the 3 corrected rows)', async () => {
     const cookie = cookieFor(3, 'IT_STAFF');
+    // Lab 4: status writes require clientUpdatedAt; off-matrix code is INVALID_TRANSITION.
+    const T = '2026-09-20T10:00:00.000Z';
 
-    vi.spyOn(prisma.ticket, 'findUnique').mockResolvedValue({ id: 1, currentStatus: 'NEW' } as never);
+    vi.spyOn(prisma.ticket, 'findUnique').mockResolvedValue({ id: 1, currentStatus: 'NEW', updatedAt: T } as never);
     vi.spyOn(prisma.ticket, 'update').mockResolvedValue({ id: 1, currentStatus: 'OPEN' } as never);
-    const ok = await request(app).patch('/api/staff/tickets/1/status').set('Cookie', cookie).send({ status: 'OPEN' });
+    const ok = await request(app).patch('/api/staff/tickets/1/status').set('Cookie', cookie).send({ status: 'OPEN', clientUpdatedAt: T });
     expect(ok.status).toBe(200);
 
     // OPEN now allows WAITING_FOR_REQUESTER (was missing)
-    vi.spyOn(prisma.ticket, 'findUnique').mockResolvedValue({ id: 1, currentStatus: 'OPEN' } as never);
+    vi.spyOn(prisma.ticket, 'findUnique').mockResolvedValue({ id: 1, currentStatus: 'OPEN', updatedAt: T } as never);
     vi.spyOn(prisma.ticket, 'update').mockResolvedValue({ id: 1, currentStatus: 'WAITING_FOR_REQUESTER' } as never);
-    const openToWaiting = await request(app).patch('/api/staff/tickets/1/status').set('Cookie', cookie).send({ status: 'WAITING_FOR_REQUESTER' });
+    const openToWaiting = await request(app).patch('/api/staff/tickets/1/status').set('Cookie', cookie).send({ status: 'WAITING_FOR_REQUESTER', clientUpdatedAt: T });
     expect(openToWaiting.status).toBe(200);
 
     // WAITING corrected: should allow CANCELLED, not RESOLVED
-    vi.spyOn(prisma.ticket, 'findUnique').mockResolvedValue({ id: 1, currentStatus: 'WAITING_FOR_REQUESTER' } as never);
-    const waitingToCancelled = await request(app).patch('/api/staff/tickets/1/status').set('Cookie', cookie).send({ status: 'CANCELLED' });
+    vi.spyOn(prisma.ticket, 'findUnique').mockResolvedValue({ id: 1, currentStatus: 'WAITING_FOR_REQUESTER', updatedAt: T } as never);
+    const waitingToCancelled = await request(app).patch('/api/staff/tickets/1/status').set('Cookie', cookie).send({ status: 'CANCELLED', clientUpdatedAt: T });
     expect(waitingToCancelled.status).toBe(200);
-    vi.spyOn(prisma.ticket, 'findUnique').mockResolvedValue({ id: 1, currentStatus: 'WAITING_FOR_REQUESTER' } as never);
-    const waitingToResolved = await request(app).patch('/api/staff/tickets/1/status').set('Cookie', cookie).send({ status: 'RESOLVED' });
+    vi.spyOn(prisma.ticket, 'findUnique').mockResolvedValue({ id: 1, currentStatus: 'WAITING_FOR_REQUESTER', updatedAt: T } as never);
+    const waitingToResolved = await request(app).patch('/api/staff/tickets/1/status').set('Cookie', cookie).send({ status: 'RESOLVED', clientUpdatedAt: T });
     expect(waitingToResolved.status).toBe(400);
-    expect(waitingToResolved.body.error.code).toBe('VALIDATION_ERROR');
+    expect(waitingToResolved.body.error.code).toBe('INVALID_TRANSITION');
 
     // REOPENED corrected: should allow CANCELLED, not RESOLVED
-    vi.spyOn(prisma.ticket, 'findUnique').mockResolvedValue({ id: 1, currentStatus: 'REOPENED' } as never);
-    const reopenedToCancelled = await request(app).patch('/api/staff/tickets/1/status').set('Cookie', cookie).send({ status: 'CANCELLED' });
+    vi.spyOn(prisma.ticket, 'findUnique').mockResolvedValue({ id: 1, currentStatus: 'REOPENED', updatedAt: T } as never);
+    const reopenedToCancelled = await request(app).patch('/api/staff/tickets/1/status').set('Cookie', cookie).send({ status: 'CANCELLED', clientUpdatedAt: T });
     expect(reopenedToCancelled.status).toBe(200);
-    vi.spyOn(prisma.ticket, 'findUnique').mockResolvedValue({ id: 1, currentStatus: 'REOPENED' } as never);
-    const reopenedToResolved = await request(app).patch('/api/staff/tickets/1/status').set('Cookie', cookie).send({ status: 'RESOLVED' });
+    vi.spyOn(prisma.ticket, 'findUnique').mockResolvedValue({ id: 1, currentStatus: 'REOPENED', updatedAt: T } as never);
+    const reopenedToResolved = await request(app).patch('/api/staff/tickets/1/status').set('Cookie', cookie).send({ status: 'RESOLVED', clientUpdatedAt: T });
     expect(reopenedToResolved.status).toBe(400);
 
-    vi.spyOn(prisma.ticket, 'findUnique').mockResolvedValue({ id: 1, currentStatus: 'NEW' } as never);
-    const blocked = await request(app).patch('/api/staff/tickets/1/status').set('Cookie', cookie).send({ status: 'RESOLVED' });
+    vi.spyOn(prisma.ticket, 'findUnique').mockResolvedValue({ id: 1, currentStatus: 'NEW', updatedAt: T } as never);
+    const blocked = await request(app).patch('/api/staff/tickets/1/status').set('Cookie', cookie).send({ status: 'RESOLVED', clientUpdatedAt: T });
     expect(blocked.status).toBe(400);
-    expect(blocked.body.error.code).toBe('VALIDATION_ERROR');
+    expect(blocked.body.error.code).toBe('INVALID_TRANSITION');
 
-    vi.spyOn(prisma.ticket, 'findUnique').mockResolvedValue({ id: 1, currentStatus: 'CANCELLED' } as never);
-    const terminal = await request(app).patch('/api/staff/tickets/1/status').set('Cookie', cookie).send({ status: 'OPEN' });
+    vi.spyOn(prisma.ticket, 'findUnique').mockResolvedValue({ id: 1, currentStatus: 'CANCELLED', updatedAt: T } as never);
+    const terminal = await request(app).patch('/api/staff/tickets/1/status').set('Cookie', cookie).send({ status: 'OPEN', clientUpdatedAt: T });
     expect(terminal.status).toBe(400);
   });
 

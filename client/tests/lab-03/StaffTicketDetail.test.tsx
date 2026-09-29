@@ -16,6 +16,7 @@ const ticket = {
   appearsResolved: false,
   appearsResolvedAt: null,
   ticketDate: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
   requester: { id: 7, name: 'Requester One', email: 'requester1@toktickit.local' },
   owner: { id: 3, name: 'IT Alice' },
   category: { id: 2, name: 'Hardware' },
@@ -116,9 +117,13 @@ describe('Lab 3 StaffTicketDetail (UI-04 + style)', () => {
       return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
     });
     await userEvent.selectOptions(screen.getByLabelText('IT Priority'), 'HIGH');
-    await userEvent.selectOptions(screen.getByLabelText('Current Status'), 'OPEN');
+    // Lab 4: only matrix-allowed targets are offered (IN_PROGRESS → WAITING…).
+    await userEvent.selectOptions(screen.getByLabelText('Current Status'), 'WAITING_FOR_REQUESTER');
     expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('/priority'), expect.anything());
-    expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('/status'), expect.anything());
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.stringContaining('/status'),
+      expect.objectContaining({ body: expect.stringContaining('clientUpdatedAt') })
+    );
   });
 
   it('requires confirmation for CANCELLED and unassign', async () => {

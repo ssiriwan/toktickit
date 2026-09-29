@@ -1115,30 +1115,63 @@ export function createApp() {
     });
     return res.json(updated);
   });
-  app.patch('/api/staff/tickets/:id/status', ...staffGuards, async (req, res) => {
-    const ticketId = Number(req.params.id);
-    if (!Number.isInteger(ticketId) || ticketId <= 0) return invalidQuery(res);
-    const status = typeof req.body?.status === 'string' ? req.body.status.trim() : '';
-    if (!STATUSES.includes(status)) return validationError(res, [{ field: 'status', message: 'Invalid status' }]);
-    const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
-    if (!ticket) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
-    const allowed = ALLOWED_TRANSITIONS[ticket.currentStatus] ?? [];
-    if (!allowed.includes(status)) {
-      return res.status(400).json({
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: `Transition from ${ticket.currentStatus} to ${status} is not permitted`,
-          details: [{ field: 'status', message: `Allowed: ${allowed.join(', ') || 'none'}` }]
+  // Lab 4: ticket workflow — matrix → concurrency → resolution gate (api-spec §4).
+  async function handleTicketStatusChange(req: express.Request, res: express.Response) {
+    try {
+      const ticketId = Number(req.params.id);
+      if (!Number.isInteger(ticketId) || ticketId <= 0) return invalidQuery(res);
+      const status = typeof req.body?.status === 'string' ? req.body.status.trim() : '';
+      if (!STATUSES.includes(status)) return validationError(res, [{ field: 'status', message: 'Invalid status' }]);
+      const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+      if (!ticket) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
+      const allowed = ALLOWED_TRANSITIONS[ticket.currentStatus] ?? [];
+      if (!allowed.includes(status)) {
+        return res.status(400).json({
+          error: {
+            code: 'INVALID_TRANSITION',
+            message: `Transition from ${ticket.currentStatus} to ${status} is not permitted`,
+            details: [{ field: 'status', message: `Allowed: ${allowed.join(', ') || 'none'}` }]
+          }
+        });
+      }
+      const rawUpdatedAt = req.body?.clientUpdatedAt;
+      const clientTime = typeof rawUpdatedAt === 'string' ? new Date(rawUpdatedAt).getTime() : NaN;
+      if (!Number.isFinite(clientTime)) {
+        return validationError(res, [{ field: 'clientUpdatedAt', message: 'clientUpdatedAt is required' }]);
+      }
+      if (new Date(ticket.updatedAt).getTime() > clientTime) {
+        return res.status(409).json({
+          error: {
+            code: 'STALE_UPDATE',
+            message: 'Ticket was updated by someone else. Refresh and try again.',
+            details: [{ field: 'clientUpdatedAt', message: 'Ticket changed since you loaded it' }]
+          }
+        });
+      }
+      if (status === 'RESOLVED') {
+        const completed = await prisma.actionTaken.count({ where: { ticketId, status: 'COMPLETED' } });
+        if (completed === 0) {
+          return res.status(400).json({
+            error: {
+              code: 'RESOLUTION_GATE_VIOLATION',
+              message: 'At least one COMPLETED action is required before resolving',
+              details: [{ field: 'status', message: 'Add a COMPLETED action first' }]
+            }
+          });
         }
+      }
+      const updated = await prisma.ticket.update({
+        where: { id: ticketId },
+        data: { currentStatus: status as never },
+        select: { id: true, currentStatus: true, updatedAt: true }
       });
+      return res.json(updated);
+    } catch {
+      return res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to update status' } });
     }
-    const updated = await prisma.ticket.update({
-      where: { id: ticketId },
-      data: { currentStatus: status as never },
-      select: { id: true, currentStatus: true, updatedAt: true }
-    });
-    return res.json(updated);
-  });
+  }
+
+  app.patch('/api/staff/tickets/:id/status', ...staffGuards, handleTicketStatusChange);
 
   app.patch('/api/tickets/:id/priority', ...staffGuards, async (req, res) => {
     try {
@@ -1161,36 +1194,7 @@ export function createApp() {
     }
   });
 
-  app.patch('/api/tickets/:id/status', ...staffGuards, async (req, res) => {
-    try {
-      const ticketId = Number(req.params.id);
-      if (!Number.isInteger(ticketId) || ticketId <= 0) return invalidQuery(res);
-      const status = typeof req.body?.status === 'string' ? req.body.status.trim() : '';
-      if (!STATUSES.includes(status)) {
-        return validationError(res, [{ field: 'status', message: 'Invalid status' }]);
-      }
-      const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
-      if (!ticket) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
-      const allowed = ALLOWED_TRANSITIONS[ticket.currentStatus] ?? [];
-      if (!allowed.includes(status)) {
-        return res.status(400).json({
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: `Transition from ${ticket.currentStatus} to ${status} is not permitted`,
-            details: [{ field: 'status', message: `Allowed: ${allowed.join(', ') || 'none'}` }]
-          }
-        });
-      }
-      const updated = await prisma.ticket.update({
-        where: { id: ticketId },
-        data: { currentStatus: status as never },
-        select: { id: true, currentStatus: true, updatedAt: true }
-      });
-      res.json(updated);
-    } catch {
-      res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to update status' } });
-    }
-  });
+  app.patch('/api/tickets/:id/status', ...staffGuards, handleTicketStatusChange);
 
   // Staff-scoped comment/note routes — aliases that IT/Admin must use
   // (requester routes under /api/tickets remain for Requester; these are the staff contract)

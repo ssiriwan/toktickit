@@ -30,7 +30,7 @@
 - New **Actions Taken** section below the tabs as a card list (one article per action showing Date/Time, Description, Result, Performed by, Status badge, Follow-up flag/note, Attachment notes).
 - `+ Add Action Taken` opens an inline form card (`role=dialog`): `Description *` (textarea, `maxLength` 2000), `Date/Time` (default now), `Performed by` (dropdown, active IT Staff/Admin only — inactive excluded, BR-04), `Status` (default PENDING; edit mode lists lifecycle-allowed targets only), `Result` (required when COMPLETED, FR-07), `Follow-up Required` toggle revealing `Follow-up Note *`, `Attachment Notes` (text). Client validation mirrors API; submit debounced; failure preserves input.
 - Row actions: `Edit` (same form), `Mark completed` (opens the editor when Result is missing), `Cancel action`. List refetches after `200` (no optimistic update).
-- **Status control (planned — workflow hardening, plan Issue #49, not yet implemented):** ticket status dropdown will list only matrix-allowed targets; choosing `RESOLVED` with zero Completed actions will show the gate warning and block save; stale edits will show the `409` banner with Refresh. Current behavior: full status list, Lab 3 matrix enforced server-side only.
+- **Status control:** ticket status dropdown lists only matrix-allowed targets from the current status; choosing `RESOLVED` with zero Completed actions shows the gate warning (`Resolution gate: add at least one Completed action before resolving`) and blocks the save client-side (server `400` message rendered if it ever arrives); every save sends `clientUpdatedAt`, and a stale edit (`409`) shows `This ticket was updated elsewhere. Refresh and try again.` with a Refresh button.
 
 ### 3.4 Actions Taken on Requester Ticket Detail (`TicketDetail.tsx`)
 
@@ -42,7 +42,7 @@
 |---|---|---|
 | Dashboards | loading/loaded/empty/error | loading text, counts, Retry, empty CTA |
 | Action form | idle/valid/invalid/submitting/success/failure | inline errors, submitting text, preserved input, banner |
-| Status control | *(planned, plan Issue #49)* idle/saving/gate-blocked/stale/forbidden | gate warning, 409 banner + Refresh |
+| Status control | idle/saving/gate-blocked/stale/forbidden | gate warning, 409 banner + Refresh |
 
 ## 5. Responsive & accessibility
 

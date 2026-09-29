@@ -200,6 +200,13 @@ Checked ui-spec §2/§3.1/§3.2 + spec §6 + FR-14..16 line by line: nav, `/` ro
 **What the agent did (all local, NOT committed per order):**
 Added a stroke-based refresh SVG (aria-hidden) to the Refresh button; restyled staff cards (label top-left `fw-bold #374151`, value centered `fw-bold var(--zen-primary)`); added `justify-content-center` to the card row (full rows unaffected, leftover columns centered on all breakpoints). Fixed the test's link-name regexes for the new label-first order ("New 2"). 6/6 green.
 
+### 22. Ticket workflow hardening (Issue #55) — TDD implementation
+**Prompt (TH):**
+> *"เพื่อน merge แล้ว ทำ Ticket workflow ต่อไปได้เลย"*
+
+**What the agent did:**
+Merged PR #54, closed #53, created Issue #55 + branch. TDD: `ticket-workflow.api.test.ts` (WF-01..07) → 4 red on the new behaviors. Replaced both status routes with one shared handler enforcing matrix (now `400 INVALID_TRANSITION`) → concurrency (`409 STALE_UPDATE`, `clientUpdatedAt` required) → resolution gate (`400 RESOLUTION_GATE_VIOLATION`) in contract order; updated 2 Lab 3 code assertions + added `clientUpdatedAt` to DETAIL-04/05 with a justification comment. Staff detail: matrix-filtered dropdown, gate warning blocking RESOLVED pre-round-trip, `clientUpdatedAt` on save, 409 banner + Refresh; fixed the Lab 3 UI test to an allowed target and added the missing `updatedAt` fixture. Flipped ui-spec §3.3 from planned to implemented. Full suite 41 files/211 tests green (first run failed only on a dead Docker daemon — restarted, clean re-run); re-seeded.
+
 ---
 
 ## My Reflection (draft — to expand at release)
