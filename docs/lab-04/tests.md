@@ -70,7 +70,7 @@
 
 ## 4. Execution
 
-- `npm test`: 41 files / 213 tests passed, 0 failed (100% green on `lab4-staging`).
+- `npm test`: 42 files / 215 tests passed, 0 failed (100% green on `lab4-staging`).
 - `npm run e2e:lab4`: 8 passed (E2E-01..03 + VIS-01 ×4) on chromium with seed pinning + E2E-action cleanup + 0008 reset.
 - `npm run build`: client (vite, 54 modules) + server (tsc) clean.
 - Seed fixtures for tests: requesters ×2 (isolation), active/inactive staff, tickets across 8 statuses + unassigned, actions (0 / 1-completed / multi-performer / follow-up).

@@ -51,8 +51,8 @@ function Header() {
   if (!user) return null;
   return (
     <header className="zen-header">
-      <div className="container d-flex justify-content-between align-items-center w-100" style={{ maxWidth: '1200px' }}>
-        <div className="d-flex align-items-center gap-4">
+      <div className="container d-flex justify-content-between align-items-center flex-wrap gap-2 w-100" style={{ maxWidth: '1200px' }}>
+        <div className="d-flex align-items-center gap-4 flex-wrap">
           <Link to="/" className="brand text-decoration-none" style={{ color: '#FFFFFF', fontWeight: 700, fontSize: '18px' }}>
             TokTickIT
           </Link>
@@ -106,7 +106,7 @@ function Header() {
             )}
           </nav>
         </div>
-        <div className="d-flex align-items-center gap-2">
+        <div className="d-flex align-items-center gap-2 flex-wrap">
           <small className="d-none d-md-inline">{user.name}</small>
           <span className="badge bg-light text-dark">{user.role}</span>
           <button
