@@ -20,7 +20,8 @@
 | https://github.com/ssiriwan/toktickit/pull/54 | #53 (plan: #51) | Role dashboards UI (Issue #53) | MERGED into `lab4-staging` (`37580ee`, 2026-09-29) — round 1 (3 non-blockings: NavLink end fixed, evidence WIP acknowledged) |
 | https://github.com/ssiriwan/toktickit/pull/56 | #55 (plan: #49) | Ticket workflow hardening and resolution gate (Issue #55) | MERGED into `lab4-staging` (`06330e2`, 2026-09-29) — round 1 (1 blocking: stale gate) fixed via `onChanged` + UI-06c |
 | https://github.com/ssiriwan/toktickit/pull/58 | #57 (plan: #52) | Final hardening, regression, screenshots, release prep (Issue #57) | MERGED into `lab4-staging` (`9654f8a`, 2026-09-29) — round 1 (Passed + E2E race + performer race, both fixed) + round 2 (traceability rows + UI-07 file + smoke-level note) |
-| https://github.com/ssiriwan/toktickit/pull/60 | #59 (plan: #52) | Final docs: reviewer and ai-use curation (Issue #59) | Open — awaiting @thhanabun review |
+| https://github.com/ssiriwan/toktickit/pull/60 | #59 (plan: #52) | Final docs: reviewer and ai-use curation (Issue #59) | MERGED into `lab4-staging` (`e1b8f86`, 2026-09-29) — approved and merged |
+| https://github.com/ssiriwan/toktickit/pull/62 | #61 (plan: #52) | Release evidence: workflow shots, a11y checklist, test evidence, README (Issue #61) | Open — round 1 review by @thhanabun (Passed + blocking 0008 spec-fight fixed via 0005 switch + non-blocking counts/format/typo addressed) |
 
 ### Reviews Received — Details
 
@@ -58,6 +59,14 @@
 - **PR #58 (Final hardening, regression, screenshots, release prep):** round 1 by @thhanabun (2026-09-29) — Passed (E2E-01 lifecycle through Edit, E2E-03 off-matrix respected + gate asserted mid-flow, E2E-02 drill-downs land filtered with rows, deterministic setup/teardown, 15 PNGs match §12 paths, gate live-check + performer backfill, tests.md all Pass).
   - Blocking (round 1 was green except): E2E-only performer-default race + gate-refresh race found during the run — fixed via backfill effect + awaited `onChanged` + live gate recheck; E2E 8/8 on re-run.
   - Round 2: non-blocking traceability (UI-01b/01c/06b/06c lacked matrix rows) — added 4 rows; missing UI-07 style test created (the table had pointed at a nonexistent file); UI-07 explicitly marked smoke-level so the report never oversells it. Approved.
+
+- **PR #60 (Final docs):** Approved and merged into `lab4-staging` (`e1b8f86`). Curated ai-use down to 10 selected prompts with full reflections; reviewer records aligned.
+
+- **PR #62 (Release evidence):** round 1 by @thhanabun (2026-10-13) — Passed (a11y-checklist complete, flex-wrap header fix, strong workflow evidence test with real 409 race, test-run-evidence infra failure note, rewritten README, tests.md arithmetic).
+  - Blocking 1 (specs fight over ticket 0008 without inter-spec reset): screenshots workflow pointed at unused zero-action ticket `TK-20260910-0005` (NEW → OPEN → IN_PROGRESS → gate warning → complete action → resolve), isolating it completely from `ticket-resolution.spec.ts` (`0008`) and making `npm run e2e:lab4` 8/8 fully deterministic regardless of execution order. Added `0005` reset to `global.setup.ts`.
+  - Non-blocking 1 (screenshots.spec.ts:128 formatting): separated two statements onto individual lines.
+  - Non-blocking 2 (stale counts): updated README:63 and test-run-evidence.md:14,16 from 41 files / 213 tests to 42 files / 215 tests.
+  - Non-blocking 3 (typo in a11y-checklist.md:18): fixed "badgesReuse" to "badges reuse".
 
 ## Pull Requests I Reviewed (partner repo: thhanabun/Software_Eng_Lab)
 

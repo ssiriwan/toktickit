@@ -125,7 +125,8 @@ test.describe('VIS-01 — Lab 4 responsive screenshots', () => {
     await page.getByRole('button', { name: /^cancel$/i }).last().click();
   });
 
-  test('actions taken read-only on requester ticket detail', async ({ page }) => {    await loginAsRequester(page);
+  test('actions taken read-only on requester ticket detail', async ({ page }) => {
+    await loginAsRequester(page);
     await page.getByRole('link', { name: /view my tickets/i }).click();
     await expect(page).toHaveURL(/\/tickets/);
     // requester2 owns TK-20260910-0006, which carries a seeded IN_PROGRESS action.
@@ -178,12 +179,18 @@ test.describe('VIS-01 — Lab 4 responsive screenshots', () => {
     });
     await dialog.getByRole('button', { name: /^cancel$/i }).last().click();
 
-    // Part 7: matrix-filtered status control on OPEN ticket 0008.
+    // Part 7: matrix-filtered status control on NEW ticket 0005 (isolated from 0008 resolution flow).
     await page.goto('/staff/queue');
-    await page.getByPlaceholder(/search by ticket number/i).fill('TK-20260910-0008');
+    await page.getByPlaceholder(/search by ticket number/i).fill('TK-20260910-0005');
     await page.getByRole('button', { name: /^search$/i }).click();
     await page.getByRole('button', { name: /^open$/i }).filter({ visible: true }).first().click();
     await expect(page).toHaveURL(/\/staff\/tickets\/\d+/);
+
+    // NEW → OPEN first.
+    await page.getByLabel(/current status/i).selectOption('OPEN');
+    await expect(page.getByLabel(/current status/i)).toHaveValue('OPEN', { timeout: 10000 });
+
+    // Show matrix-filtered status dropdown on OPEN ticket (IN_PROGRESS, WAITING_FOR_REQUESTER, CANCELLED).
     await page.getByLabel(/current status/i).click();
     await page.screenshot({ path: 'artifacts/lab-04/screenshots/workflow/status-options.png' });
 

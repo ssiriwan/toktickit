@@ -11,9 +11,9 @@
       Tests  215 passed (213 + UI-07 style test)
 ```
 
-- 41 files: Labs 1–2 (real-DB suites need `toktickit-db` on `:5434`) + Lab 3 (mocked auth/queue/detail/admin) + Lab 4 (mocked actions/workflow/dashboards + pure unit + real-DB perf smoke).
+- 42 files: Labs 1–2 (real-DB suites need `toktickit-db` on `:5434`) + Lab 3 (mocked auth/queue/detail/admin) + Lab 4 (mocked actions/workflow/dashboards + pure unit + real-DB perf smoke).
 - 0 failed, 0 skipped-in-error. (Lab 2 suites wipe tickets in setup/teardown — reseeded after every full run.)
-- Environment note: two runs during this sprint failed purely on load (bcrypt cost-12 > 5 s timeouts, Docker daemon/container down). All failures were infra (`Can't reach database`, wall-clock timeouts), zero assertion failures; clean re-runs after freeing the machine were 41/41 and 41/41.
+- Environment note: two runs during this sprint failed purely on load (bcrypt cost-12 > 5 s timeouts, Docker daemon/container down). All failures were infra (`Can't reach database`, wall-clock timeouts), zero assertion failures; clean re-runs after freeing the machine were 42/42 and 42/42.
 
 ## 2. E2E (`npm run e2e:lab4`, chromium, workers:1, seed-pinned setup/teardown)
 
