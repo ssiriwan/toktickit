@@ -67,7 +67,7 @@
 - [x] Actions CRUD + validation + inactive-assignee + requester-403 (ACT-01..14, UNIT-02, UI-01/01b/01c/02, E2E-01)
 - [x] Workflow matrix + gate + concurrency + legacy regression (WF-01..07, UI-05/06/06b/06c, E2E-03)
 - [x] Dashboards server-computed + role-isolated + drill-down (UNIT-01, RD-01..03, SD-01..03, UI-03/04, PERF-01, E2E-02)
-- [x] Style consistency Lab 4 screens (UI-07) + responsive + visual (VIS-01: 15 screenshots, 4 areas × 3 viewports) + a11y (labels, alert/status roles, focus, keyboard)
+- [x] Style consistency Lab 4 screens (UI-07) + responsive + visual (VIS-01: 21 screenshots, 4 areas × 3 viewports + 9 functional/evidence shots) + a11y (labels, alert/status roles, focus, keyboard)
 - [x] `npm test` green (legacy + new), `npm run build` clean, seed idempotent, backup taken
 
 ## 4. Execution
@@ -76,4 +76,4 @@
 - `npm run e2e:lab4`: 9 passed (E2E-01..03 + VIS-01 ×5) on chromium with seed pinning + E2E-action cleanup + 0005/0006/0008 reset.
 - `npm run build`: client (vite, 54 modules) + server (tsc) clean.
 - Seed fixtures for tests: requesters ×2 (isolation), active/inactive staff, tickets across 8 statuses + unassigned, actions (0 / 1-completed / multi-performer / follow-up).
-- `Final` column flipped to `Pass` after the 100% green run + evidence screenshots under `artifacts/lab-04/screenshots/` (15 PNGs).
+- `Final` column flipped to `Pass` after the 100% green run + evidence screenshots under `artifacts/lab-04/screenshots/` (21 PNGs).

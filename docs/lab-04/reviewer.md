@@ -21,7 +21,8 @@
 | https://github.com/ssiriwan/toktickit/pull/56 | #55 (plan: #49) | Ticket workflow hardening and resolution gate (Issue #55) | MERGED into `lab4-staging` (`06330e2`, 2026-09-29) — round 1 (1 blocking: stale gate) fixed via `onChanged` + UI-06c |
 | https://github.com/ssiriwan/toktickit/pull/58 | #57 (plan: #52) | Final hardening, regression, screenshots, release prep (Issue #57) | MERGED into `lab4-staging` (`9654f8a`, 2026-09-29) — round 1 (Passed + E2E race + performer race, both fixed) + round 2 (traceability rows + UI-07 file + smoke-level note) |
 | https://github.com/ssiriwan/toktickit/pull/60 | #59 (plan: #52) | Final docs: reviewer and ai-use curation (Issue #59) | MERGED into `lab4-staging` (`e1b8f86`, 2026-09-29) — approved and merged |
-| https://github.com/ssiriwan/toktickit/pull/62 | #61 (plan: #52) | Release evidence: workflow shots, a11y checklist, test evidence, README (Issue #61) | Open — round 1 review by @thhanabun (Passed + blocking 0008 spec-fight fixed via 0005 switch + non-blocking counts/format/typo addressed) |
+| https://github.com/ssiriwan/toktickit/pull/62 | #61 (plan: #52) | Release evidence: workflow shots, a11y checklist, test evidence, README (Issue #61) | MERGED into `lab4-staging` (`4b8e0e3`, 2026-10-31) — 3 review rounds by @thhanabun, all points fixed, merged |
+| https://github.com/ssiriwan/toktickit/pull/63 | #63 (release) | Release: Lab 4 — Actions Taken, Dashboards, Workflow Hardening, and Final Regression | Open — round 1 review by @thhanabun (Passed all scope checks, 2 blockings addressed) |
 
 ### Reviews Received — Details
 
@@ -62,7 +63,7 @@
 
 - **PR #60 (Final docs):** Approved and merged into `lab4-staging` (`e1b8f86`). Curated ai-use down to 10 selected prompts with full reflections; reviewer records aligned.
 
-- **PR #62 (Release evidence):** round 1 by @thhanabun (2026-10-13) — Passed (a11y-checklist complete, flex-wrap header fix, strong workflow evidence test with real 409 race, test-run-evidence infra failure note, rewritten README, tests.md arithmetic).
+- **PR #62 (Release evidence):** MERGED into `lab4-staging` (`4b8e0e3`). Round 1 by @thhanabun (2026-10-13) — Passed (a11y-checklist complete, flex-wrap header fix, strong workflow evidence test with real 409 race, test-run-evidence infra failure note, rewritten README, tests.md arithmetic).
   - Blocking 1 (specs fight over ticket 0008 without inter-spec reset): screenshots workflow pointed at unused zero-action ticket `TK-20260910-0005` (NEW → OPEN → IN_PROGRESS → gate warning → complete action → resolve), isolating it completely from `ticket-resolution.spec.ts` (`0008`) and making `npm run e2e:lab4` 9/9 fully deterministic regardless of execution order. Added `0005` reset to `global.setup.ts`.
   - Non-blocking 1 (screenshots.spec.ts:128 formatting): separated two statements onto individual lines.
   - Non-blocking 2 (stale counts): updated README:63 and test-run-evidence.md:14,16 from 41 files / 213 tests to 42 files / 215 tests.
@@ -73,6 +74,11 @@
     - Added reconciliation note in `tests.md` clarifying that the 5th test in `screenshots.spec.ts` captures visual evidence for Parts 6 & 7 on top of the planned functional E2E-01..03 tests.
     - Added `TK-20260910-0006` reset (`itPriority: 'URGENT'`, `currentStatus: 'REOPENED'`) in both `global.setup.ts` and `screenshots.spec.ts` post-race teardown, preventing URGENT priority drift across runs.
     - Removed silent `catch {}` in fixture reset helper: now logs and rethrows on database errors for clear failure diagnostics.
+
+- **PR #63 (Release PR):** round 1 by @thhanabun (2026-11-01) — Passed all 6 scope and engineering contract checks (exact 9 increments, additive migration only, config wiring, clean mergeable state vs main).
+  - Blocking 1 (reviewer.md status): marked PR #62 as MERGED (`4b8e0e3`) with complete round-1/2/3 history, and added PR #63 release row.
+  - Blocking 2 (screenshot count reconciliation): updated screenshot count to 21 across README.md, tests.md, and release PR body (4 areas × 3 viewports = 12 + 9 functional/evidence shots).
+  - Non-blockings addressed: formatted release PR description, documented mandatory main rerun checklist, and added `pgdata_*.tar.gz` to `.gitignore`.
 
 ## Pull Requests I Reviewed (partner repo: thhanabun/Software_Eng_Lab)
 

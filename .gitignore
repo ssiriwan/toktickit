@@ -13,3 +13,4 @@ uploads/
 server/uploads/
 test-results/
 playwright-report/
+pgdata_*.tar.gz

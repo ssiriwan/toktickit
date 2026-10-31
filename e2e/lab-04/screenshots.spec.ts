@@ -202,9 +202,17 @@ test.describe('VIS-01 — Lab 4 responsive screenshots', () => {
     await expect(dialog.getByLabel(/performed by/i)).toBeVisible({ timeout: 10000 });
     const performerOptions = await dialog.getByLabel(/performed by/i).locator('option').allTextContents();
     expect(performerOptions.join('|')).not.toMatch(/inactive/i);
+    // Expand select element visually so all active staff options are readable in the screenshot
+    await dialog.getByLabel(/performed by/i).evaluate((el) => {
+      (el as HTMLSelectElement).size = Math.min((el as HTMLSelectElement).options.length, 6);
+    });
+    await dialog.getByLabel(/performed by/i).scrollIntoViewIfNeeded();
     await page.screenshot({
       path: 'artifacts/lab-04/screenshots/actions-taken/performer-options.png',
       fullPage: true
+    });
+    await dialog.getByLabel(/performed by/i).evaluate((el) => {
+      (el as HTMLSelectElement).size = 1;
     });
     await dialog.getByRole('button', { name: /^cancel$/i }).last().click();
 

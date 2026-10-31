@@ -68,7 +68,7 @@ npm run build         # client (vite) + server (tsc) clean
 - **Unit:** action validation (BR-05..08/29), dashboard UTC window (BR-28), lifecycle matrices
 - **API:** actions CRUD + authz, workflow matrix/gate/409, dashboards (isolation, counts, user summary), perf smoke (p95 < 1s)
 - **UI:** action form + debounce + read-only, dashboards cards + drill-down hrefs, status control + gate/409 banners, theme tokens
-- **E2E:** Playwright: action lifecycle → requester visibility, gate → resolve → close, drill-down URLs, 15 screenshots (4 areas × 3 viewports)
+- **E2E:** Playwright: action lifecycle → requester visibility, gate → resolve → close, drill-down URLs, 21 screenshots (4 areas × 3 viewports + 9 functional/evidence shots)
 
 Full logs: `docs/lab-04/test-run-evidence.md`. Contract: `docs/lab-04/{specification,api-spec,ui-spec,tests}.md`.
 
