@@ -64,7 +64,9 @@ async function resetWorkflowFixtures() {
   dotenv.config({ path: path.join(process.cwd(), '.env') });
   const prisma = new PrismaClient();
   try {
-    await prisma.actionTaken.deleteMany({ where: { description: { startsWith: 'E2E ' } } });
+    await prisma.actionTaken.deleteMany({
+      where: { ticket: { ticketNumber: { in: ['TK-20260910-0005', 'TK-20260910-0006'] } } }
+    });
     await prisma.ticket.updateMany({
       where: { ticketNumber: 'TK-20260910-0005' },
       data: { currentStatus: 'NEW' }
