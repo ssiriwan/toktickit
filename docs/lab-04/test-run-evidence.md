@@ -29,7 +29,7 @@
   8 passed
 ```
 
-- Global setup reseeds, pins E2E accounts, deletes `E2E *` actions, resets `TK-20260910-0008` → OPEN (same as teardown — deterministic reruns).
+- Global setup reseeds, pins E2E accounts, deletes `E2E *` actions, resets `TK-20260910-0008` → OPEN and `TK-20260910-0005` → NEW (same as teardown — deterministic reruns).
 - Two genuine bugs found by E2E (not by unit tests): performer-default race (fixed with backfill effect) and un-awaited gate refresh (fixed with live recheck). See `ai-use.md` §9.
 
 ## 3. Builds (`npm run build`)

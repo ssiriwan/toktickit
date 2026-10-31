@@ -4,8 +4,8 @@ import { defineConfig, devices } from '@playwright/test';
  * Lab 4 E2E (E2E-01..03 + VIS-01).
  * - workers: 1 — specs share seeded accounts on one database.
  * - globalSetup/Teardown reseed + pin E2E accounts (requester2/it2/it3/
- *   admin1/admin2), remove E2E-created actions, and reset the
- *   resolution-flow ticket (TK-20260910-0008) to OPEN.
+ *   admin1/admin2), remove E2E-created actions, and reset tickets
+ *   TK-20260910-0008 to OPEN and TK-20260910-0005 to NEW.
  * Run: npm run e2e:lab4
  */
 export default defineConfig({

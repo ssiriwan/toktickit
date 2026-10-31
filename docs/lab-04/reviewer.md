@@ -67,6 +67,7 @@
   - Non-blocking 1 (screenshots.spec.ts:128 formatting): separated two statements onto individual lines.
   - Non-blocking 2 (stale counts): updated README:63 and test-run-evidence.md:14,16 from 41 files / 213 tests to 42 files / 215 tests.
   - Non-blocking 3 (typo in a11y-checklist.md:18): fixed "badgesReuse" to "badges reuse".
+  - Round 2 follow-ups (non-blocking): eliminated residual order coupling by adding `resetTicket0005()` in `screenshots.spec.ts` (called both before/after the workflow section + in `test.afterAll`), keeping `0005` in `NEW` state for `dashboards.spec.ts` regardless of execution order; propagated `0005` mentions to `playwright.lab04.config.ts` and `test-run-evidence.md:32`; confirmed TODO block will be filled after release merge to main before PDF build.
 
 ## Pull Requests I Reviewed (partner repo: thhanabun/Software_Eng_Lab)
 
