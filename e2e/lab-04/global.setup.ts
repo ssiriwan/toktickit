@@ -18,6 +18,8 @@ const RESET_ACCOUNTS: { email: string; role: 'REQUESTER' | 'IT_STAFF' | 'ADMINIS
  * - E2E-created actions (description starts with "E2E ") are removed.
  * - TK-20260910-0008 (resolution-flow ticket) is reset to OPEN so the
  *   gate → complete → resolve → close flow is deterministic every run.
+ * - TK-20260910-0005 (screenshots workflow ticket) is reset to NEW.
+ * - TK-20260910-0006 (race ticket) is reset to URGENT priority and REOPENED status.
  * Owner daily accounts (requester1/it1) are never touched.
  */
 export default async function globalSetup() {
@@ -44,6 +46,14 @@ export default async function globalSetup() {
     await prisma.ticket.updateMany({
       where: { ticketNumber: 'TK-20260910-0008' },
       data: { currentStatus: 'OPEN' }
+    });
+    await prisma.ticket.updateMany({
+      where: { ticketNumber: 'TK-20260910-0005' },
+      data: { currentStatus: 'NEW' }
+    });
+    await prisma.ticket.updateMany({
+      where: { ticketNumber: 'TK-20260910-0006' },
+      data: { itPriority: 'URGENT', currentStatus: 'REOPENED' }
     });
   } finally {
     await prisma.$disconnect();

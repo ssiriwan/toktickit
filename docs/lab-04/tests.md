@@ -58,7 +58,9 @@
 | E2E-01 | E2E | AC-19 | Create action → complete with result → requester sees read-only | flow green | `e2e/lab-04/actions-taken-flow.spec.ts` | Pass |
 | E2E-02 | E2E | AC-20 | Dashboard metrics → drill-down lands filtered | flow green | `e2e/lab-04/dashboards.spec.ts` | Pass |
 | E2E-03 | E2E | AC-06,07,19 | Gate blocks RESOLVED → complete action → resolve → close | flow green | `e2e/lab-04/ticket-resolution.spec.ts` | Pass |
-| VIS-01 | Visual | Part 9 | 4 primary screens × 3 viewports (1280/768/375) | readable, no overflow | `artifacts/lab-04/screenshots/*` | Pass |
+| VIS-01 | Visual | Part 9 | 4 primary screens × 3 viewports (1280/768/375) + workflow evidence | readable, no overflow | `artifacts/lab-04/screenshots/*` | Pass |
+
+> **Note on E2E test count (reconciliation):** In addition to planned functional tests (E2E-01..03, 4 tests across 3 files), `screenshots.spec.ts` includes 4 viewport capture tests plus 1 workflow-evidence test (`workflow evidence (Part 6 edit + Part 7 gate/resolve/409)`) for report visual evidence (Parts 6 & 7). Total executed E2E tests under `npm run e2e:lab4` is **9 passed**.
 
 ## 3. Coverage checklist
 
@@ -70,8 +72,8 @@
 
 ## 4. Execution
 
-- `npm test`: 41 files / 213 tests passed, 0 failed (100% green on `lab4-staging`).
-- `npm run e2e:lab4`: 8 passed (E2E-01..03 + VIS-01 ×4) on chromium with seed pinning + E2E-action cleanup + 0008 reset.
+- `npm test`: 42 files / 215 tests passed, 0 failed (100% green on `lab4-staging`).
+- `npm run e2e:lab4`: 9 passed (E2E-01..03 + VIS-01 ×5) on chromium with seed pinning + E2E-action cleanup + 0005/0006/0008 reset.
 - `npm run build`: client (vite, 54 modules) + server (tsc) clean.
 - Seed fixtures for tests: requesters ×2 (isolation), active/inactive staff, tickets across 8 statuses + unassigned, actions (0 / 1-completed / multi-performer / follow-up).
 - `Final` column flipped to `Pass` after the 100% green run + evidence screenshots under `artifacts/lab-04/screenshots/` (15 PNGs).
