@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import type { Requester } from '../lab-03/AuthContext';
+import { ActionsTakenList } from '../lab-04/ActionsTakenList';
 
 type Attachment = {
   id: number;
@@ -316,6 +317,12 @@ export function TicketDetail({ ticketId, requester, onBack }: TicketDetailProps)
               {commentBusy ? 'Posting...' : 'Post Comment'}
             </button>
           </div>
+        </div>
+      </section>
+
+      <section className="card mb-3">
+        <div className="card-body">
+          <ActionsTakenList ticketId={ticketId} mode="requester" />
         </div>
       </section>
 

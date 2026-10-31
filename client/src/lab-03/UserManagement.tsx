@@ -352,8 +352,8 @@ export function UserManagement({ currentUserId }: { currentUserId: number }) {
       {users.length === 0 ? (
         <p role="status">{appliedSearch || roleFilter ? 'No users match your filters.' : 'No users found.'}</p>
       ) : (
-        <div className="table-responsive">
-          <table className="table align-middle">
+        <div className="table-responsive border" style={{ borderRadius: '0.75rem', overflow: 'hidden' }}>
+          <table className="table align-middle mb-0">
             <thead>
               <tr>
                 <th scope="col">Name</th>

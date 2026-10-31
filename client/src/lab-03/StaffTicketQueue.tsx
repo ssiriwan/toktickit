@@ -62,12 +62,25 @@ export function StaffTicketQueue({
 
   const [search, setSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  // Dashboard drill-down links pre-apply filters via URL query (validated).
+  // Reads window.location directly (no router hook) so the component also
+  // renders outside a Router in legacy tests.
+  const [searchParams] = useState(() => new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search));
+  const [statusFilter, setStatusFilter] = useState(() => {
+    const s = searchParams.get('status') ?? '';
+    return STATUSES.includes(s) ? s : '';
+  });
   const [categoryFilter, setCategoryFilter] = useState('');
   const [systemFilter, setSystemFilter] = useState('');
   const [reqPriority, setReqPriority] = useState('');
-  const [itPriority, setItPriority] = useState('');
-  const [ownerFilter, setOwnerFilter] = useState('');
+  const [itPriority, setItPriority] = useState(() => {
+    const p = searchParams.get('itPriority') ?? '';
+    return PRIORITIES.includes(p) ? p : '';
+  });
+  const [ownerFilter, setOwnerFilter] = useState(() => {
+    const o = searchParams.get('owner') ?? '';
+    return o === 'me' || o === 'unassigned' ? o : '';
+  });
   const [sort, setSort] = useState('updatedAt');
   const [order, setOrder] = useState<'asc' | 'desc'>('desc');
   const [pageSize, setPageSize] = useState(10);
@@ -342,8 +355,8 @@ export function StaffTicketQueue({
 
       {tickets.length > 0 && (
         <>
-          <div className="table-responsive d-none d-md-block">
-            <table className="table table-hover">
+          <div className="table-responsive d-none d-md-block border" style={{ borderRadius: '0.75rem', overflow: 'hidden' }}>
+            <table className="table table-hover mb-0">
               <thead>
                 <tr style={{ background: '#EAF6EF' }}>
                   <th style={headerCell}>Ticket No.</th>
@@ -371,8 +384,8 @@ export function StaffTicketQueue({
                   <tr key={t.id}>
                     <td>{t.ticketNumber}</td>
                     <td>{new Date(t.ticketDate).toLocaleDateString()}</td>
-                    <td style={{ maxWidth: '16rem' }} title={t.summary}>
-                      <span className="d-inline-block text-truncate" style={{ maxWidth: '16rem' }}>{t.summary}</span>
+                    <td style={{ maxWidth: '16rem', overflowWrap: 'anywhere', whiteSpace: 'normal' }} title={t.summary}>
+                      {t.summary}
                     </td>
                     <td>{t.category.name}</td>
                     <td><span className={`badge badge-priority-${t.requestedPriority}`}>{t.requestedPriority}</span></td>
@@ -393,7 +406,7 @@ export function StaffTicketQueue({
 
           <div className="d-md-none">
             {tickets.map((t) => (
-              <div key={t.id} className="card mb-2">
+              <div key={t.id} className="card mb-2" style={{ borderRadius: '0.75rem' }}>
                 <div className="card-body">
                   <div className="d-flex justify-content-between align-items-center mb-1">
                     <strong>{t.ticketNumber}</strong>

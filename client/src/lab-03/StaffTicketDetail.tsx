@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import { ActionsTakenList } from '../lab-04/ActionsTakenList';
+
 type DetailTicket = {
   id: number;
   ticketNumber: string;
@@ -22,7 +24,16 @@ type DetailTicket = {
   attachments: { id: number; filename: string; mimeType: string; fileSize: number; isRemoved: boolean; createdAt: string }[];
 };
 
-const STATUSES = ['NEW', 'OPEN', 'IN_PROGRESS', 'WAITING_FOR_REQUESTER', 'RESOLVED', 'CLOSED', 'REOPENED', 'CANCELLED'];
+const STATUS_TRANSITIONS: Record<string, string[]> = {
+  NEW: ['OPEN', 'CANCELLED'],
+  OPEN: ['IN_PROGRESS', 'WAITING_FOR_REQUESTER', 'CANCELLED'],
+  IN_PROGRESS: ['WAITING_FOR_REQUESTER', 'RESOLVED', 'CANCELLED'],
+  WAITING_FOR_REQUESTER: ['IN_PROGRESS', 'CANCELLED'],
+  RESOLVED: ['CLOSED', 'REOPENED'],
+  CLOSED: ['REOPENED'],
+  REOPENED: ['IN_PROGRESS', 'CANCELLED'],
+  CANCELLED: []
+};
 const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
 
 function formatStatus(s: string) {
@@ -60,6 +71,9 @@ export function StaffTicketDetail() {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<string | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [hasCompletedAction, setHasCompletedAction] = useState(false);
+  const [gateWarning, setGateWarning] = useState<string | null>(null);
+  const [staleConflict, setStaleConflict] = useState(false);
 
   async function load() {
     setStatus('loading');
@@ -95,8 +109,25 @@ export function StaffTicketDetail() {
         if (list) setUsers(list);
       })
       .catch(() => {});
+    loadGateState();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ticketId]);
+
+  // Resolution-gate input: whether a COMPLETED action exists (guarded —
+  // legacy fetch stubs may answer with a non-array for unknown URLs).
+  // Returns the fresh value; the state copy is a best-effort cache only —
+  // the status control always rechecks live before allowing RESOLVED.
+  async function loadGateState(): Promise<boolean> {
+    try {
+      const res = await fetch(`/api/staff/tickets/${ticketId}/actions`, { credentials: 'include' });
+      const data: unknown = res.ok ? await res.json().catch(() => []) : [];
+      const completed = Array.isArray(data) && data.some((a) => (a as { status?: string }).status === 'COMPLETED');
+      setHasCompletedAction(completed);
+      return completed;
+    } catch {
+      return hasCompletedAction;
+    }
+  }
 
   async function handleClaim() {
     setSaving('owner');
@@ -183,6 +214,13 @@ export function StaffTicketDetail() {
 
   async function handleStatusChange(value: string) {
     setStatusDraft(value);
+    setGateWarning(null);
+    if (value === 'RESOLVED' && !(await loadGateState())) {
+      // Resolution gate: block before any round-trip when no Completed action exists.
+      setGateWarning('Resolution gate: add at least one Completed action before resolving.');
+      if (ticket) setStatusDraft(ticket.currentStatus);
+      return;
+    }
     if (value === 'CANCELLED') {
       setPendingStatus(value);
       setShowCancelConfirm(true);
@@ -193,21 +231,28 @@ export function StaffTicketDetail() {
 
   async function doStatusSave(statusValue?: string) {
     const value = statusValue ?? pendingStatus ?? statusDraft;
+    if (!ticket) return;
     setSaving('status');
     setSaveError(null);
+    setStaleConflict(false);
     setShowCancelConfirm(false);
     try {
       const res = await fetch(`/api/staff/tickets/${ticketId}/status`, {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: value })
+        body: JSON.stringify({ status: value, clientUpdatedAt: ticket.updatedAt })
       });
-      const payload = await res.json().catch(() => ({} as { error?: { message?: string; details?: { message?: string }[] } }));
+      const payload = await res.json().catch(() => ({} as { error?: { code?: string; message?: string; details?: { message?: string }[] } }));
       if (!res.ok) {
+        if (res.status === 409 || payload.error?.code === 'STALE_UPDATE') {
+          setStaleConflict(true);
+          return;
+        }
         setSaveError(payload.error?.message ?? payload.error?.details?.[0]?.message ?? 'Failed to update status');
         return;
       }
+      setGateWarning(null);
       await load();
     } catch {
       setSaveError('Failed to update status');
@@ -301,6 +346,8 @@ export function StaffTicketDetail() {
   if (status === 'forbidden') return <p role="alert" className="container py-4 text-danger">You do not have access to this ticket.</p>;
   if (status === 'error' || !ticket) return <p role="alert" className="container py-4 text-danger">Unable to load ticket.</p>;
 
+  const allowedStatuses = [ticket.currentStatus, ...(STATUS_TRANSITIONS[ticket.currentStatus] ?? [])];
+
   return (
     <main className="container py-4" style={{ maxWidth: '56rem' }}>
       <button type="button" className="btn btn-outline-secondary mb-3" onClick={() => navigate('/staff/queue')}>
@@ -345,7 +392,7 @@ export function StaffTicketDetail() {
                 onChange={(e) => handleStatusChange(e.target.value)}
                 aria-label="Current Status"
               >
-                {STATUSES.map((s) => (
+                {allowedStatuses.map((s) => (
                   <option key={s} value={s}>{formatStatus(s)}</option>
                 ))}
               </select>
@@ -413,6 +460,17 @@ export function StaffTicketDetail() {
             <div className="zen-readonly">{ticket.description}</div>
           </div>
           {saveError && <p className="text-danger col-12" role="alert">{saveError}</p>}
+          {gateWarning && <p className="text-warning col-12" role="alert">{gateWarning}</p>}
+          {staleConflict && (
+            <div className="col-12">
+              <p className="text-danger" role="alert">
+                This ticket was updated elsewhere. Refresh and try again.
+              </p>
+              <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => { setStaleConflict(false); load(); }}>
+                Refresh
+              </button>
+            </div>
+          )}
           {downloadError && <p className="text-danger col-12" role="alert">{downloadError}</p>}
           {saving && <p className="text-muted col-12" role="status">Saving...</p>}
         </div>
@@ -521,6 +579,12 @@ export function StaffTicketDetail() {
           </div>
         </section>
       )}
+
+      <div className="card mt-3">
+        <div className="card-body">
+          <ActionsTakenList ticketId={ticketId} mode="staff" onChanged={loadGateState} />
+        </div>
+      </div>
     </main>
   );
 }

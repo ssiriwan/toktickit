@@ -22,16 +22,26 @@ interface MyTicketsProps {
 }
 
 export function MyTickets({ requester, onSelectTicket }: MyTicketsProps) {
+  // Dashboard drill-down links pre-apply filters via URL query (validated).
+  // Reads window.location directly (no router hook) so the component also
+  // renders outside a Router in legacy tests.
+  const [searchParams] = useState(() => new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search));
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'empty'>('loading');
   const [search, setSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [systemFilter, setSystemFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState(() => {
+    const s = searchParams.get('status') ?? '';
+    return ['NEW', 'OPEN', 'IN_PROGRESS', 'WAITING_FOR_REQUESTER', 'RESOLVED', 'CLOSED', 'REOPENED', 'CANCELLED'].includes(s) ? s : '';
+  });
   const [priorityFilter, setPriorityFilter] = useState('');
-  const [sort, setSort] = useState('ticketDate');
-  const [order, setOrder] = useState<'asc' | 'desc'>('desc');
+  const [sort, setSort] = useState(() => {
+    const s = searchParams.get('sort') ?? '';
+    return ['ticketDate', 'updatedAt', 'requestedPriority'].includes(s) ? s : 'ticketDate';
+  });
+  const [order, setOrder] = useState<'asc' | 'desc'>(() => (searchParams.get('order') === 'asc' ? 'asc' : 'desc'));
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [pagination, setPagination] = useState({ page: 1, pageSize: 10, totalItems: 0, totalPages: 1 });
