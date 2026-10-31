@@ -25,11 +25,12 @@
   ✓  5 screenshots — staff dashboard (3 viewports)
   ✓  6 screenshots — actions taken on staff ticket detail (3 viewports)
   ✓  7 screenshots — actions taken read-only on requester ticket detail (3 viewports)
-  ✓  8 ticket-resolution — gate blocks RESOLVED, then complete → resolve → close succeeds
-  8 passed
+  ✓  8 screenshots — workflow evidence (Part 6 edit + Part 7 gate/resolve/409)
+  ✓  9 ticket-resolution — gate blocks RESOLVED, then complete → resolve → close succeeds
+  9 passed
 ```
 
-- Global setup reseeds, pins E2E accounts, deletes `E2E *` actions, resets `TK-20260910-0008` → OPEN and `TK-20260910-0005` → NEW (same as teardown — deterministic reruns).
+- Global setup reseeds, pins E2E accounts, deletes `E2E *` actions, resets `TK-20260910-0008` → OPEN, `TK-20260910-0005` → NEW, and `TK-20260910-0006` → URGENT/REOPENED (same as teardown — deterministic reruns).
 - Two genuine bugs found by E2E (not by unit tests): performer-default race (fixed with backfill effect) and un-awaited gate refresh (fixed with live recheck). See `ai-use.md` §9.
 
 ## 3. Builds (`npm run build`)

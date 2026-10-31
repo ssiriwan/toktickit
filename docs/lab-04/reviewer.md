@@ -63,11 +63,16 @@
 - **PR #60 (Final docs):** Approved and merged into `lab4-staging` (`e1b8f86`). Curated ai-use down to 10 selected prompts with full reflections; reviewer records aligned.
 
 - **PR #62 (Release evidence):** round 1 by @thhanabun (2026-10-13) — Passed (a11y-checklist complete, flex-wrap header fix, strong workflow evidence test with real 409 race, test-run-evidence infra failure note, rewritten README, tests.md arithmetic).
-  - Blocking 1 (specs fight over ticket 0008 without inter-spec reset): screenshots workflow pointed at unused zero-action ticket `TK-20260910-0005` (NEW → OPEN → IN_PROGRESS → gate warning → complete action → resolve), isolating it completely from `ticket-resolution.spec.ts` (`0008`) and making `npm run e2e:lab4` 8/8 fully deterministic regardless of execution order. Added `0005` reset to `global.setup.ts`.
+  - Blocking 1 (specs fight over ticket 0008 without inter-spec reset): screenshots workflow pointed at unused zero-action ticket `TK-20260910-0005` (NEW → OPEN → IN_PROGRESS → gate warning → complete action → resolve), isolating it completely from `ticket-resolution.spec.ts` (`0008`) and making `npm run e2e:lab4` 9/9 fully deterministic regardless of execution order. Added `0005` reset to `global.setup.ts`.
   - Non-blocking 1 (screenshots.spec.ts:128 formatting): separated two statements onto individual lines.
   - Non-blocking 2 (stale counts): updated README:63 and test-run-evidence.md:14,16 from 41 files / 213 tests to 42 files / 215 tests.
   - Non-blocking 3 (typo in a11y-checklist.md:18): fixed "badgesReuse" to "badges reuse".
   - Round 2 follow-ups (non-blocking): eliminated residual order coupling by adding `resetTicket0005()` in `screenshots.spec.ts` (called both before/after the workflow section + in `test.afterAll`), keeping `0005` in `NEW` state for `dashboards.spec.ts` regardless of execution order; propagated `0005` mentions to `playwright.lab04.config.ts` and `test-run-evidence.md:32`; confirmed TODO block will be filled after release merge to main before PDF build.
+  - Round 3 follow-ups (Blocking count fix + non-blockings addressed):
+    - Reconciled E2E suite count to **9 passed** everywhere: updated `test-run-evidence.md` with full 9-line output (including `workflow evidence (Part 6 edit + Part 7 gate/resolve/409)`), `README.md:64` (`VIS-01 ×5`), and `tests.md:74`.
+    - Added reconciliation note in `tests.md` clarifying that the 5th test in `screenshots.spec.ts` captures visual evidence for Parts 6 & 7 on top of the planned functional E2E-01..03 tests.
+    - Added `TK-20260910-0006` reset (`itPriority: 'URGENT'`, `currentStatus: 'REOPENED'`) in both `global.setup.ts` and `screenshots.spec.ts` post-race teardown, preventing URGENT priority drift across runs.
+    - Removed silent `catch {}` in fixture reset helper: now logs and rethrows on database errors for clear failure diagnostics.
 
 ## Pull Requests I Reviewed (partner repo: thhanabun/Software_Eng_Lab)
 

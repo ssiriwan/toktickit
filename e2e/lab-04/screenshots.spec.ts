@@ -55,7 +55,7 @@ async function loginAsStaffShots(page: Page) {
   await expect(page.getByText(/welcome back/i)).toBeVisible({ timeout: 15000 });
 }
 
-async function resetTicket0005() {
+async function resetWorkflowFixtures() {
   const { createRequire } = await import('node:module');
   const path = await import('node:path');
   const require = createRequire(path.join(process.cwd(), 'server', 'package.json'));
@@ -69,8 +69,13 @@ async function resetTicket0005() {
       where: { ticketNumber: 'TK-20260910-0005' },
       data: { currentStatus: 'NEW' }
     });
-  } catch {
-    // best-effort cleanup
+    await prisma.ticket.updateMany({
+      where: { ticketNumber: 'TK-20260910-0006' },
+      data: { itPriority: 'URGENT', currentStatus: 'REOPENED' }
+    });
+  } catch (err) {
+    console.error('Failed to reset workflow fixtures:', err);
+    throw err;
   } finally {
     await prisma.$disconnect();
   }
@@ -78,7 +83,7 @@ async function resetTicket0005() {
 
 test.describe('VIS-01 — Lab 4 responsive screenshots', () => {
   test.afterAll(async () => {
-    await resetTicket0005();
+    await resetWorkflowFixtures();
   });
   test('requester dashboard', async ({ page }) => {
     await loginAsRequester(page);
@@ -204,7 +209,7 @@ test.describe('VIS-01 — Lab 4 responsive screenshots', () => {
     await dialog.getByRole('button', { name: /^cancel$/i }).last().click();
 
     // Part 7: matrix-filtered status control on NEW ticket 0005 (isolated from 0008 resolution flow).
-    await resetTicket0005();
+    await resetWorkflowFixtures();
     await page.goto('/staff/queue');
     await page.getByPlaceholder(/search by ticket number/i).fill('TK-20260910-0005');
     await page.getByRole('button', { name: /^search$/i }).click();
@@ -253,7 +258,7 @@ test.describe('VIS-01 — Lab 4 responsive screenshots', () => {
       fullPage: true
     });
     // Immediately reset 0005 back to NEW so subsequent tests (e.g. dashboards NEW link) stay decoupled.
-    await resetTicket0005();
+    await resetWorkflowFixtures();
 
     // Part 7: stale 409 banner via two-context race on TK-20260910-0006.
     const contextB = await browser.newContext();
@@ -278,5 +283,7 @@ test.describe('VIS-01 — Lab 4 responsive screenshots', () => {
       fullPage: true
     });
     await contextB.close();
+    // Restore 0006 priority/status after 409 race
+    await resetWorkflowFixtures();
   });
 });

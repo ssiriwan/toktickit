@@ -61,7 +61,7 @@ npm run dev:client   # http://localhost:5173 (Vite, proxy /api → 3000)
 
 ```bash
 npm test              # 42 files / 215 tests green (Labs 1–4, mocked API/UI + real-DB Lab 2)
-npm run e2e:lab4      # 8 passed on chromium (E2E-01..03 + VIS-01 ×4, seed-pinned, workers:1)
+npm run e2e:lab4      # 9 passed on chromium (E2E-01..03 + VIS-01 ×5, seed-pinned, workers:1)
 npm run build         # client (vite) + server (tsc) clean
 ```
 
